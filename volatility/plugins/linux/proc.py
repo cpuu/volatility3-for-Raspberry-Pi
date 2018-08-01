@@ -7,8 +7,8 @@ from volatility.framework.configuration import requirements
 from volatility.framework.interfaces import plugins
 from volatility.framework.objects import utility
 from volatility.framework.renderers import format_hints
+from volatility.framework.automagic import linux
 from volatility.plugins.linux import pslist
-
 
 class Maps(plugins.PluginInterface):
     """Lists all memory maps for all processes"""
@@ -30,20 +30,22 @@ class Maps(plugins.PluginInterface):
             name = utility.array_to_string(task.comm)
 
             for vma in task.mm.mmap_iter:
-                flags = vma.protection()
-                page_offset = vma.page_offset()
+                flags = vma.get_protection()
+                page_offset = vma.get_page_offset()
                 major = 0
                 minor = 0
                 inode = 0
                 path = ""
 
                 if vma.vm_file != 0:
-                    inode_object = vma.vm_file.f_path.dentry.d_inode
-                    major = inode_object.i_sb.major
-                    minor = inode_object.i_sb.minor
-                    inode = inode_object.i_ino
-                    # TODO - update the second parameter to hopefully go away once extension is updated
-                    path = task.path_for_file(vma.vm_file, "")
+                    dentry = vma.vm_file.get_dentry()
+                    if dentry != 0:
+                        inode_object = dentry.d_inode
+                        major = inode_object.i_sb.major
+                        minor = inode_object.i_sb.minor
+                        inode = inode_object.i_ino
+                        
+                path  = vma.get_name(task)
 
                 yield (
                     0,
@@ -60,6 +62,10 @@ class Maps(plugins.PluginInterface):
                      ))
 
     def run(self):
+        filter = pslist.PsList.create_filter([self.config.get('pid', None)])
+
+        plugin = pslist.PsList.list_tasks
+
         return renderers.TreeGrid(
             [("PID", int),
              ("Process", str),
@@ -71,6 +77,8 @@ class Maps(plugins.PluginInterface):
              ("Minor", int),
              ("Inode", int),
              ("File Path", str)],
-            self._generator(pslist.PsList.list_tasks(self.context,
-                                                     self.config['primary'],
-                                                     self.config['vmlinux'])))
+            self._generator(plugin(self.context, 
+                                   self.config['primary'],
+                                   self.config['vmlinux'],
+                                   filter = filter)))
+
