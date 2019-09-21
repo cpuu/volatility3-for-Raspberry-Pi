@@ -21,35 +21,79 @@ block_cipher = None
 # This adds the current working directory, which should usually do the trick
 sys.path.append(os.getcwd())
 
-a = Analysis(['vol.py'],
-             pathex = [],
-             binaries = [],
-             datas = collect_data_files('volatility.framework') + \
-                     collect_data_files('volatility.framework.plugins', include_py_files = True) + \
-                     collect_data_files('volatility.schemas') + \
-                     collect_data_files('volatility.plugins', include_py_files = True),
-             hiddenimports = collect_submodules('volatility.framework.automagic') + \
-                             collect_submodules('volatility.framework.plugins') + \
-                             collect_submodules('volatility.framework.symbols'),
-             hookspath = [],
-             runtime_hooks = [],
-             excludes = [],
-             win_no_prefer_redirects = False,
-             win_private_assemblies = False,
-             cipher = block_cipher,
-             noarchive = False)
-pyz = PYZ(a.pure, a.zipped_data,
-          cipher = block_cipher)
-exe = EXE(pyz,
-          a.scripts,
-          a.binaries,
-          a.zipfiles,
-          a.datas,
-          [],
-          name = 'vol',
-          debug = False,
-          bootloader_ignore_signals = False,
-          strip = False,
-          upx = True,
-          runtime_tmpdir = None,
-          console = True)
+vol_analysis = Analysis(['vol.py'],
+                        pathex = [],
+                        binaries = [],
+                        datas = collect_data_files('volatility.framework') + \
+                                collect_data_files('volatility.framework.automagic', include_py_files = True) + \
+                                collect_data_files('volatility.framework.plugins', include_py_files = True) + \
+                                collect_data_files('volatility.schemas') + \
+                                collect_data_files('volatility.plugins', include_py_files = True),
+                        hiddenimports = collect_submodules('volatility.framework.automagic') + \
+                                        collect_submodules('volatility.framework.plugins') + \
+                                        collect_submodules('volatility.framework.symbols'),
+                        hookspath = [],
+                        runtime_hooks = [],
+                        excludes = [],
+                        win_no_prefer_redirects = False,
+                        win_private_assemblies = False,
+                        cipher = block_cipher,
+                        noarchive = False)
+######
+# Multipackage spec files are broken in pyinstaller 3.0 (see bug 1527)
+######
+# The following can be uncommented once multipackage spec files work again
+
+# volshell_analysis = Analysis(['volshell.py'],
+#                              pathex = [],
+#                              binaries = [],
+#                              datas = collect_data_files('volatility.framework') + \
+#                                      collect_data_files('volatility.framework.automagic', include_py_files = True) + \
+#                                      collect_data_files('volatility.framework.plugins', include_py_files = True) + \
+#                                      collect_data_files('volatility.cli', include_py_files = True) + \
+#                                      collect_data_files('volatility.schemas') + \
+#                                      collect_data_files('volatility.plugins', include_py_files = True),
+#                              hiddenimports = collect_submodules('volatility.framework.automagic') + \
+#                                              collect_submodules('volatility.framework.plugins') + \
+#                                              collect_submodules('volatility.framework.symbols'),
+#                              hookspath = [],
+#                              runtime_hooks = [],
+#                              excludes = [],
+#                              win_no_prefer_redirects = False,
+#                              win_private_assemblies = False,
+#                              cipher = block_cipher,
+#                              noarchive = False)
+
+# MERGE((vol_analysis, 'vol', 'vol'), (volshell_analysis, 'volshell', 'volshell'))
+
+vol_pyz = PYZ(vol_analysis.pure, vol_analysis.zipped_data,
+              cipher = block_cipher)
+vol_exe = EXE(vol_pyz,
+              vol_analysis.scripts,
+              vol_analysis.binaries,
+              vol_analysis.zipfiles,
+              vol_analysis.datas,
+              [('u', None, 'OPTION')],
+              name = 'vol',
+              debug = False,
+              bootloader_ignore_signals = False,
+              strip = False,
+              upx = True,
+              runtime_tmpdir = None,
+              console = True)
+
+# volshell_pyz = PYZ(volshell_analysis.pure, volshell_analysis.zipped_data,
+#                    cipher = block_cipher)
+# volshell_exe = EXE(volshell_pyz,
+#                    volshell_analysis.scripts,
+#                    volshell_analysis.binaries,
+#                    volshell_analysis.zipfiles,
+#                    volshell_analysis.datas,
+#                    [('u', None, 'OPTION')],
+#                    name = 'vol',
+#                    debug = False,
+#                    bootloader_ignore_signals = False,
+#                    strip = False,
+#                    upx = True,
+#                    runtime_tmpdir = None,
+#                    console = True)
