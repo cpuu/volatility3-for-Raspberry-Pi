@@ -46,11 +46,8 @@ class Memmap(interfaces.plugins.PluginInterface):
 
             for mapval in proc_layer.mapping(0x0, proc_layer.maximum_address, ignore_errors = True):
                 kpage, _, vpage, page_size, maplayer = mapval
-                cur_set = reverse_map.get(kpage >> 12, set())
-                cur_set.add(("kernel", vpage))
-                reverse_map[kpage >> 12] = cur_set
-                yield(0, (proc.ImageFileName.cast("string", max_length = proc.ImageFileName.vol.count),
-                    proc.UniqueProcessId,
+               
+                yield(0, (
                     format_hints.Hex(kpage), 
                     format_hints.Hex(vpage), 
                     format_hints.Hex(page_size), 
@@ -61,7 +58,7 @@ class Memmap(interfaces.plugins.PluginInterface):
     def run(self):
         filter_func = pslist.PsList.create_pid_filter([self.config.get('pid', None)])
 
-        return renderers.TreeGrid([ ("Process", str), ("PID", int),("Virtual", format_hints.Hex),("Physical", format_hints.Hex), ("Size", format_hints.Hex), ("Offset", format_hints.Hex)],
+        return renderers.TreeGrid([ ("Virtual", format_hints.Hex),("Physical", format_hints.Hex), ("Size", format_hints.Hex), ("Offset", format_hints.Hex)],
                                   self._generator(
                                       pslist.PsList.list_processes(context = self.context,
                                                                    layer_name = self.config['primary'],
