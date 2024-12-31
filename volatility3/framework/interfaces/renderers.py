@@ -9,9 +9,8 @@ renderer interface which can interact with a TreeGrid to produce
 suitable output.
 """
 
-from dataclasses import dataclass
+import dataclasses
 import datetime
-from volatility3.framework import interfaces
 from abc import ABCMeta, abstractmethod
 from collections import abc
 from typing import (
@@ -27,6 +26,14 @@ from typing import (
     TypeVar,
     Union,
 )
+from typing import Dict
+import functools
+
+from volatility3.framework import interfaces
+
+
+class BaseAbsentValue:
+    """Class that represents values which are not present for some reason."""
 
 
 class Column(NamedTuple):
@@ -36,10 +43,33 @@ class Column(NamedTuple):
 
 RenderOption = Any
 
+T = TypeVar("T")
+
+class TypeRendererInterface:
+    type = T
+
+    def __init__(self, func: Optional[Callable] = None, options: Optional[Dict[str, Any]] = None):
+        self._options = options or {}
+        setattr(self, "render", func)
+
+    @property
+    def options(self):
+        return self._options
+
+    def render(self, data: T|BaseAbsentValue) -> Any:
+        """Renders a specific datatype"""
+        return ""
+
+    def __call__(self, data: T|BaseAbsentValue) -> Any:
+        """Shortcut for render"""
+        return self.render(data)
+
 
 class Renderer(metaclass=ABCMeta):
     """Class that defines the interface that all output renderers must
     support."""
+
+    _type_renderers: Dict[Union[Type, str], Callable]
 
     def __init__(self, options: Optional[List[RenderOption]] = None) -> None:
         """Accepts an options object to configure the renderers."""
@@ -104,10 +134,6 @@ class TreeNode(abc.Sequence, metaclass=ABCMeta):
         """
 
 
-class BaseAbsentValue:
-    """Class that represents values which are not present for some reason."""
-
-
 class Disassembly:
     """A class to indicate that the bytes provided should be disassembled
     (based on the architecture)"""
@@ -126,11 +152,23 @@ class Disassembly:
         self.offset = offset
 
 
-@dataclass
+@dataclasses.dataclass
 class LayerData(object):
+    """Layer data
+
+    This requires the contex to be passed in, in case plugins want to use multiple contexts
+    and to ensure the TreeGrid interface doesn't change, since this would break all existing plugins"""
+    context: 'interfaces.context.ContextInterface'
     layer_name: str
     offset: int
     length: int
+
+    @staticmethod
+    def from_object(object: 'interfaces.objects.ObjectInterface', size: Optional[int] = None):
+        return LayerData(context = object._context,
+            layer_name = object.vol.layer_name,
+            offset = object.vol.offset,
+            length = size or object.vol.size)
 
 
 # We don't class these off a shared base, because the BaseTypes must only
@@ -164,6 +202,7 @@ class TreeGrid(metaclass=ABCMeta):
     and to create cycles.
     """
 
+    # TODO: Figure out why this isn't just BaseTypes (which includes AbsentValues'
     base_types: ClassVar[Tuple] = (
         int,
         str,
@@ -171,13 +210,14 @@ class TreeGrid(metaclass=ABCMeta):
         bytes,
         datetime.datetime,
         Disassembly,
+        LayerData
     )
 
     def __init__(
         self,
         columns: ColumnsType,
         generator: Generator,
-        context: Optional[interfaces.context.ContextInterface] = None,
+        context: Optional['interfaces.context.ContextInterface'] = None,
     ) -> None:
         """Constructs a TreeGrid object using a specific set of columns.
 
@@ -192,7 +232,7 @@ class TreeGrid(metaclass=ABCMeta):
         self._context = context
 
     @property
-    def context(self) -> Optional[interfaces.context.ContextInterface]:
+    def context(self) -> Optional['interfaces.context.ContextInterface']:
         """Returns the context value for the tree grid (to retrieve data items)
 
         This is a property to ensure the renderers don't try changing the context for any reason
