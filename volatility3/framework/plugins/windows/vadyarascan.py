@@ -18,7 +18,7 @@ class VadYaraScan(interfaces.plugins.PluginInterface):
     """Scans all the Virtual Address Descriptor memory maps using yara."""
 
     _required_framework_version = (2, 4, 0)
-    _version = (1, 1, 0)
+    _version = (1, 1, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -32,8 +32,11 @@ class VadYaraScan(interfaces.plugins.PluginInterface):
             requirements.PluginRequirement(
                 name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="yarascanner", component=yarascan.YaraScanner, version=(2, 0, 0)
+            ),
             requirements.PluginRequirement(
-                name="yarascan", plugin=yarascan.YaraScan, version=(1, 3, 0)
+                name="yarascan", plugin=yarascan.YaraScan, version=(2, 0, 0)
             ),
             requirements.ListRequirement(
                 name="pid",
@@ -66,33 +69,40 @@ class VadYaraScan(interfaces.plugins.PluginInterface):
         ):
             layer_name = task.add_process_layer()
             layer = self.context.layers[layer_name]
+
+            max_vad_size = 0
+            vad_maps_to_scan = []
+
             for start, size in self.get_vad_maps(task):
                 if size > sanity_check:
-                    vollog.warn(
+                    vollog.debug(
                         f"VAD at 0x{start:x} over sanity-check size, not scanning"
                     )
                     continue
+                max_vad_size = max(max_vad_size, size)
+                vad_maps_to_scan.append((start, size))
 
-                for match in rules.match(data=layer.read(start, size, True)):
-                    if yarascan.YaraScan.yara_returns_instances():
-                        for match_string in match.strings:
-                            for instance in match_string.instances:
-                                yield 0, (
-                                    format_hints.Hex(instance.offset + start),
-                                    task.UniqueProcessId,
-                                    match.rule,
-                                    match_string.identifier,
-                                    instance.matched_data,
-                                )
-                    else:
-                        for offset, name, value in match.strings:
-                            yield 0, (
-                                format_hints.Hex(offset + start),
-                                task.UniqueProcessId,
-                                match.rule,
-                                name,
-                                value,
-                            )
+            if not vad_maps_to_scan:
+                vollog.warning(
+                    f"No VADs were found for task {task.UniqueProcessID}, not scanning"
+                )
+                continue
+
+            scanner = yarascan.YaraScanner(rules=rules)
+            scanner.chunk_size = max_vad_size
+
+            # scan the VAD data (in one contiguous block) with the yarascanner
+            for start, size in vad_maps_to_scan:
+                for offset, rule_name, name, value in scanner(
+                    layer.read(start, size, pad=True), start
+                ):
+                    yield 0, (
+                        format_hints.Hex(offset),
+                        task.UniqueProcessId,
+                        rule_name,
+                        name,
+                        value,
+                    )
 
     @staticmethod
     def get_vad_maps(
