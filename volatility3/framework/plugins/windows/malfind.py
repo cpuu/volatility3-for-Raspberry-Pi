@@ -106,9 +106,7 @@ class Malfind(interfaces.plugins.PluginInterface):
             proc_layer_name = proc.add_process_layer()
         except exceptions.InvalidAddressException as excp:
             vollog.debug(
-                "Process {}: invalid address {} in layer {}".format(
-                    proc_id, excp.invalid_address, excp.layer_name
-                )
+                f"Process {proc_id}: invalid address {excp.invalid_address} in layer {excp.layer_name}"
             )
             return None
 
@@ -122,10 +120,29 @@ class Malfind(interfaces.plugins.PluginInterface):
                 vadinfo.winnt_protections,
             )
             write_exec = "EXECUTE" in protection_string and "WRITE" in protection_string
-
-            # the write/exec check applies to everything
+            dirty_page = None
             if not write_exec:
-                continue
+                """
+                # Inspect "PAGE_EXECUTE_READ" VAD pages to detect
+                # non writable memory regions having been injected
+                # using elevated WriteProcessMemory().
+                """
+                if "EXECUTE" in protection_string:
+                    for page in range(
+                        vad.get_start(), vad.get_end(), proc_layer.page_size
+                    ):
+                        try:
+                            # If we have a dirty page in a non writable "EXECUTE" region, it is suspicious.
+                            if proc_layer.is_dirty(page):
+                                dirty_page = page
+                                break
+                        except exceptions.InvalidAddressException:
+                            # Abort as it is likely that other addresses in the same range will also fail.
+                            break
+                    if dirty_page is None:
+                        continue
+                else:
+                    continue
 
             if (vad.get_private_memory() == 1 and vad.get_tag() == "VadS") or (
                 vad.get_private_memory() == 0
@@ -134,6 +151,11 @@ class Malfind(interfaces.plugins.PluginInterface):
                 if cls.is_vad_empty(proc_layer, vad):
                     continue
 
+                if dirty_page is not None:
+                    # Useful information to investigate the page content with volshell afterwards.
+                    vollog.warning(
+                        f"[proc_id {proc_id}] Found suspicious DIRTY + {protection_string} page at {hex(dirty_page)}",
+                    )
                 data = proc_layer.read(vad.get_start(), 64, pad=True)
                 yield vad, data
 
@@ -141,16 +163,30 @@ class Malfind(interfaces.plugins.PluginInterface):
         # determine if we're on a 32 or 64 bit kernel
         kernel = self.context.modules[self.config["kernel"]]
 
+        # set refined criteria to know when to add to "Notes" column
+        refined_criteria = {
+            b"MZ": "MZ header",
+            b"\x55\x8B": "PE header",
+            b"\x55\x48": "Function prologue",
+            b"\x55\x89": "Function prologue",
+        }
+
         is_32bit_arch = not symbols.symbol_table_is_64bit(
             self.context, kernel.symbol_table_name
         )
 
         for proc in procs:
+            # by default, "Notes" column will be set to N/A
             process_name = utility.array_to_string(proc.ImageFileName)
 
             for vad, data in self.list_injections(
                 self.context, kernel.layer_name, kernel.symbol_table_name, proc
             ):
+                notes = renderers.NotApplicableValue()
+                # Check for unique headers and update "Notes" column if criteria is met
+                if data[0:2] in refined_criteria:
+                    notes = refined_criteria[data[0:2]]
+
                 # if we're on a 64 bit kernel, we may still need 32 bit disasm due to wow64
                 if is_32bit_arch or proc.get_is_wow64():
                     architecture = "intel"
@@ -172,9 +208,7 @@ class Malfind(interfaces.plugins.PluginInterface):
                         file_output = file_handle.preferred_filename
                     except (exceptions.InvalidAddressException, OverflowError) as excp:
                         vollog.debug(
-                            "Unable to dump PE with pid {0}.{1:#x}: {2}".format(
-                                proc.UniqueProcessId, vad.get_start(), excp
-                            )
+                            f"Unable to dump PE with pid {proc.UniqueProcessId}.{vad.get_start():#x}: {excp}"
                         )
 
                 yield (
@@ -196,6 +230,7 @@ class Malfind(interfaces.plugins.PluginInterface):
                         vad.get_commit_charge(),
                         vad.get_private_memory(),
                         file_output,
+                        notes,
                         format_hints.HexBytes(data),
                         disasm,
                     ),
@@ -216,6 +251,7 @@ class Malfind(interfaces.plugins.PluginInterface):
                 ("CommitCharge", int),
                 ("PrivateMemory", int),
                 ("File output", str),
+                ("Notes", str),
                 ("Hexdump", format_hints.HexBytes),
                 ("Disasm", interfaces.renderers.Disassembly),
             ],

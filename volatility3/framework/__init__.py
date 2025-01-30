@@ -6,31 +6,29 @@
 import glob
 import sys
 import zipfile
-
-required_python_version = (3, 7, 0)
-if (
-    sys.version_info.major != required_python_version[0]
-    or sys.version_info.minor < required_python_version[1]
-    or (
-        sys.version_info.minor == required_python_version[1]
-        and sys.version_info.micro < required_python_version[2]
-    )
-):
-    raise RuntimeError(
-        "Volatility framework requires python version {}.{}.{} or greater".format(
-            *required_python_version
-        )
-    )
-
 import importlib
 import inspect
 import logging
 import os
 import traceback
-from typing import Any, Dict, Generator, List, Tuple, Type, TypeVar
+import functools
+import warnings
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Type, TypeVar
 
-from volatility3.framework import constants, interfaces
+from volatility3.framework import constants, exceptions, interfaces
+from volatility3.framework.configuration import requirements
 
+if (
+    sys.version_info.major != constants.REQUIRED_PYTHON_VERSION[0]
+    or sys.version_info.minor < constants.REQUIRED_PYTHON_VERSION[1]
+    or (
+        sys.version_info.minor == constants.REQUIRED_PYTHON_VERSION[1]
+        and sys.version_info.micro < constants.REQUIRED_PYTHON_VERSION[2]
+    )
+):
+    raise RuntimeError(
+        f"Volatility framework requires python version {'.'.join(str(x) for x in constants.REQUIRED_PYTHON_VERSION)} or greater"
+    )
 
 # ##
 #
@@ -56,27 +54,80 @@ def require_interface_version(*args) -> None:
     if len(args):
         if args[0] != interface_version()[0]:
             raise RuntimeError(
-                "Framework interface version {} is incompatible with required version {}".format(
-                    interface_version()[0], args[0]
-                )
+                f"Framework interface version {interface_version()[0]} is incompatible with required version {args[0]}"
             )
         if len(args) > 1:
             if args[1] > interface_version()[1]:
                 raise RuntimeError(
                     "Framework interface version {} is an older revision than the required version {}".format(
-                        ".".join([str(x) for x in interface_version()[0:2]]),
-                        ".".join([str(x) for x in args[0:2]]),
+                        ".".join(str(x) for x in interface_version()[0:2]),
+                        ".".join(str(x) for x in args[0:2]),
                     )
                 )
 
 
-class NonInheritable(object):
+class Deprecation:
+    """Deprecation related methods."""
+
+    @staticmethod
+    def deprecated_method(
+        replacement: Callable,
+        replacement_version: Tuple[int, int, int] = None,
+        additional_information: str = "",
+    ):
+        """A decorator for marking functions as deprecated.
+
+        Args:
+            replacement: The replacement function overriding the deprecated API, in the form of a Callable (typically a method)
+            replacement_version: The "replacement" base class version that the deprecated method expects before proxying to it. This implies that "replacement" is a method from a class that inherits from VersionableInterface.
+            additional_information: Information appended at the end of the deprecation message
+        """
+
+        def decorator(deprecated_func):
+            @functools.wraps(deprecated_func)
+            def wrapper(*args, **kwargs):
+                nonlocal replacement, replacement_version, additional_information
+                # Prevent version mismatches between deprecated (proxy) methods and the ones they proxy
+                if (
+                    replacement_version is not None
+                    and callable(replacement)
+                    and hasattr(replacement, "__self__")
+                ):
+                    replacement_base_class = replacement.__self__
+
+                    # Verify that the base class inherits from VersionableInterface
+                    if inspect.isclass(replacement_base_class) and issubclass(
+                        replacement_base_class,
+                        interfaces.configuration.VersionableInterface,
+                    ):
+                        # SemVer check
+                        if not requirements.VersionRequirement.matches_required(
+                            replacement_version, replacement_base_class.version
+                        ):
+                            raise exceptions.VersionMismatchException(
+                                deprecated_func,
+                                replacement_base_class,
+                                replacement_version,
+                                "This is a bug, the deprecated call needs to be removed and the caller needs to update their code to use the new method.",
+                            )
+
+                deprecation_msg = f"Method \"{deprecated_func.__module__ + '.' + deprecated_func.__qualname__}\" is deprecated, use \"{replacement.__module__ + '.' + replacement.__qualname__}\" instead. {additional_information}"
+                warnings.warn(deprecation_msg, FutureWarning)
+                # Return the wrapped function with its original arguments
+                return deprecated_func(*args, **kwargs)
+
+            return wrapper
+
+        return decorator
+
+
+class NonInheritable:
     def __init__(self, value: Any, cls: Type) -> None:
         self.default_value = value
         self.cls = cls
 
-    def __get__(self, obj: Any, get_type: Type = None) -> Any:
-        if type == self.cls:
+    def __get__(self, obj: Any, get_type: Type = Optional[None]) -> Any:
+        if type is self.cls:
             if hasattr(self.default_value, "__get__"):
                 return self.default_value.__get__(obj, get_type)
             return self.default_value
@@ -99,8 +150,7 @@ def class_subclasses(cls: Type[T]) -> Generator[Type[T], None, None]:
         # The typing system is not clever enough to realize that clazz has a hidden attr after the hasattr check
         if not hasattr(clazz, "hidden") or not clazz.hidden:  # type: ignore
             yield clazz
-        for return_value in class_subclasses(clazz):
-            yield return_value
+        yield from class_subclasses(clazz)
 
 
 def import_files(base_module, ignore_errors: bool = False) -> List[str]:
@@ -161,11 +211,7 @@ def import_files(base_module, ignore_errors: bool = False) -> List[str]:
 
 def _filter_files(filename: str):
     """Ensures that a filename traversed is an importable python file"""
-    return (
-        filename.endswith(".py")
-        or filename.endswith(".pyc")
-        or filename.endswith(".pyo")
-    ) and not filename.startswith("__")
+    return (filename.endswith((".py", ".pyc"))) and not filename.startswith("__")
 
 
 def import_file(module: str, path: str, ignore_errors: bool = False) -> List[str]:
@@ -189,9 +235,7 @@ def import_file(module: str, path: str, ignore_errors: bool = False) -> List[str
                     traceback.TracebackException.from_exception(e).format(chain=True)
                 )
             )
-            vollog.debug(
-                "Failed to import module {} based on file: {}".format(module, path)
-            )
+            vollog.debug(f"Failed to import module {module} based on file: {path}")
             failures.append(module)
             if not ignore_errors:
                 raise
@@ -206,11 +250,10 @@ def _zipwalk(path: str):
             if not file.is_dir():
                 dirlist = zip_results.get(os.path.dirname(file.filename), [])
                 dirlist.append(os.path.basename(file.filename))
-                zip_results[
-                    os.path.join(path, os.path.dirname(file.filename))
-                ] = dirlist
-    for value in zip_results:
-        yield value, zip_results[value]
+                zip_results[os.path.join(path, os.path.dirname(file.filename))] = (
+                    dirlist
+                )
+    yield from zip_results.items()
 
 
 def list_plugins() -> Dict[str, Type[interfaces.plugins.PluginInterface]]:
@@ -223,8 +266,14 @@ def list_plugins() -> Dict[str, Type[interfaces.plugins.PluginInterface]]:
     return plugin_list
 
 
-def clear_cache(complete=False):
+def clear_cache(complete=True):
     try:
+        if complete:
+            glob_pattern = "*.cache"
+            for cache_filename in glob.glob(
+                os.path.join(constants.CACHE_PATH, glob_pattern)
+            ):
+                os.unlink(cache_filename)
         os.unlink(os.path.join(constants.CACHE_PATH, constants.IDENTIFIERS_FILENAME))
     except FileNotFoundError:
         vollog.log(constants.LOGLEVEL_VVVV, "Attempting to clear a non-existant cache")

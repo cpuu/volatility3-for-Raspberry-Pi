@@ -5,7 +5,7 @@ import datetime
 import logging
 from typing import Callable, Dict, Set, Tuple
 
-from volatility3.framework import objects, interfaces, renderers
+from volatility3.framework import objects, interfaces, renderers, exceptions
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
 from volatility3.plugins.windows import pslist
@@ -14,8 +14,7 @@ vollog = logging.getLogger(__name__)
 
 
 class PsTree(interfaces.plugins.PluginInterface):
-    """Plugin for listing processes in a tree based on their parent process
-    ID."""
+    """Plugin for listing processes in a tree based on their parent process ID."""
 
     _required_framework_version = (2, 0, 0)
 
@@ -132,6 +131,25 @@ class PsTree(interfaces.plugins.PluginInterface):
                 proc.get_exit_time(),
             )
 
+            try:
+                audit = proc.SeAuditProcessCreationInfo.ImageFileName.Name
+                # If 'audit' is set to the empty string, display NotAvailableValue
+                row += (audit.get_string() or renderers.NotAvailableValue(),)
+            except exceptions.InvalidAddressException:
+                row += (renderers.NotAvailableValue(),)
+
+            try:
+                process_params = proc.get_peb().ProcessParameters
+                row += (
+                    process_params.CommandLine.get_string(),
+                    process_params.ImagePathName.get_string(),
+                )
+            except exceptions.InvalidAddressException:
+                row += (
+                    renderers.NotAvailableValue(),
+                    renderers.NotAvailableValue(),
+                )
+
             yield (self._levels[pid] - 1, row)
             for child_pid in self._children.get(pid, []):
                 yield from yield_processes(
@@ -161,6 +179,9 @@ class PsTree(interfaces.plugins.PluginInterface):
                 ("Wow64", bool),
                 ("CreateTime", datetime.datetime),
                 ("ExitTime", datetime.datetime),
+                ("Audit", str),
+                ("Cmd", str),
+                ("Path", str),
             ],
             self._generator(
                 filter_func=pslist.PsList.create_pid_filter(

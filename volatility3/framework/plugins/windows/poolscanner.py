@@ -127,8 +127,8 @@ class PoolHeaderScanner(interfaces.layers.ScannerInterface):
 class PoolScanner(plugins.PluginInterface):
     """A generic pool scanner plugin."""
 
-    _version = (1, 0, 0)
     _required_framework_version = (2, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -139,7 +139,7 @@ class PoolScanner(plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="handles", plugin=handles.Handles, version=(1, 0, 0)
+                name="handles", plugin=handles.Handles, version=(2, 0, 0)
             ),
         ]
 
@@ -181,9 +181,9 @@ class PoolScanner(plugins.PluginInterface):
                 ),
             )
 
-    @staticmethod
+    @classmethod
     def builtin_constraints(
-        symbol_table: str, tags_filter: List[bytes] = None
+        cls, symbol_table: str, tags_filter: Optional[List[bytes]] = None
     ) -> List[PoolConstraint]:
         """Get built-in PoolConstraints given a list of pool tags.
 
@@ -222,6 +222,24 @@ class PoolScanner(plugins.PluginInterface):
                 type_name=symbol_table + constants.BANG + "_EPROCESS",
                 object_type="Process",
                 size=(600, None),
+                skip_type_test=True,
+                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+            ),
+            # threads on windows before windows8
+            PoolConstraint(
+                b"Thr\xe5",  # -> “protected” allocation, MSB is set.
+                type_name=symbol_table + constants.BANG + "_ETHREAD",
+                object_type="Thread",
+                size=(600, None),  # -> 0x0258 - size of struct in win5.1
+                skip_type_test=True,
+                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+            ),
+            # threads on windows starting with windows8
+            PoolConstraint(
+                b"Thre",
+                type_name=symbol_table + constants.BANG + "_ETHREAD",
+                object_type="Thread",
+                size=(600, None),  # -> 0x0258 - size of struct in win5.1
                 page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
             ),
             # files on windows before windows 8

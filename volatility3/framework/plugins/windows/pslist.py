@@ -4,7 +4,7 @@
 
 import datetime
 import logging
-from typing import Callable, Iterable, List, Type
+from typing import Callable, Iterator, List, Optional, Type
 
 from volatility3.framework import renderers, interfaces, layers, exceptions, constants
 from volatility3.framework.configuration import requirements
@@ -12,6 +12,7 @@ from volatility3.framework.objects import utility
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.windows.extensions import pe
+from volatility3.framework.symbols.windows import extensions
 from volatility3.plugins import timeliner
 
 vollog = logging.getLogger(__name__)
@@ -113,7 +114,7 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
     @classmethod
     def create_pid_filter(
-        cls, pid_list: List[int] = None, exclude: bool = False
+        cls, pid_list: Optional[List[int]] = None, exclude: bool = False
     ) -> Callable[[interfaces.objects.ObjectInterface], bool]:
         """A factory for producing filter functions that filter based on a list
         of process IDs.
@@ -125,20 +126,52 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         Returns:
             Filter function for passing to the `list_processes` method
         """
-        filter_func = lambda _: False
+
+        def filter_func(_):
+            return False
+
         # FIXME: mypy #4973 or #2608
         pid_list = pid_list or []
         filter_list = [x for x in pid_list if x is not None]
         if filter_list:
             if exclude:
-                filter_func = lambda x: x.UniqueProcessId in filter_list
+
+                def filter_func(x):
+                    return x.UniqueProcessId in filter_list
+
             else:
-                filter_func = lambda x: x.UniqueProcessId not in filter_list
+
+                def filter_func(x):
+                    return x.UniqueProcessId not in filter_list
+
         return filter_func
 
     @classmethod
+    def create_active_process_filter(
+        cls,
+    ) -> Callable[[interfaces.objects.ObjectInterface], bool]:
+        """A factory for producing a filter function that only returns
+           active, userland processes. This prevents plugins from operating on terminated
+           processes that are still in the process list due to smear or handle leaks as well
+           as kernel processes (System, Registry, etc.). Use of this filter for plugins searching
+           for system state anomalies significantly reduces false positive in smeared and terminated
+           processes.
+        Returns:
+            Filter function for passing to the `list_processes` method
+        """
+
+        return lambda x: not (
+            x.is_valid()
+            and x.ActiveThreads > 0
+            and x.UniqueProcessId != 4
+            and x.InheritedFromUniqueProcessId != 4
+            and x.ExitTime.QuadPart == 0
+            and x.get_handle_count() != renderers.UnreadableValue()
+        )
+
+    @classmethod
     def create_name_filter(
-        cls, name_list: List[str] = None, exclude: bool = False
+        cls, name_list: Optional[List[str]] = None, exclude: bool = False
     ) -> Callable[[interfaces.objects.ObjectInterface], bool]:
         """A factory for producing filter functions that filter based on a list
         of process names.
@@ -149,20 +182,24 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         Returns:
             Filter function for passing to the `list_processes` method
         """
-        filter_func = lambda _: False
+
+        def filter_func(_):
+            return False
+
         # FIXME: mypy #4973 or #2608
         name_list = name_list or []
         filter_list = [x for x in name_list if x is not None]
         if filter_list:
             if exclude:
-                filter_func = (
-                    lambda x: utility.array_to_string(x.ImageFileName) in filter_list
-                )
+
+                def filter_func(x):
+                    return utility.array_to_string(x.ImageFileName) in filter_list
+
             else:
-                filter_func = (
-                    lambda x: utility.array_to_string(x.ImageFileName)
-                    not in filter_list
-                )
+
+                def filter_func(x):
+                    return utility.array_to_string(x.ImageFileName) not in filter_list
+
         return filter_func
 
     @classmethod
@@ -174,7 +211,7 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         filter_func: Callable[
             [interfaces.objects.ObjectInterface], bool
         ] = lambda _: False,
-    ) -> Iterable[interfaces.objects.ObjectInterface]:
+    ) -> Iterator["extensions.EPROCESS"]:
         """Lists all the processes in the primary layer that are in the pid
         config option.
 

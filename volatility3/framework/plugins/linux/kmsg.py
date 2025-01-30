@@ -5,11 +5,12 @@ import re
 import logging
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Generator, Iterator, List, Tuple
+from typing import Generator, Iterator, List, Tuple, Union
 
 from volatility3.framework import (
     class_subclasses,
     constants,
+    exceptions,
     interfaces,
     renderers,
 )
@@ -65,7 +66,7 @@ class ABCKmsg(ABC):
         self._config = config
         self.vmlinux = context.modules[self._config["kernel"]]
         self.layer_name = self.vmlinux.layer_name  # type: ignore
-        self.long_unsigned_int_size = self.vmlinux.get_type("long unsigned int").size
+        self.long_unsigned_int_size = self.vmlinux.get_type("pointer").size
 
     @classmethod
     def run_all(
@@ -134,8 +135,14 @@ class ABCKmsg(ABC):
             bool: True if the kernel being analyzed fulfill the class requirements.
         """
 
-    def get_string(self, addr: int, length: int) -> str:
-        txt = self._context.layers[self.layer_name].read(addr, length)  # type: ignore
+    def get_string(self, addr: int, length: int) -> Union[str, None]:
+        layer = self._context.layers[self.layer_name]
+        if not layer.is_valid(addr, length):
+            vollog.warning("Failed to read log record at address 0x%x", addr)
+            return None
+
+        txt = layer.read(addr, length)
+
         return txt.decode(encoding="utf8", errors="replace")
 
     def nsec_to_sec_str(self, nsec: int) -> str:
@@ -148,7 +155,7 @@ class ABCKmsg(ABC):
         #   This might seem insignificant but it could cause some issues
         #   when compared with userland tool results or when used in
         #   timelines.
-        return "%lu.%06lu" % (nsec / 1000000000, (nsec % 1000000000) / 1000)
+        return f"{nsec // 1000000000}.{(nsec % 1000000000) // 1000:06}"
 
     def get_timestamp_in_sec_str(self, obj) -> str:
         # obj could be log, printk_log or printk_info
@@ -165,7 +172,7 @@ class ABCKmsg(ABC):
 
     def get_caller_text(self, caller_id):
         caller_name = "CPU" if caller_id & 0x80000000 else "Task"
-        caller = "%s(%u)" % (caller_name, caller_id & ~0x80000000)
+        caller = f"{caller_name}({caller_id & ~0x80000000})"
         return caller
 
     def get_prefix(self, obj) -> Tuple[int, int, str, str]:
@@ -197,7 +204,9 @@ class ABCKmsg(ABC):
 class Kmsg_pre_3_5(ABCKmsg):
     """The kernel ring buffer (log_buf) is a char array that sequentially stores
     log lines, each separated by newline (LF) characters. i.e:
-        <6>[ 9565.250411] line1!\n<6>[ 9565.250412] line2\n...
+
+        <6>[ 9565.250411] line1!\\n<6>[ 9565.250412] line2\\n...
+
     """
 
     @classmethod
@@ -260,7 +269,7 @@ class Kmsg_3_5_to_3_11(ABCKmsg):
     def _get_log_struct_name(self):
         return "log"
 
-    def get_text_from_log(self, msg) -> str:
+    def get_text_from_log(self, msg) -> Union[str, None]:
         log_struct_name = self._get_log_struct_name()
         log_struct_size = self.vmlinux.get_type(log_struct_name).size
         msg_offset = msg.vol.offset + log_struct_size
@@ -269,7 +278,8 @@ class Kmsg_3_5_to_3_11(ABCKmsg):
     def get_log_lines(self, msg) -> Generator[str, None, None]:
         if msg.text_len > 0:
             text = self.get_text_from_log(msg)
-            yield from text.splitlines()
+            if text:
+                yield from text.splitlines()
 
     def get_dict_lines(self, msg) -> Generator[str, None, None]:
         if msg.dict_len == 0:
@@ -278,9 +288,13 @@ class Kmsg_3_5_to_3_11(ABCKmsg):
         log_struct_name = self._get_log_struct_name()
         log_struct_size = self.vmlinux.get_type(log_struct_name).size
         dict_offset = msg.vol.offset + log_struct_size + msg.text_len
-        dict_data = self._context.layers[self.layer_name].read(
-            dict_offset, msg.dict_len
-        )
+        layer = self._context.layers[self.layer_name]
+        try:
+            dict_data = layer.read(dict_offset, msg.dict_len)
+        except exceptions.InvalidAddressException:
+            vollog.debug("Unable to read kmsg dict from 0x%x", dict_offset)
+            return None
+
         for chunk in dict_data.split(b"\x00"):
             yield " " + chunk.decode()
 
@@ -314,23 +328,27 @@ class Kmsg_3_5_to_3_11(ABCKmsg):
         while cur_idx < end_idx:
             msg_offset = log_buf_ptr + cur_idx  # type: ignore
             msg = self.vmlinux.object(object_type=log_struct_name, offset=msg_offset)
-            if msg.len == 0:
-                # As per kernel/printk.c:
-                # A length == 0 for the next message indicates a wrap-around to
-                # the beginning of the buffer.
-                cur_idx = 0
-                end_idx = log_next_idx
-            else:
-                facility, level, timestamp, caller = self.get_prefix(msg)
-                level_txt = self.get_level_text(level)
-                facility_txt = self.get_facility_text(facility)
+            try:
+                if msg.len == 0:
+                    # As per kernel/printk.c:
+                    # A length == 0 for the next message indicates a wrap-around to
+                    # the beginning of the buffer.
+                    cur_idx = 0
+                    end_idx = log_next_idx
+                else:
+                    facility, level, timestamp, caller = self.get_prefix(msg)
+                    level_txt = self.get_level_text(level)
+                    facility_txt = self.get_facility_text(facility)
 
-                for line in self.get_log_lines(msg):
-                    yield facility_txt, level_txt, timestamp, caller, line
-                for line in self.get_dict_lines(msg):
-                    yield facility_txt, level_txt, timestamp, caller, line
+                    for line in self.get_log_lines(msg):
+                        yield facility_txt, level_txt, timestamp, caller, line
+                    for line in self.get_dict_lines(msg):
+                        yield facility_txt, level_txt, timestamp, caller, line
 
-                cur_idx += msg.len
+                    cur_idx += msg.len
+            except exceptions.InvalidAddressException:
+                vollog.warning("Kmsg buffer msg length could not be read")
+                return
 
 
 class Kmsg_3_11_to_5_10(Kmsg_3_5_to_3_11):
@@ -396,7 +414,7 @@ class Kmsg_5_10_to_(ABCKmsg):
     def symtab_checks(cls, vmlinux) -> bool:
         return vmlinux.has_symbol("prb")
 
-    def get_text_from_data_ring(self, text_data_ring, desc, info) -> str:
+    def get_text_from_data_ring(self, text_data_ring, desc, info) -> Union[str, None]:
         text_data_sz = text_data_ring.size_bits
         text_data_mask = 1 << text_data_sz
 
@@ -424,7 +442,8 @@ class Kmsg_5_10_to_(ABCKmsg):
 
     def get_log_lines(self, text_data_ring, desc, info) -> Generator[str, None, None]:
         text = self.get_text_from_data_ring(text_data_ring, desc, info)
-        yield from text.splitlines()
+        if text:
+            yield from text.splitlines()
 
     def get_dict_lines(self, info) -> Generator[str, None, None]:
         dict_text = utility.array_to_string(info.dev_info.subsystem)
@@ -495,7 +514,7 @@ class Kmsg_5_10_to_(ABCKmsg):
 class Kmsg(interfaces.plugins.PluginInterface):
     """Kernel log buffer reader"""
 
-    _required_framework_version = (2, 0, 0)
+    _required_framework_version = (2, 6, 0)
 
     _version = (1, 0, 2)
 
@@ -514,6 +533,13 @@ class Kmsg(interfaces.plugins.PluginInterface):
             yield (0, values)
 
     def run(self):
+        if not self.context.symbol_space.verify_table_versions(
+            "dwarf2json", lambda version, _: (not version) or version > (0, 4, 1)
+        ):
+            raise exceptions.SymbolSpaceError(
+                "Invalid symbol table, please ensure the ISF table produced by dwarf2json was produced using a version > 0.4.1"
+            )
+
         return renderers.TreeGrid(
             [
                 ("facility", str),

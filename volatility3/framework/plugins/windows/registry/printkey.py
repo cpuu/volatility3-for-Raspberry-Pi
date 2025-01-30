@@ -4,7 +4,7 @@
 
 import datetime
 import logging
-from typing import List, Sequence, Iterable, Tuple, Union
+from typing import List, Optional, Sequence, Iterable, Tuple, Union
 
 from volatility3.framework import objects, renderers, exceptions, interfaces, constants
 from volatility3.framework.configuration import requirements
@@ -20,7 +20,7 @@ class PrintKey(interfaces.plugins.PluginInterface):
     """Lists the registry keys under a hive or specific key value."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 0)
+    _version = (1, 1, 0)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -51,7 +51,7 @@ class PrintKey(interfaces.plugins.PluginInterface):
     def key_iterator(
         cls,
         hive: RegistryHive,
-        node_path: Sequence[objects.StructType] = None,
+        node_path: Optional[Sequence[objects.StructType]] = None,
         recurse: bool = False,
     ) -> Iterable[
         Tuple[
@@ -121,7 +121,7 @@ class PrintKey(interfaces.plugins.PluginInterface):
     def _printkey_iterator(
         self,
         hive: RegistryHive,
-        node_path: Sequence[objects.StructType] = None,
+        node_path: Optional[Sequence[objects.StructType]] = None,
         recurse: bool = False,
     ):
         """Method that wraps the more generic key_iterator, to provide output
@@ -193,9 +193,9 @@ class PrintKey(interfaces.plugins.PluginInterface):
                     vollog.debug(
                         "Couldn't read registry value type, so data is unreadable"
                     )
-                    value_data: Union[
-                        interfaces.renderers.BaseAbsentValue, bytes
-                    ] = renderers.UnreadableValue()
+                    value_data: Union[interfaces.renderers.BaseAbsentValue, bytes] = (
+                        renderers.UnreadableValue()
+                    )
                 else:
                     try:
                         value_data = node.decode_data()
@@ -242,8 +242,8 @@ class PrintKey(interfaces.plugins.PluginInterface):
         self,
         layer_name: str,
         symbol_table: str,
-        hive_offsets: List[int] = None,
-        key: str = None,
+        hive_offsets: Optional[List[int]] = None,
+        key: Optional[str] = None,
         recurse: bool = False,
     ):
         for hive in hivelist.HiveList.list_hives(
@@ -282,7 +282,7 @@ class PrintKey(interfaces.plugins.PluginInterface):
                         renderers.UnreadableValue(),
                         format_hints.Hex(hive.hive_offset),
                         "Key",
-                        "?\\" + (key or ""),
+                        f"{hive.get_name()}\\" + (key or ""),
                         renderers.UnreadableValue(),
                         renderers.UnreadableValue(),
                         renderers.UnreadableValue(),

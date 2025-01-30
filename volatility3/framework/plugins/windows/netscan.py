@@ -23,7 +23,7 @@ class NetScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
     """Scans for network objects present in a particular windows memory image."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls):
@@ -50,9 +50,9 @@ class NetScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             ),
         ]
 
-    @staticmethod
+    @classmethod
     def create_netscan_constraints(
-        context: interfaces.context.ContextInterface, symbol_table: str
+        cls, context: interfaces.context.ContextInterface, symbol_table: str
     ) -> List[poolscanner.PoolConstraint]:
         """Creates a list of Pool Tag Constraints for network objects.
 
@@ -76,7 +76,7 @@ class NetScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
         # ~ vollog.debug("Using pool size constraints: TcpL {}, TcpE {}, UdpA {}".format(tcpl_size, tcpe_size, udpa_size))
 
-        return [
+        constraints = [
             # TCP listener
             poolscanner.PoolConstraint(
                 b"TcpL",
@@ -99,6 +99,19 @@ class NetScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 page_type=poolscanner.PoolType.NONPAGED | poolscanner.PoolType.FREE,
             ),
         ]
+
+        if symbol_table.startswith("netscan-win10-20348"):
+            vollog.debug("Adding additional pool constraint for `TTcb` tags")
+            constraints.append(
+                poolscanner.PoolConstraint(
+                    b"TTcb",
+                    type_name=symbol_table + constants.BANG + "_TCP_ENDPOINT",
+                    size=(tcpe_size, None),
+                    page_type=poolscanner.PoolType.NONPAGED | poolscanner.PoolType.FREE,
+                )
+            )
+
+        return constraints
 
     @classmethod
     def determine_tcpip_version(
@@ -148,20 +161,15 @@ class NetScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             raise NotImplementedError(
                 "Kernel Debug Structure version format not supported!"
             )
-        except:
-            # unsure what to raise here. Also, it might be useful to add some kind of fallback,
+        except Exception:
+            # FIXME: unsure what to raise here. Also, it might be useful to add some kind of fallback,
             # either to a user-provided version or to another method to determine tcpip.sys's version
             raise exceptions.VolatilityException(
                 "Kernel Debug Structure missing VERSION/KUSER structure, unable to determine Windows version!"
             )
 
         vollog.debug(
-            "Determined OS Version: {}.{} {}.{}".format(
-                kuser.NtMajorVersion,
-                kuser.NtMinorVersion,
-                vers.MajorVersion,
-                vers.MinorVersion,
-            )
+            f"Determined OS Version: {kuser.NtMajorVersion}.{kuser.NtMinorVersion} {vers.MajorVersion}.{vers.MinorVersion}"
         )
 
         if nt_major_version == 10 and arch == "x64":
@@ -218,6 +226,7 @@ class NetScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 (10, 0, 18362, 0): "netscan-win10-18362-x64",
                 (10, 0, 18363, 0): "netscan-win10-18363-x64",
                 (10, 0, 19041, 0): "netscan-win10-19041-x64",
+                (10, 0, 20348, 0): "netscan-win10-20348-x64",
             }
 
         # we do not need to check for tcpip's specific FileVersion in every case
@@ -258,9 +267,7 @@ class NetScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 if ver:
                     tcpip_mod_version = ver[3]
                     vollog.debug(
-                        "Determined tcpip.sys's FileVersion: {}".format(
-                            tcpip_mod_version
-                        )
+                        f"Determined tcpip.sys's FileVersion: {tcpip_mod_version}"
                     )
                 else:
                     vollog.debug("Could not determine tcpip.sys's FileVersion.")
@@ -302,12 +309,7 @@ class NetScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
             else:
                 raise NotImplementedError(
-                    "This version of Windows is not supported: {}.{} {}.{}!".format(
-                        nt_major_version,
-                        nt_minor_version,
-                        vers.MajorVersion,
-                        vers_minor_version,
-                    )
+                    f"This version of Windows is not supported: {nt_major_version}.{nt_minor_version} {vers.MajorVersion}.{vers_minor_version}!"
                 )
 
         vollog.debug(f"Determined symbol filename: {filename}")
@@ -487,24 +489,17 @@ class NetScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             if not isinstance(row_data[9], datetime.datetime):
                 continue
             row_data = [
-                "N/A"
-                if isinstance(i, renderers.UnreadableValue)
-                or isinstance(i, renderers.UnparsableValue)
-                else i
+                (
+                    "N/A"
+                    if isinstance(i, renderers.UnreadableValue)
+                    or isinstance(i, renderers.UnparsableValue)
+                    else i
+                )
                 for i in row_data
             ]
             description = (
-                "Network connection: Process {} {} Local Address {}:{} "
-                "Remote Address {}:{} State {} Protocol {} ".format(
-                    row_data[7],
-                    row_data[8],
-                    row_data[2],
-                    row_data[3],
-                    row_data[4],
-                    row_data[5],
-                    row_data[6],
-                    row_data[1],
-                )
+                f"Network connection: Process {row_data[7]} {row_data[8]} Local Address {row_data[2]}:{row_data[3]} "
+                f"Remote Address {row_data[4]}:{row_data[5]} State {row_data[6]} Protocol {row_data[1]} "
             )
             yield (description, timeliner.TimeLinerType.CREATED, row_data[9])
 

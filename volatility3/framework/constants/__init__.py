@@ -6,14 +6,24 @@
 Stores all the constant values that are generally fixed throughout
 volatility This includes default scanning block sizes, etc.
 """
+
 import enum
 import os.path
 import sys
 import warnings
 from typing import Callable, Optional
 
-import volatility3.framework.constants.linux
-import volatility3.framework.constants.windows
+from volatility3.framework.constants import linux as linux
+from volatility3.framework.constants import windows as windows
+from volatility3.framework.constants._version import (
+    PACKAGE_VERSION as PACKAGE_VERSION,
+    VERSION_MAJOR as VERSION_MAJOR,
+    VERSION_MINOR as VERSION_MINOR,
+    VERSION_PATCH as VERSION_PATCH,
+    VERSION_SUFFIX as VERSION_SUFFIX,
+)
+
+REQUIRED_PYTHON_VERSION = (3, 8, 0)
 
 PLUGINS_PATH = [
     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "plugins")),
@@ -42,33 +52,27 @@ if hasattr(sys, "frozen") and sys.frozen:
 BANG = "!"
 """Constant used to delimit table names from type names when referring to a symbol"""
 
-# We use the SemVer 2.0.0 versioning scheme
-VERSION_MAJOR = 2  # Number of releases of the library with a breaking change
-VERSION_MINOR = 5  # Number of changes that only add to the interface
-VERSION_PATCH = 2  # Number of changes that do not change the interface
-VERSION_SUFFIX = ""
-
-# TODO: At version 2.0.0, remove the symbol_shift feature
-
-PACKAGE_VERSION = (
-    ".".join([str(x) for x in [VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH]])
-    + VERSION_SUFFIX
-)
-"""The canonical version of the volatility3 package"""
-
 AUTOMAGIC_CONFIG_PATH = "automagic"
 """The root section within the context configuration for automagic values"""
 
+LOGLEVEL_INFO = 20
+"""Logging level for information data, showed when use the requests any logging: -v"""
+LOGLEVEL_DEBUG = 10
+"""Logging level for debugging data, showed when the user requests more logging detail: -vv"""
 LOGLEVEL_V = 9
-"""Logging level for a single -v"""
+"""Logging level for the lowest "extra" level of logging: -vvv"""
 LOGLEVEL_VV = 8
-"""Logging level for -vv"""
+"""Logging level for two levels of detail: -vvvv"""
 LOGLEVEL_VVV = 7
-"""Logging level for -vvv"""
+"""Logging level for three levels of detail: -vvvvv"""
 LOGLEVEL_VVVV = 6
-"""Logging level for -vvvv"""
+"""Logging level for four levels of detail: -vvvvvv"""
 
-CACHE_PATH = os.path.join(os.path.expanduser("~"), ".cache", "volatility3")
+
+CACHE_PATH = os.path.join(
+    os.environ.get("XDG_CACHE_HOME") or os.path.join(os.path.expanduser("~"), ".cache"),
+    "volatility3",
+)
 """Default path to store cached data"""
 
 SQLITE_CACHE_PERIOD = "-3 days"
@@ -137,4 +141,5 @@ def __getattr__(name):
     ]:
         warnings.warn(f"{name} is deprecated", FutureWarning)
         return globals()[f"{deprecated_tag}{name}"]
-    return None
+
+    return getattr(__import__(__name__), name)

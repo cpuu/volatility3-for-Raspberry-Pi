@@ -2,16 +2,14 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 import logging
-from typing import List, Iterable, Generator
+from typing import Generator, Iterable, List, Optional
 
-from volatility3.framework import constants
-from volatility3.framework import exceptions, interfaces
-from volatility3.framework import renderers
+from volatility3.framework import constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.windows.extensions import pe
-from volatility3.plugins.windows import pslist, dlllist
+from volatility3.plugins.windows import pedump, pslist
 
 vollog = logging.getLogger(__name__)
 
@@ -20,7 +18,11 @@ class Modules(interfaces.plugins.PluginInterface):
     """Lists the loaded kernel modules."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 1, 0)
+    _version = (2, 0, 0)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._enumeration_method = self.list_modules
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -33,13 +35,15 @@ class Modules(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="pslist", component=pslist.PsList, version=(2, 0, 0)
             ),
-            requirements.VersionRequirement(
-                name="dlllist", component=dlllist.DllList, version=(2, 0, 0)
-            ),
             requirements.BooleanRequirement(
                 name="dump",
                 description="Extract listed modules",
                 default=False,
+                optional=True,
+            ),
+            requirements.IntRequirement(
+                name="base",
+                description="Extract a single module with BASE address",
                 optional=True,
             ),
             requirements.StringRequirement(
@@ -48,50 +52,79 @@ class Modules(interfaces.plugins.PluginInterface):
                 optional=True,
                 default=None,
             ),
+            requirements.VersionRequirement(
+                name="pedump", component=pedump.PEDump, version=(1, 0, 0)
+            ),
         ]
+
+    def dump_module(self, session_layers, pe_table_name, mod):
+        session_layer_name = self.find_session_layer(
+            self.context, session_layers, mod.DllBase
+        )
+        file_output = f"Cannot find a viable session layer for {mod.DllBase:#x}"
+        if session_layer_name:
+            file_output = pedump.PEDump.dump_ldr_entry(
+                self.context,
+                pe_table_name,
+                mod,
+                self.open,
+                layer_name=session_layer_name,
+            )
+            if not file_output:
+                file_output = "Error outputting file"
+
+        return file_output
 
     def _generator(self):
         kernel = self.context.modules[self.config["kernel"]]
-        pe_table_name = intermed.IntermediateSymbolTable.create(
-            self.context, self.config_path, "windows", "pe", class_types=pe.class_types
-        )
 
-        for mod in self.list_modules(
+        pe_table_name = None
+        session_layers = None
+
+        if self.config["dump"]:
+            pe_table_name = intermed.IntermediateSymbolTable.create(
+                self.context,
+                self.config_path,
+                "windows",
+                "pe",
+                class_types=pe.class_types,
+            )
+
+            session_layers = list(
+                self.get_session_layers(
+                    self.context, kernel.layer_name, kernel.symbol_table_name
+                )
+            )
+
+        for mod in self._enumeration_method(
             self.context, kernel.layer_name, kernel.symbol_table_name
         ):
+            if self.config["base"] and self.config["base"] != mod.DllBase:
+                continue
+
             try:
                 BaseDllName = mod.BaseDllName.get_string()
+                if self.config["name"] and self.config["name"] not in BaseDllName:
+                    continue
             except exceptions.InvalidAddressException:
-                BaseDllName = ""
+                BaseDllName = interfaces.renderers.BaseAbsentValue()
 
             try:
                 FullDllName = mod.FullDllName.get_string()
             except exceptions.InvalidAddressException:
-                FullDllName = ""
-
-            if self.config["name"] and self.config["name"] not in BaseDllName:
-                continue
+                FullDllName = interfaces.renderers.BaseAbsentValue()
 
             file_output = "Disabled"
             if self.config["dump"]:
-                file_handle = dlllist.DllList.dump_pe(
-                    self.context, pe_table_name, mod, self.open
-                )
-                file_output = "Error outputting file"
-                if file_handle:
-                    file_handle.close()
-                    file_output = file_handle.preferred_filename
+                file_output = self.dump_module(session_layers, pe_table_name, mod)
 
-            yield (
-                0,
-                (
-                    format_hints.Hex(mod.vol.offset),
-                    format_hints.Hex(mod.DllBase),
-                    format_hints.Hex(mod.SizeOfImage),
-                    BaseDllName,
-                    FullDllName,
-                    file_output,
-                ),
+            yield 0, (
+                format_hints.Hex(mod.vol.offset),
+                format_hints.Hex(mod.DllBase),
+                format_hints.Hex(mod.SizeOfImage),
+                BaseDllName,
+                FullDllName,
+                file_output,
             )
 
     @classmethod
@@ -100,7 +133,7 @@ class Modules(interfaces.plugins.PluginInterface):
         context: interfaces.context.ContextInterface,
         layer_name: str,
         symbol_table: str,
-        pids: List[int] = None,
+        pids: Optional[List[int]] = None,
     ) -> Generator[str, None, None]:
         """Build a cache of possible virtual layers, in priority starting with
         the primary/kernel layer. Then keep one layer per session by cycling
@@ -131,26 +164,42 @@ class Modules(interfaces.plugins.PluginInterface):
 
                 # create the session space object in the process' own layer.
                 # not all processes have a valid session pointer.
-                session_space = context.object(
-                    symbol_table + constants.BANG + "_MM_SESSION_SPACE",
-                    layer_name=layer_name,
-                    offset=proc.Session,
-                )
+                try:
+                    session_space = context.object(
+                        symbol_table + constants.BANG + "_MM_SESSION_SPACE",
+                        layer_name=layer_name,
+                        offset=proc.Session,
+                    )
+                    session_id = session_space.SessionId
 
-                if session_space.SessionId in seen_ids:
+                except exceptions.SymbolError:
+                    # In Windows 11 24H2, the _MM_SESSION_SPACE type was
+                    # replaced with _PSP_SESSION_SPACE, and the kernel PDB
+                    # doesn't contain information about its members (otherwise,
+                    # we would just fall back to the new type). However, it
+                    # appears to be, for our purposes, functionally identical
+                    # to the _MM_SESSION_SPACE. Because _MM_SESSION_SPACE
+                    # stores its session ID at offset 8 as an unsigned long, we
+                    # create an unsigned long at that offset and use that
+                    # instead.
+                    session_id = context.object(
+                        layer_name=layer_name,
+                        object_type=symbol_table + constants.BANG + "unsigned long",
+                        offset=proc.Session + 8,
+                    )
+
+                if session_id in seen_ids:
                     continue
 
             except exceptions.InvalidAddressException:
                 vollog.log(
                     constants.LOGLEVEL_VVV,
-                    "Process {} does not have a valid Session or a layer could not be constructed for it".format(
-                        proc_id
-                    ),
+                    f"Process {proc_id} does not have a valid Session or a layer could not be constructed for it",
                 )
                 continue
 
             # save the layer if we haven't seen the session yet
-            seen_ids.append(session_space.SessionId)
+            seen_ids.append(session_id)
             yield proc_layer_name
 
     @classmethod
@@ -216,8 +265,7 @@ class Modules(interfaces.plugins.PluginInterface):
             object_type=type_name, offset=list_entry.vol.offset - reloff, absolute=True
         )
 
-        for mod in module.InLoadOrderLinks:
-            yield mod
+        yield from module.InLoadOrderLinks
 
     def run(self):
         return renderers.TreeGrid(
