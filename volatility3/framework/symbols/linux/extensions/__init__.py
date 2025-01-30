@@ -2173,8 +2173,7 @@ class sock(objects.StructType):
             return linux_constants.SOCK_FAMILY[family_idx]
 
     def get_type(self):
-        return linux_constants.
-      .get(self.sk_type, "")
+        return linux_constants.SOCK_TYPES.get(self.sk_type, "")
 
     def get_inode(self):
         if not self.sk_socket:
