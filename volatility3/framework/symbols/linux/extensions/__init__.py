@@ -2053,7 +2053,7 @@ class inet6_dev(objects.StructType):
             return
 
         # 'if_list' member was added to 'inet6_ifaddr' type in kernels 3.0
-        yield from self.addr_list.to_list(inet6_ifaddr_symname, "if_list"):
+        yield from self.addr_list.to_list(inet6_ifaddr_symname, "if_list")
 
 
 class in_ifaddr(objects.StructType):
