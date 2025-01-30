@@ -2053,8 +2053,7 @@ class inet6_dev(objects.StructType):
             return
 
         # 'if_list' member was added to 'inet6_ifaddr' type in kernels 3.0
-        for inet6_ifaddr in self.addr_list.to_list(inet6_ifaddr_symname, "if_list"):
-            yield inet6_ifaddr
+        yield from self.addr_list.to_list(inet6_ifaddr_symname, "if_list"):
 
 
 class in_ifaddr(objects.StructType):
@@ -2112,7 +2111,7 @@ class inet6_ifaddr(objects.StructType):
             return "host"
         elif (self.scope & linux_constants.IFA_LINK) != 0:
             return "link"
-        elif (self.scope & linuc_constants.IFA_SITE) != 0:
+        elif (self.scope & linux_constants.IFA_SITE) != 0:
             return "site"
         else:
             return "global"

@@ -317,7 +317,7 @@ NET_DEVICE_FLAGS = {
 
 
 # Kernels >= 2.6.17. See IF_OPER_* in include/uapi/linux/if.h
-class IF_OPER_STATES(Enum):
+class IF_OPER_STATES(enum.Enum):
     """RFC 2863 - Network interface operational status"""
 
     UNKNOWN = 0
@@ -328,7 +328,7 @@ class IF_OPER_STATES(Enum):
     DORMANT = 5
     UP = 6
 
-class ELF_IDENT(IntEnum):
+class ELF_IDENT(enum.IntEnum):
     """ELF header e_ident indexes"""
 
     EI_MAG0 = 0
