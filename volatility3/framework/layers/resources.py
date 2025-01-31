@@ -204,6 +204,8 @@ class ResourceAccessor:
                 # open it in read mode only and allow breakages to happen if they wanted to write
                 curfile = open(temp_filename, mode="rb")
 
+        # Validate the hash or delete the temp_filename and report an error
+
         # Determine whether the file is a particular type of file, and if so, open it as such
         IMPORTED_MAGIC = False
         if HAS_MAGIC:
