@@ -80,9 +80,11 @@ def multitypedata_as_text(value: format_hints.MultiTypeData) -> str:
         return string_representation.split("\x00")[0]
     return hex_bytes_as_text(value)
 
+
 T = TypeVar("T")
 
-def optional(func: Callable[[BaseAbsentValue| T], str]) -> Callable[[T], str]:
+
+def optional(func: Callable[[BaseAbsentValue | T], str]) -> Callable[[T], str]:
     @wraps(func)
     def wrapped(x: Any) -> str:
         if isinstance(x, interfaces.renderers.BaseAbsentValue):
@@ -141,13 +143,14 @@ def display_disassembly(disasm: interfaces.renderers.Disassembly) -> str:
 
 class CLITypeRenderer(interfaces.renderers.TypeRendererInterface):
     def __init__(self, func):
-        super().__init__(func = optional(func))
+        super().__init__(func=optional(func))
 
 
 class LayerDataRenderer(CLITypeRenderer):
     """Renders a LayerData object into data/bytes"""
+
     def __init__(self):
-        def render(data: interfaces.renderers.LayerData| BaseAbsentValue):
+        def render(data: interfaces.renderers.LayerData | BaseAbsentValue):
             if isinstance(data, BaseAbsentValue):
                 # FIXME: Do something cleverer here
                 return ""
@@ -169,10 +172,11 @@ class CLIRenderer(interfaces.renderers.Renderer):
         interfaces.renderers.Disassembly: CLITypeRenderer(display_disassembly),
         bytes: CLITypeRenderer(lambda x: " ".join(f"{b:02x}" for b in x)),
         interfaces.renderers.LayerData: LayerDataRenderer(),
-        datetime.datetime: CLITypeRenderer(lambda x: x.strftime("%Y-%m-%d %H:%M:%S.%f %Z")),
+        datetime.datetime: CLITypeRenderer(
+            lambda x: x.strftime("%Y-%m-%d %H:%M:%S.%f %Z")
+        ),
         "default": CLITypeRenderer(lambda x: f"{x}"),
     }
-
 
     name = "unnamed"
     structured_output = False
@@ -429,9 +433,7 @@ class PrettyTextRenderer(CLIRenderer):
                 if column in ignore_columns:
                     del line[column]
                 else:
-                    line[column] = line[column] + (
-                        "" * (nums_line - len(line[column]))
-                    )
+                    line[column] = line[column] + ("" * (nums_line - len(line[column])))
             for index in range(nums_line):
                 if index == 0:
                     outfd.write(
