@@ -27,7 +27,6 @@ from typing import (
     Union,
 )
 from typing import Dict
-import functools
 
 from volatility3.framework import interfaces
 
@@ -156,7 +155,7 @@ class Disassembly:
 
 
 @dataclasses.dataclass
-class LayerData(object):
+class LayerData:
     """Layer data
 
     This requires the contex to be passed in, in case plugins want to use multiple contexts
