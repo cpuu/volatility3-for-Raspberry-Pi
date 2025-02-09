@@ -9,7 +9,7 @@ import random
 import string
 import sys
 from functools import wraps
-from typing import Any, Callable, Dict, List, Tuple, TypeVar
+from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union
 from volatility3.cli import text_filter
 
 from volatility3.framework import exceptions, interfaces, renderers
@@ -84,7 +84,7 @@ def multitypedata_as_text(value: format_hints.MultiTypeData) -> str:
 T = TypeVar("T")
 
 
-def optional(func: Callable[[BaseAbsentValue | T], str]) -> Callable[[T], str]:
+def optional(func: Callable[[Union[BaseAbsentValue, T]], str]) -> Callable[[T], str]:
     @wraps(func)
     def wrapped(x: Any) -> str:
         if isinstance(x, interfaces.renderers.BaseAbsentValue):
@@ -150,7 +150,7 @@ class LayerDataRenderer(CLITypeRenderer):
     """Renders a LayerData object into data/bytes"""
 
     def __init__(self):
-        def render(data: interfaces.renderers.LayerData | BaseAbsentValue):
+        def render(data: Union[interfaces.renderers.LayerData, BaseAbsentValue]):
             if isinstance(data, BaseAbsentValue):
                 # FIXME: Do something cleverer here
                 return ""
