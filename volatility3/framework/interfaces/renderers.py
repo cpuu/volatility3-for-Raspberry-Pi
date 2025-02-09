@@ -58,11 +58,11 @@ class TypeRendererInterface:
     def options(self):
         return self._options
 
-    def render(self, data: T | BaseAbsentValue) -> Any:
+    def render(self, data: Union[T,BaseAbsentValue] -> Any:
         """Renders a specific datatype"""
         return ""
 
-    def __call__(self, data: T | BaseAbsentValue) -> Any:
+    def __call__(self, data: Union[T, BaseAbsentValue]) -> Any:
         """Shortcut for render"""
         return self.render(data)
 
