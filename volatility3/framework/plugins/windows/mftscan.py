@@ -326,7 +326,7 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 class ADS(interfaces.plugins.PluginInterface):
     """Scans for Alternate Data Stream"""
 
-    _required_framework_version = (2, 7, 0)
+    _required_framework_version = (2, 22, 0)
 
     _version = (1, 0, 1)
 
@@ -396,7 +396,7 @@ class ADS(interfaces.plugins.PluginInterface):
 class ResidentData(interfaces.plugins.PluginInterface):
     """Scans for MFT Records with Resident Data"""
 
-    _required_framework_version = (2, 7, 0)
+    _required_framework_version = (2, 22, 0)
 
     _version = (1, 0, 1)
 
