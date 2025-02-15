@@ -196,9 +196,13 @@ class LayerDataRenderer(CLITypeRenderer):
             printables = ""
             output = "\n"
             for count, byte in enumerate(specific_data):
-                output += f"{byte:02x} "
-                char = chr(byte)
-                printables += char if 0x20 <= byte <= 0x7E else "."
+                if count not in error_bytes:
+                    output += f"{byte:02x} "
+                    char = chr(byte)
+                    printables += char if 0x20 <= byte <= 0x7E else "."
+                else:
+                    output += "__ "
+                    printables += "."
                 if count % self.width == self.width - 1:
                     output += printables
                     if count < len(specific_data) - 1:
