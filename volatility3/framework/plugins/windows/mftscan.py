@@ -223,7 +223,7 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
         content = attr.get_resident_filecontent()
         if content:
-            content = format_hints.HexBytes(content)
+            content = interfaces.renderers.LayerData.from_object(content)
         else:
             content = renderers.NotAvailableValue()
 
@@ -387,7 +387,7 @@ class ADS(interfaces.plugins.PluginInterface):
                 ("MFT Type", str),
                 ("Filename", str),
                 ("ADS Filename", str),
-                ("Hexdump", format_hints.HexBytes),
+                ("Hexdump", interfaces.renderers.LayerData),
             ],
             self._generator(),
         )
@@ -453,7 +453,7 @@ class ResidentData(interfaces.plugins.PluginInterface):
                 ("Record Number", int),
                 ("MFT Type", str),
                 ("Filename", str),
-                ("Hexdump", format_hints.HexBytes),
+                ("Hexdump", interfaces.renderers.LayerData),
             ],
             self._generator(),
         )
