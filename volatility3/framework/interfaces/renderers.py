@@ -58,7 +58,7 @@ class TypeRendererInterface:
     def options(self):
         return self._options
 
-    def render(self, data: Union[T,BaseAbsentValue]) -> Any:
+    def render(self, data: Union[T, BaseAbsentValue]) -> Any:
         """Renders a specific datatype"""
         return ""
 
@@ -166,16 +166,20 @@ class LayerData:
     layer_name: str
     offset: int
     length: int
+    no_surrounding: bool = False
 
     @staticmethod
     def from_object(
-        object: "interfaces.objects.ObjectInterface", size: Optional[int] = None
+        object: "interfaces.objects.ObjectInterface",
+        size: Optional[int] = None,
+        no_surrounding: bool = True,
     ):
         return LayerData(
             context=object._context,
             layer_name=object.vol.layer_name,
             offset=object.vol.offset,
             length=size or object.vol.size,
+            no_surrounding=no_surrounding,
         )
 
 

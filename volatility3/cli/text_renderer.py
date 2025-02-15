@@ -161,11 +161,13 @@ class LayerDataRenderer(CLITypeRenderer):
                 # FIXME: Do something cleverer here
                 return ""
 
+            context_byte_len = self.context_byte_len if not data.no_context else 0
+
             layer = data.context.layers[data.layer_name]
             # Map of the holes
             error_bytes = set()
-            start_offset = data.offset - self.context_byte_len
-            end_offset = data.offset + data.length + self.context_byte_len
+            start_offset = data.offset - context_byte_len
+            end_offset = data.offset + data.length + context_byte_len
             if isinstance(layer, interfaces.layers.TranslationLayerInterface):
                 error_bytes = set()
                 mapping = iter(layer.mapping(start_offset, end_offset, True))

@@ -182,6 +182,7 @@ class Malfind(interfaces.plugins.PluginInterface):
                     layer_name=proc_layer_name,
                     offset=start,
                     length=length,
+                    no_surrounding=True,
                 )
                 yield (vad, data)
 

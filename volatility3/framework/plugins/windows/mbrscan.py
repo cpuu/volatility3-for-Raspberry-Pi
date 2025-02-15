@@ -154,6 +154,7 @@ class MBRScan(interfaces.plugins.PluginInterface):
                                     layer_name=layer.name,
                                     offset=mbr_start_offset,
                                     length=bootcode_length,
+                                    no_surrounding=True,
                                 ),
                             ),
                         )
