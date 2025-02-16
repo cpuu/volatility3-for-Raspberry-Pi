@@ -159,7 +159,7 @@ class Intel(linear.LinearlyMappedLayer):
         translated address lives in and the layer_name that the address
         lives in
         """
-        entry, position = self._translate_entry(offset)
+        entry, position = self._translate_entry(offset & self.page_mask)
 
         # Now we're done
         if not self._page_is_valid(entry):
@@ -181,23 +181,8 @@ class Intel(linear.LinearlyMappedLayer):
         """Extracts the page frame number (PFN) from the page table entry (PTE) entry"""
         return self._mask(entry, self._maxphyaddr - 1, 0) >> self.page_shift
 
-    def _translate_entry(self, offset: int) -> Tuple[int, int]:
-        """Translates a specific offset based on paging tables.
-
-        Returns the translated entry value
-        """
-        offset &= self.address_mask
-
-        if not (self.minimum_address <= offset <= self.maximum_address):
-            raise exceptions.InvalidAddressException(
-                offset, f"Address {offset:#x} outside virtual address range"
-            )
-
-        page_address = offset & self.page_mask
-        return self._translate_page(page_address)
-
     @functools.lru_cache(maxsize=1024)
-    def _translate_page(self, page_address: int) -> int:
+    def _translate_entry(self, page_address: int) -> int:
         """Translates a page address based on paging tables.
 
         Args:
@@ -206,11 +191,6 @@ class Intel(linear.LinearlyMappedLayer):
         Returns:
             the translated entry value
         """
-        if page_address & ~self.page_mask != 0:
-            raise exceptions.InvalidAddressException(
-                page_address,
-                f"Invalid page address {page_address:#x}. The address must be aligned to the page size",
-            )
         # Setup the entry and how far we are through the offset
         # Position maintains the number of bits left to process
         # We or with 0x1 to ensure our page_map_offset is always valid
@@ -310,7 +290,7 @@ class Intel(linear.LinearlyMappedLayer):
 
     def is_dirty(self, offset: int) -> bool:
         """Returns whether the page at offset is marked dirty"""
-        return self._page_is_dirty(self._translate_entry(offset)[0])
+        return self._page_is_dirty(self._translate_entry(offset & self.page_mask)[0])
 
     def mapping(
         self, offset: int, length: int, ignore_errors: bool = False
