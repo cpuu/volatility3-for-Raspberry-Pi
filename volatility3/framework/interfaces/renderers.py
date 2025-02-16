@@ -156,7 +156,7 @@ class Disassembly(BasicType):
         self, data: bytes, offset: int = 0, architecture: str = "intel64"
     ) -> None:
         warnings.warn(
-            f"interfaces.renderers.Disassembly is now renderers.Disassembly",
+            "interfaces.renderers.Disassembly is now renderers.Disassembly",
             FutureWarning,
         )
         self.data = data
