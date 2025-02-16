@@ -282,8 +282,53 @@ CAPABILITIES = (
 
 ELF_MAX_EXTRACTION_SIZE = 1024 * 1024 * 1024 * 4 - 1
 
+# For IFA_* below - Ref: include/net/ipv6.h
+IPV6_ADDR_LOOPBACK = 0x0010
+IPV6_ADDR_LINKLOCAL = 0x0020
+IPV6_ADDR_SITELOCAL = 0x0040
+# For inet6_ifaddr - Ref: include/net/if_inet6.h
+IFA_HOST = IPV6_ADDR_LOOPBACK
+IFA_LINK = IPV6_ADDR_LINKLOCAL
+IFA_SITE = IPV6_ADDR_SITELOCAL
 
-class ELF_IDENT(IntEnum):
+# Only for kernels < 3.15 when the net_device_flags enum didn't exist
+# ref include/uapi/linux/if.h
+NET_DEVICE_FLAGS = {
+    "IFF_UP": 0x1,
+    "IFF_BROADCAST": 0x2,
+    "IFF_DEBUG": 0x4,
+    "IFF_LOOPBACK": 0x8,
+    "IFF_POINTOPOINT": 0x10,
+    "IFF_NOTRAILERS": 0x20,
+    "IFF_RUNNING": 0x40,
+    "IFF_NOARP": 0x80,
+    "IFF_PROMISC": 0x100,
+    "IFF_ALLMULTI": 0x200,
+    "IFF_MASTER": 0x400,
+    "IFF_SLAVE": 0x800,
+    "IFF_MULTICAST": 0x1000,
+    "IFF_PORTSEL": 0x2000,
+    "IFF_AUTOMEDIA": 0x4000,
+    "IFF_DYNAMIC": 0x8000,
+    "IFF_LOWER_UP": 0x10000,
+    "IFF_DORMANT": 0x20000,
+    "IFF_ECHO": 0x40000,
+}
+
+
+# Kernels >= 2.6.17. See IF_OPER_* in include/uapi/linux/if.h
+class IF_OPER_STATES(enum.Enum):
+    """RFC 2863 - Network interface operational status"""
+
+    UNKNOWN = 0
+    NOTPRESENT = 1
+    DOWN = 2
+    LOWERLAYERDOWN = 3
+    TESTING = 4
+    DORMANT = 5
+    UP = 6
+
+class ELF_IDENT(enum.IntEnum):
     """ELF header e_ident indexes"""
 
     EI_MAG0 = 0
@@ -303,7 +348,6 @@ class ELF_CLASS(IntEnum):
     ELFCLASSNONE = 0
     ELFCLASS32 = 1
     ELFCLASS64 = 2
-
 
 # PTrace
 PT_OPT_FLAG_SHIFT = 3
