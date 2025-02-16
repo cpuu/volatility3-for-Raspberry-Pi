@@ -5,7 +5,7 @@
 
 Linux-specific values that aren't found in debug symbols
 """
-from enum import IntEnum, Flag
+import enum
 from dataclasses import dataclass
 
 KERNEL_NAME = "__kernel__"
@@ -342,7 +342,7 @@ class ELF_IDENT(enum.IntEnum):
     EI_PAD = 8
 
 
-class ELF_CLASS(IntEnum):
+class ELF_CLASS(enum.IntEnum):
     """ELF header class types"""
 
     ELFCLASSNONE = 0
@@ -364,7 +364,7 @@ PTRACE_O_EXITKILL = 1 << 20
 PTRACE_O_SUSPEND_SECCOMP = 1 << 21
 
 
-class PT_FLAGS(Flag):
+class PT_FLAGS(enum.Flag):
     "PTrace flags"
     PT_PTRACED = 0x00001
     PT_SEIZED = 0x10000
