@@ -153,6 +153,10 @@ class Disassembly:
             raise TypeError("Offset must be an integer type")
         self.offset = offset
 
+    def __str__(self) -> str:
+        """Fallback method of rendering"""
+        return str(self.data)
+
 
 @dataclasses.dataclass
 class LayerData:
@@ -181,6 +185,11 @@ class LayerData:
             length=size or object.vol.size,
             no_surrounding=no_surrounding,
         )
+
+    def __str__(self) -> str:
+        """Fallback method of rendering"""
+        data = self.context.layers[self.layer_name].read(self.offset, self.length, True)
+        return str(data)
 
 
 # We don't class these off a shared base, because the BaseTypes must only
