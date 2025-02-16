@@ -328,6 +328,7 @@ class IF_OPER_STATES(enum.Enum):
     DORMANT = 5
     UP = 6
 
+
 class ELF_IDENT(enum.IntEnum):
     """ELF header e_ident indexes"""
 
@@ -349,6 +350,7 @@ class ELF_CLASS(enum.IntEnum):
     ELFCLASS32 = 1
     ELFCLASS64 = 2
 
+
 # PTrace
 PT_OPT_FLAG_SHIFT = 3
 
@@ -366,6 +368,7 @@ PTRACE_O_SUSPEND_SECCOMP = 1 << 21
 
 class PT_FLAGS(enum.Flag):
     "PTrace flags"
+
     PT_PTRACED = 0x00001
     PT_SEIZED = 0x10000
 
