@@ -74,7 +74,7 @@ class MBRScan(interfaces.plugins.PluginInterface):
         partition_table_object = symbol_table + constants.BANG + "PARTITION_TABLE"
 
         # Define Signature and Data Length
-        mbr_signature = b"\x55\xAA"
+        mbr_signature = b"\x55\xaa"
         mbr_length = 0x200
         bootcode_length = 0x1B8
 
@@ -120,9 +120,7 @@ class MBRScan(interfaces.plugins.PluginInterface):
                                 renderers.NotApplicableValue(),
                                 renderers.NotApplicableValue(),
                                 renderers.NotApplicableValue(),
-                                interfaces.renderers.Disassembly(
-                                    bootcode, 0, architecture
-                                ),
+                                renderers.Disassembly(bootcode, 0, architecture),
                             ),
                         )
                     else:
@@ -146,10 +144,8 @@ class MBRScan(interfaces.plugins.PluginInterface):
                                 renderers.NotApplicableValue(),
                                 renderers.NotApplicableValue(),
                                 renderers.NotApplicableValue(),
-                                interfaces.renderers.Disassembly(
-                                    bootcode, 0, architecture
-                                ),
-                                interfaces.renderers.LayerData(
+                                renderers.Disassembly(bootcode, 0, architecture),
+                                renderers.LayerData(
                                     context=self.context,
                                     layer_name=layer.name,
                                     offset=mbr_start_offset,
@@ -238,7 +234,7 @@ class MBRScan(interfaces.plugins.PluginInterface):
                     ("Bootable", bool),
                     ("PartitionType", str),
                     ("SectorInSize", format_hints.Hex),
-                    ("Disasm", interfaces.renderers.Disassembly),
+                    ("Disasm", renderers.Disassembly),
                 ],
                 self._generator(),
             )
@@ -262,8 +258,8 @@ class MBRScan(interfaces.plugins.PluginInterface):
                     ("EndingCHS", int),
                     ("EndingSector", int),
                     ("SectorInSize", format_hints.Hex),
-                    ("Disasm", interfaces.renderers.Disassembly),
-                    ("Bootcode", interfaces.renderers.LayerData),
+                    ("Disasm", renderers.Disassembly),
+                    ("Bootcode", renderers.LayerData),
                 ],
                 self._generator(),
             )

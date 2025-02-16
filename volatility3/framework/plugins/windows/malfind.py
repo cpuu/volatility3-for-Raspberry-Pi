@@ -103,7 +103,7 @@ class Malfind(interfaces.plugins.PluginInterface):
         symbol_table: str,
         proc: interfaces.objects.ObjectInterface,
     ) -> Generator[
-        Tuple[interfaces.objects.ObjectInterface, interfaces.renderers.LayerData],
+        Tuple[interfaces.objects.ObjectInterface, renderers.LayerData],
         None,
         None,
     ]:
@@ -177,7 +177,7 @@ class Malfind(interfaces.plugins.PluginInterface):
                     )
                 start = vad.get_start()
                 length = 64
-                data = interfaces.renderers.LayerData(
+                data = renderers.LayerData(
                     context=context,
                     layer_name=proc_layer_name,
                     offset=start,
@@ -223,9 +223,7 @@ class Malfind(interfaces.plugins.PluginInterface):
                 else:
                     architecture = "intel64"
 
-                disasm = interfaces.renderers.Disassembly(
-                    data, vad.get_start(), architecture
-                )
+                disasm = renderers.Disassembly(data, vad.get_start(), architecture)
 
                 file_output = "Disabled"
                 if self.config["dump"]:
@@ -281,8 +279,8 @@ class Malfind(interfaces.plugins.PluginInterface):
                 ("PrivateMemory", int),
                 ("File output", str),
                 ("Notes", str),
-                ("Hexdump", interfaces.renderers.LayerData),
-                ("Disasm", interfaces.renderers.Disassembly),
+                ("Hexdump", renderers.LayerData),
+                ("Disasm", renderers.Disassembly),
             ],
             self._generator(
                 pslist.PsList.list_processes(

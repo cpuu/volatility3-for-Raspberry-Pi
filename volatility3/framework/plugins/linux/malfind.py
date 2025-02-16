@@ -18,7 +18,7 @@ class Malfind(interfaces.plugins.PluginInterface):
     """Lists process memory ranges that potentially contain injected code."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 2)
+    _version = (1, 0, 3)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -76,9 +76,7 @@ class Malfind(interfaces.plugins.PluginInterface):
                 else:
                     architecture = "intel64"
 
-                disasm = interfaces.renderers.Disassembly(
-                    data, vma.vm_start, architecture
-                )
+                disasm = renderers.Disassembly(data, vma.vm_start, architecture)
 
                 yield (
                     0,
@@ -106,7 +104,7 @@ class Malfind(interfaces.plugins.PluginInterface):
                 ("Path", str),
                 ("Protection", str),
                 ("Hexdump", format_hints.HexBytes),
-                ("Disasm", interfaces.renderers.Disassembly),
+                ("Disasm", renderers.Disassembly),
             ],
             self._generator(
                 pslist.PsList.list_tasks(

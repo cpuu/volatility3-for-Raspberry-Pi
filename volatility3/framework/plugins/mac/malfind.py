@@ -68,9 +68,7 @@ class Malfind(interfaces.plugins.PluginInterface):
                 else:
                     architecture = "intel64"
 
-                disasm = interfaces.renderers.Disassembly(
-                    data, vma.links.start, architecture
-                )
+                disasm = renderers.Disassembly(data, vma.links.start, architecture)
 
                 yield (
                     0,
@@ -99,7 +97,7 @@ class Malfind(interfaces.plugins.PluginInterface):
                 ("End", format_hints.Hex),
                 ("Protection", str),
                 ("Hexdump", format_hints.HexBytes),
-                ("Disasm", interfaces.renderers.Disassembly),
+                ("Disasm", renderers.Disassembly),
             ],
             self._generator(
                 list_tasks(self.context, self.config["kernel"], filter_func=filter_func)

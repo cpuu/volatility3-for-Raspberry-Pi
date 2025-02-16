@@ -9,8 +9,8 @@ renderer interface which can interact with a TreeGrid to produce
 suitable output.
 """
 
-import dataclasses
 import datetime
+import warnings
 from abc import ABCMeta, abstractmethod
 from collections import abc
 from typing import (
@@ -31,8 +31,18 @@ from typing import Dict
 from volatility3.framework import interfaces
 
 
+class BasicType:
+    def __str__(self) -> str:
+        """Fallback method for rendering basic types"""
+        return str(self)
+
+
 class BaseAbsentValue:
     """Class that represents values which are not present for some reason."""
+
+    def __str__(self) -> str:
+        """Fallback method for rendering basic types"""
+        return "-"
 
 
 class Column(NamedTuple):
@@ -136,7 +146,7 @@ class TreeNode(abc.Sequence, metaclass=ABCMeta):
         """
 
 
-class Disassembly:
+class Disassembly(BasicType):
     """A class to indicate that the bytes provided should be disassembled
     (based on the architecture)"""
 
@@ -145,6 +155,10 @@ class Disassembly:
     def __init__(
         self, data: bytes, offset: int = 0, architecture: str = "intel64"
     ) -> None:
+        warnings.warn(
+            f"interfaces.renderers.Disassembly is now renderers.Disassembly",
+            FutureWarning,
+        )
         self.data = data
         self.architecture = None
         if architecture in self.possible_architectures:
@@ -158,40 +172,6 @@ class Disassembly:
         return str(self.data)
 
 
-@dataclasses.dataclass
-class LayerData:
-    """Layer data
-
-    This requires the contex to be passed in, in case plugins want to use multiple contexts
-    and to ensure the TreeGrid interface doesn't change, since this would break all existing plugins
-    """
-
-    context: "interfaces.context.ContextInterface"
-    layer_name: str
-    offset: int
-    length: int
-    no_surrounding: bool = False
-
-    @staticmethod
-    def from_object(
-        object: "interfaces.objects.ObjectInterface",
-        size: Optional[int] = None,
-        no_surrounding: bool = True,
-    ):
-        return LayerData(
-            context=object._context,
-            layer_name=object.vol.layer_name,
-            offset=object.vol.offset,
-            length=size or object.vol.size,
-            no_surrounding=no_surrounding,
-        )
-
-    def __str__(self) -> str:
-        """Fallback method of rendering"""
-        data = self.context.layers[self.layer_name].read(self.offset, self.length, True)
-        return str(data)
-
-
 # We don't class these off a shared base, because the BaseTypes must only
 # contain the types that the validator will accept (which would not include the base)
 
@@ -203,8 +183,7 @@ BaseTypes = Union[
     Type[bytes],
     Type[datetime.datetime],
     Type[BaseAbsentValue],
-    Type[Disassembly],
-    Type[LayerData],
+    Type[BasicType],
 ]
 ColumnsType = List[Tuple[str, BaseTypes]]
 VisitorSignature = Callable[[TreeNode, _Type], _Type]
@@ -224,15 +203,7 @@ class TreeGrid(metaclass=ABCMeta):
     """
 
     # TODO: Figure out why this isn't just BaseTypes (which includes AbsentValues'
-    base_types: ClassVar[Tuple] = (
-        int,
-        str,
-        float,
-        bytes,
-        datetime.datetime,
-        Disassembly,
-        LayerData,
-    )
+    base_types: ClassVar[Tuple] = (int, str, float, bytes, datetime.datetime, BasicType)
 
     def __init__(
         self,

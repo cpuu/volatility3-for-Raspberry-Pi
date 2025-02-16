@@ -114,7 +114,7 @@ def quoted_optional(func: Callable) -> Callable:
     return wrapped
 
 
-def display_disassembly(disasm: interfaces.renderers.Disassembly) -> str:
+def display_disassembly(disasm: renderers.Disassembly) -> str:
     """Renders a disassembly renderer type into string format.
 
     Args:
@@ -156,12 +156,12 @@ class LayerDataRenderer(CLITypeRenderer):
         self.display_hex = True
         self.display_ascii = True
 
-        def render(data: Union[interfaces.renderers.LayerData, BaseAbsentValue]):
+        def render(data: Union[renderers.LayerData, BaseAbsentValue]):
             if isinstance(data, BaseAbsentValue):
                 # FIXME: Do something cleverer here
                 return ""
 
-            context_byte_len = self.context_byte_len if not data.no_context else 0
+            context_byte_len = self.context_byte_len if not data.no_surrounding else 0
 
             layer = data.context.layers[data.layer_name]
             # Map of the holes
@@ -230,9 +230,9 @@ class CLIRenderer(interfaces.renderers.Renderer):
         format_hints.Hex: CLITypeRenderer(lambda x: f"0x{x:x}"),
         format_hints.HexBytes: CLITypeRenderer(hex_bytes_as_text),
         format_hints.MultiTypeData: CLITypeRenderer(multitypedata_as_text),
-        interfaces.renderers.Disassembly: CLITypeRenderer(display_disassembly),
+        renderers.Disassembly: CLITypeRenderer(display_disassembly),
         bytes: CLITypeRenderer(lambda x: " ".join(f"{b:02x}" for b in x)),
-        interfaces.renderers.LayerData: LayerDataRenderer(),
+        renderers.LayerData: LayerDataRenderer(),
         datetime.datetime: CLITypeRenderer(
             lambda x: x.strftime("%Y-%m-%d %H:%M:%S.%f %Z")
         ),
@@ -523,7 +523,7 @@ class PrettyTextRenderer(CLIRenderer):
 class JsonRenderer(CLIRenderer):
     _type_renderers = {
         format_hints.HexBytes: quoted_optional(hex_bytes_as_text),
-        interfaces.renderers.Disassembly: quoted_optional(display_disassembly),
+        renderers.Disassembly: quoted_optional(display_disassembly),
         format_hints.MultiTypeData: quoted_optional(multitypedata_as_text),
         bytes: optional(lambda x: " ".join(f"{b:02x}" for b in x)),
         datetime.datetime: lambda x: (
