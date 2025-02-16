@@ -18,7 +18,7 @@ class Handles(interfaces.plugins.PluginInterface):
     """Lists process open handles."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (2, 0, 0)
+    _version = (2, 0, 1)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -144,7 +144,11 @@ class Handles(interfaces.plugins.PluginInterface):
 
         type_map: Dict[int, str] = {}
 
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associated kernel virtual offset, failing"
+            )
         ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
 
         try:
@@ -202,7 +206,11 @@ class Handles(interfaces.plugins.PluginInterface):
         except exceptions.SymbolError:
             return None
 
-        kvo = context.layers[layer_name].config["kernel_virtual_offset"]
+        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associated kernel virtual offset, failing"
+            )
         return context.object(
             symbol_table + constants.BANG + "unsigned int",
             layer_name,
@@ -216,7 +224,7 @@ class Handles(interfaces.plugins.PluginInterface):
         kernel = self.context.modules[self.config["kernel"]]
 
         virtual = kernel.layer_name
-        kvo = self.context.layers[virtual].config["kernel_virtual_offset"]
+        kvo = kernel.offset
 
         ntkrnlmp = self.context.module(
             kernel.symbol_table_name, layer_name=virtual, offset=kvo
@@ -243,7 +251,12 @@ class Handles(interfaces.plugins.PluginInterface):
         layer_object = self.context.layers[virtual]
         masked_offset = offset & layer_object.maximum_address
 
-        for entry in table:
+        for i in range(len(table)):
+            try:
+                entry = table[i]
+            except exceptions.InvalidAddressException:
+                vollog.debug(f"Failed to get handle table entry at index {i}")
+                continue
             # This triggered a backtrace in many testing samples
             # in the level == 0 path
             # The code above this calls `is_valid` on the `offset`

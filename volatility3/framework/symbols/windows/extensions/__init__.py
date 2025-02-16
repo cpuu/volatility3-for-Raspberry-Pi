@@ -24,6 +24,7 @@ from volatility3.framework.objects import utility
 from volatility3.framework.renderers import conversion
 from volatility3.framework.symbols import generic
 from volatility3.framework.symbols.windows.extensions import pool
+from volatility3.framework.symbols import windows
 
 vollog = logging.getLogger(__name__)
 
@@ -262,14 +263,20 @@ class MMVAD_SHORT(objects.StructType):
     def get_commit_charge(self):
         """Get the VAD's commit charge (number of committed pages)"""
 
-        if self.has_member("u1") and self.u1.has_member("VadFlags1"):
+        if self.has_member("CommitCharge"):
+            return self.CommitCharge
+
+        elif self.has_member("u1") and self.u1.has_member("VadFlags1"):
             return self.u1.VadFlags1.CommitCharge
 
         elif self.has_member("u") and self.u.has_member("VadFlags"):
             return self.u.VadFlags.CommitCharge
 
         elif self.has_member("Core"):
-            return self.Core.u1.VadFlags1.CommitCharge
+            if self.Core.has_member("CommitCharge"):
+                return self.Core.CommitCharge
+            else:
+                return self.Core.u1.VadFlags1.CommitCharge
 
         raise AttributeError("Unable to find the commit charge member")
 
@@ -775,41 +782,130 @@ class EPROCESS(generic.GenericIntelProcess, pool.ExecutiveObject):
         )
         return peb
 
-    def load_order_modules(self) -> Iterable[interfaces.objects.ObjectInterface]:
-        """Generator for DLLs in the order that they were loaded."""
+    def get_peb32(self) -> Optional[interfaces.objects.ObjectInterface]:
+        """Constructs a PEB32 object"""
+        if constants.BANG not in self.vol.type_name:
+            raise ValueError(
+                f"Invalid symbol table name syntax (no {constants.BANG} found)"
+            )
+
+        # add_process_layer can raise InvalidAddressException.
+        # if that happens, we let the exception propagate upwards
+        proc_layer_name = self.add_process_layer()
+        proc_layer = self._context.layers[proc_layer_name]
+
+        # Determine if process is running under WOW64.
+        if self.get_is_wow64():
+            proc = self.get_wow_64_process()
+        else:
+            return None
+        # Confirm WoW64Process points to a valid process address
+        if not proc_layer.is_valid(proc):
+            raise exceptions.InvalidAddressException(
+                proc_layer_name, proc, f"Invalid Wow64Process address at {self.Peb:0x}"
+            )
+
+        # Leverage the context of existing symbol table to help configure
+        # a new symbol table for 32-bit types
+        sym_table = self.get_symbol_table_name()
+        config_path = self._context.symbol_space[sym_table].config_path
+
+        # Load the 32-bit types into a new symbol space
+        # We use the WindowsKernelIntermedSymbols class to make
+        # sure we get all the object helpers. For example, traversing
+        # linked-lists.
+        self._32bit_table_name = windows.WindowsKernelIntermedSymbols.create(
+            self._context, config_path, "windows", "wow64"
+        )
+
+        # windows 10
+        if self._context.symbol_space.has_type(
+            sym_table + constants.BANG + "_EWOW64PROCESS"
+        ):
+            offset = proc.Peb
+
+        # vista sp0-sp1 and 2003 sp1-sp2
+        elif self._context.symbol_space.has_type(
+            sym_table + constants.BANG + "_WOW64_PROCESS"
+        ):
+            offset = proc.Wow64
+
+        else:
+            offset = proc
+
+        peb32 = self._context.object(
+            f"{self._32bit_table_name}{constants.BANG}_PEB32",
+            layer_name=proc_layer_name,
+            offset=offset,
+        )
+        return peb32
+
+    def set_types(self, peb) -> str:
+        ldr_data = self._context.symbol_space.get_type(
+            self._32bit_table_name + constants.BANG + "_PEB_LDR_DATA"
+        )
+        peb.Ldr = peb.Ldr.cast("pointer", subtype=ldr_data)
+        sym_table = self._32bit_table_name
+        return sym_table
+
+    def _walk_ldr_list(
+        self, list_member: str, link_member: str
+    ) -> Iterable[interfaces.objects.ObjectInterface]:
+        """
+        Walks LDR_DATA_TABLEs and enforces the entries at least have a valid base address
+        This function also breaks up exception handling as much as possible to ensure the
+        most data is returned as possible
+        """
+        pebs = []
 
         try:
             peb = self.get_peb()
-            yield from peb.Ldr.InLoadOrderModuleList.to_list(
-                f"{self.get_symbol_table_name()}{constants.BANG}_LDR_DATA_TABLE_ENTRY",
-                "InLoadOrderLinks",
-            )
+            if peb:
+                pebs.append(peb)
         except exceptions.InvalidAddressException:
-            return None
+            vollog.debug(f"Process at {self.vol.offset:#x} has invalid PEB")
+
+        try:
+            peb32 = self.get_peb32()
+            if peb32:
+                pebs.append(peb32)
+        except exceptions.InvalidAddressException:
+            vollog.debug(f"Process at {self.vol.offset:#x} has invalid 32 bit PEB")
+
+        for peb in pebs:
+            sym_table = self.get_symbol_table_name()
+            if peb.Ldr.vol.type_name.split(constants.BANG)[-1] == ("unsigned long"):
+                sym_table = self.set_types(peb)
+
+            for ldr in peb.Ldr.member(list_member).to_list(
+                f"{sym_table}{constants.BANG}" + "_LDR_DATA_TABLE_ENTRY", link_member
+            ):
+                try:
+                    # Several samples in testing crashed from DLLs being returned
+                    # where DllBase was on the next page and that page was not in memory
+                    # Not being able to retrieve the base makes the entry pretty useless
+                    # So we enforce here its presence
+                    ldr.DllBase
+                    yield ldr
+                except exceptions.InvalidAddressException:
+                    continue
+
+    def load_order_modules(self) -> Iterable[interfaces.objects.ObjectInterface]:
+        """Generator for DLLs in the order that they were loaded."""
+
+        yield from self._walk_ldr_list("InLoadOrderModuleList", "InLoadOrderLinks")
 
     def init_order_modules(self) -> Iterable[interfaces.objects.ObjectInterface]:
         """Generator for DLLs in the order that they were initialized"""
 
-        try:
-            peb = self.get_peb()
-            yield from peb.Ldr.InInitializationOrderModuleList.to_list(
-                f"{self.get_symbol_table_name()}{constants.BANG}_LDR_DATA_TABLE_ENTRY",
-                "InInitializationOrderLinks",
-            )
-        except exceptions.InvalidAddressException:
-            return None
+        yield from self._walk_ldr_list(
+            "InInitializationOrderModuleList", "InInitializationOrderLinks"
+        )
 
     def mem_order_modules(self) -> Iterable[interfaces.objects.ObjectInterface]:
         """Generator for DLLs in the order that they appear in memory"""
 
-        try:
-            peb = self.get_peb()
-            yield from peb.Ldr.InMemoryOrderModuleList.to_list(
-                f"{self.get_symbol_table_name()}{constants.BANG}_LDR_DATA_TABLE_ENTRY",
-                "InMemoryOrderLinks",
-            )
-        except exceptions.InvalidAddressException:
-            return None
+        yield from self._walk_ldr_list("InMemoryOrderModuleList", "InMemoryOrderLinks")
 
     def get_handle_count(self):
         try:
@@ -832,9 +928,14 @@ class EPROCESS(generic.GenericIntelProcess, pool.ExecutiveObject):
                     return renderers.NotApplicableValue()
 
                 symbol_table_name = self.get_symbol_table_name()
-                kvo = self._context.layers[self.vol.native_layer_name].config[
-                    "kernel_virtual_offset"
-                ]
+                kvo = self._context.layers[self.vol.native_layer_name].config.get(
+                    "kernel_virtual_offset", None
+                )
+                if not kvo:
+                    raise ValueError(
+                        "Intel layer does not have an associated kernel virtual offset, failing"
+                    )
+
                 ntkrnlmp = self._context.module(
                     symbol_table_name,
                     layer_name=self.vol.native_layer_name,
@@ -1024,7 +1125,13 @@ class TOKEN(objects.StructType):
 
         if self.UserAndGroupCount < 0xFFFF:
             layer_name = self.vol.layer_name
-            kvo = self._context.layers[layer_name].config["kernel_virtual_offset"]
+            kvo = self._context.layers[layer_name].config.get(
+                "kernel_virtual_offset", None
+            )
+            if not kvo:
+                raise ValueError(
+                    "Intel layer does not have an associated kernel virtual offset, failing"
+                )
             symbol_table = self.get_symbol_table_name()
             ntkrnlmp = self._context.module(
                 symbol_table, layer_name=layer_name, offset=kvo
@@ -1126,9 +1233,13 @@ class KTIMER(objects.StructType):
     def get_dpc(self):
         """Return Dpc, and if Windows 7 or later, decode it"""
         symbol_table_name = self.get_symbol_table_name()
-        kvo = self._context.layers[self.vol.native_layer_name].config[
-            "kernel_virtual_offset"
-        ]
+        kvo = self._context.layers[self.vol.native_layer_name].config.get(
+            "kernel_virtual_offset", None
+        )
+        if not kvo:
+            raise ValueError(
+                "Intel layer does not have an associated kernel virtual offset, failing"
+            )
         ntkrnlmp = self._context.module(
             symbol_table_name,
             layer_name=self.vol.native_layer_name,
