@@ -7,7 +7,7 @@
 import logging
 import os
 import struct
-from typing import Tuple, Optional, Generator, Set, Dict, Any, Type
+from typing import Tuple, Optional, Generator, Set, Dict, Any, Type, List
 
 from volatility3.framework import interfaces, symbols, exceptions
 from volatility3.framework import renderers
@@ -372,7 +372,7 @@ class Consoles(interfaces.plugins.PluginInterface):
         Tuple[
             interfaces.objects.ObjectInterface,
             Optional[interfaces.objects.ObjectInterface],
-            list[Any],
+            List[Any],
         ],
         None,
         None,
