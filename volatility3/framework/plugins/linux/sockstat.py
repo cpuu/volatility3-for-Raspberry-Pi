@@ -13,6 +13,7 @@ from volatility3.framework.objects import utility
 from volatility3.framework.symbols import linux
 from volatility3.plugins.linux import lsof
 from volatility3.plugins.linux import pslist
+from volatility3.framework.symbols.linux import net
 
 
 vollog = logging.getLogger(__name__)
@@ -22,12 +23,23 @@ class SockHandlers(interfaces.configuration.VersionableInterface):
     """Handles several socket families extracting the sockets information."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (3, 0, 0)
+    _version = (4, 0, 0)
+    _net_version_required = (1, 0, 0)
 
-    def __init__(self, vmlinux, task, *args, **kwargs):
+    def __init__(self, context, vmlinux_name, task, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._vmlinux = vmlinux
+        self._vmlinux = context.modules[vmlinux_name]
+        self._symbol_table = context.symbol_space[self._vmlinux.symbol_table_name]
         self._task = task
+
+        if not requirements.VersionRequirement.matches_required(
+            net.NetSymbols.version, self._net_version_required
+        ):
+            raise ValueError(
+                f"Version mismatch of volatility library NetSymbols version ({net.NetSymbols.version}) and needed version ({self._net_version_required})"
+            )
+
+        net.NetSymbols.apply(self._symbol_table)
 
         try:
             netns_id = task.nsproxy.net_ns.get_inode()
@@ -438,7 +450,7 @@ class Sockstat(plugins.PluginInterface):
     """Lists all network connections for all processes."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (3, 0, 3)
+    _version = (3, 0, 4)
 
     @classmethod
     def get_requirements(cls):
@@ -449,7 +461,7 @@ class Sockstat(plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="SockHandlers", component=SockHandlers, version=(3, 0, 0)
+                name="SockHandlers", component=SockHandlers, version=(4, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="lsof", plugin=lsof.Lsof, version=(2, 0, 0)
@@ -459,6 +471,9 @@ class Sockstat(plugins.PluginInterface):
             ),
             requirements.VersionRequirement(
                 name="linuxutils", component=linux.LinuxUtilities, version=(2, 0, 0)
+            ),
+            requirements.VersionRequirement(
+                name="linux_net", component=net.NetSymbols, version=(1, 0, 0)
             ),
             requirements.BooleanRequirement(
                 name="unix",
@@ -578,7 +593,7 @@ class Sockstat(plugins.PluginInterface):
 
         return tuple(sock_stat), protocol
 
-    def _generator(self, pids: List[int], netns_id_arg: int, symbol_table: str):
+    def _generator(self, pids: List[int], netns_id_arg: int, kernel_module_name: str):
         """Enumerate tasks sockets. Each row represents a kernel socket.
 
         Args:
@@ -599,9 +614,13 @@ class Sockstat(plugins.PluginInterface):
             tasks: String with a list of tasks and FDs using a socket. It can also have
                    extended information such as socket filters, bpf info, etc.
         """
+        vmlinux = self.context.modules[kernel_module_name]
+        symbol_table = self.context.symbol_space[vmlinux.symbol_table_name]
+        net.NetSymbols.apply(symbol_table)
+
         filter_func = pslist.PsList.create_pid_filter(pids)
         socket_generator = self.list_sockets(
-            self.context, symbol_table, filter_func=filter_func
+            self.context, kernel_module_name, filter_func=filter_func
         )
 
         for (
@@ -646,7 +665,7 @@ class Sockstat(plugins.PluginInterface):
     def run(self):
         pids = self.config.get("pids")
         netns_id = self.config["netns"]
-        symbol_table = self.config["kernel"]
+        kernel_module_name = self.config["kernel"]
 
         tree_grid_args = [
             ("NetNS", int),
@@ -666,4 +685,6 @@ class Sockstat(plugins.PluginInterface):
             ("Filter", str),
         ]
 
-        return TreeGrid(tree_grid_args, self._generator(pids, netns_id, symbol_table))
+        return TreeGrid(
+            tree_grid_args, self._generator(pids, netns_id, kernel_module_name)
+        )

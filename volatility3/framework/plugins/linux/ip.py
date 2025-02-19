@@ -6,6 +6,7 @@ from typing import List
 from volatility3.framework import interfaces, renderers, constants
 from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import plugins
+from volatility3.framework.symbols.linux import net
 
 
 class Addr(plugins.PluginInterface):
@@ -22,6 +23,9 @@ class Addr(plugins.PluginInterface):
                 name="kernel",
                 description="Linux kernel",
                 architectures=["Intel32", "Intel64"],
+            ),
+            requirements.VersionRequirement(
+                name="Net", component=net.NetSymbols, version=(1, 0, 0)
             ),
         ]
 
@@ -94,7 +98,10 @@ class Link(plugins.PluginInterface):
                 name="kernel",
                 description="Linux kernel",
                 architectures=["Intel32", "Intel64"],
-            )
+            ),
+            requirements.VersionRequirement(
+                name="Net", component=net.NetSymbols, version=(1, 0, 0)
+            ),
         ]
 
     def _gather_net_dev_link_info(self, net_device):
@@ -122,6 +129,8 @@ class Link(plugins.PluginInterface):
 
     def _generator(self):
         vmlinux = self.context.modules[self.config["kernel"]]
+
+        net.NetSymbols.apply(self.context.symbol_space[vmlinux.symbol_table_name])
 
         net_type_symname = vmlinux.symbol_table_name + constants.BANG + "net"
         net_device_symname = vmlinux.symbol_table_name + constants.BANG + "net_device"
