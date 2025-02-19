@@ -8,7 +8,6 @@ from struct import pack, unpack
 from typing import List, Optional, Tuple
 
 from Crypto.Cipher import AES, ARC4, DES
-from Crypto.Hash import MD5
 
 from volatility3.framework import interfaces, renderers
 from volatility3.framework.configuration import requirements
@@ -529,7 +528,7 @@ class Hashdump(interfaces.plugins.PluginInterface):
         (des_k1, des_k2) = cls.sid_to_key(rid)
         des1 = DES.new(des_k1, DES.MODE_ECB)
         des2 = DES.new(des_k2, DES.MODE_ECB)
-        md5 = MD5.new()
+        md5 = hashlib.md5()
 
         md5.update(hbootkey[:0x10] + pack("<L", rid) + lmntstr)
         rc4_key = md5.digest()
