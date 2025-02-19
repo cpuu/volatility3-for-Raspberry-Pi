@@ -73,14 +73,14 @@ class SockHandlers(interfaces.configuration.VersionableInterface):
         netdevices_map = {}
         nethead = self._vmlinux.object_from_symbol(symbol_name="net_namespace_list")
         net_symname = self._vmlinux.symbol_table_name + constants.BANG + "net"
-        for net in nethead.to_list(net_symname, "list"):
+        for network in nethead.to_list(net_symname, "list"):
             net_device_symname = (
                 self._vmlinux.symbol_table_name + constants.BANG + "net_device"
             )
             for net_dev in net.dev_base_head.to_list(net_device_symname, "dev_list"):
                 if (
                     isinstance(netns_id, NotAvailableValue)
-                    or net.get_inode() != netns_id
+                    or network.get_inode() != netns_id
                 ):
                     continue
                 dev_name = utility.array_to_string(net_dev.name)

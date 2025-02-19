@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from volatility3.framework import objects, exceptions, renderers, interfaces, constants
 from volatility3.framework.objects import utility

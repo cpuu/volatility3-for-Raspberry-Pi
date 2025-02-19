@@ -204,9 +204,11 @@ class AbstractNetfilter(ABC):
             module_name [str]: Linux kernel module name
             hooked [bool]: "True" if the network stack has been hijacked
         """
-        for netns, net in self.get_net_namespaces():
+        for netns, network in self.get_net_namespaces():
             for proto_idx, proto_name, hook_idx, hook_name in self._proto_hook_loop():
-                hooks_container = self.get_hooks_container(net, proto_name, hook_name)
+                hooks_container = self.get_hooks_container(
+                    network, proto_name, hook_name
+                )
 
                 for hook_container in hooks_container:
                     for hook_ops in self.get_hook_ops(
@@ -311,9 +313,9 @@ class AbstractNetfilter(ABC):
         """
         nethead = self.vmlinux.object_from_symbol("net_namespace_list")
         symbol_net_name = self.get_symbol_fullname("net")
-        for net in nethead.to_list(symbol_net_name, "list"):
-            net_ns_id = net.ns.inum
-            yield net_ns_id, net
+        for network in nethead.to_list(symbol_net_name, "list"):
+            net_ns_id = network.ns.inum
+            yield net_ns_id, network
 
     def get_hooks_container(self, net, proto_name, hook_name):
         """Returns the data structure used in a specific kernel implementation to store
