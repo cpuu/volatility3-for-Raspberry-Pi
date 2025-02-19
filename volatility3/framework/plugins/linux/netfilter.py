@@ -703,9 +703,9 @@ class NetfilterNetDevImp_4_14_to_latest(AbstractNetfilterNetDev):
 class Netfilter(interfaces.plugins.PluginInterface):
     """Lists Netfilter hooks."""
 
-    _required_framework_version = (2, 0, 0)
+    _required_framework_version = (2, 22, 0)
 
-    _version = (1, 1, 0)
+    _version = (1, 1, 1)
 
     _required_linux_utilities_modules_version = (1, 0, 0)
     _required_linuxutils_version = (2, 1, 0)

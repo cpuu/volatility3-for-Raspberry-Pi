@@ -22,7 +22,7 @@ vollog = logging.getLogger(__name__)
 class SockHandlers(interfaces.configuration.VersionableInterface):
     """Handles several socket families extracting the sockets information."""
 
-    _required_framework_version = (2, 0, 0)
+    _required_framework_version = (2, 22, 0)
     _version = (4, 0, 0)
     _net_version_required = (1, 0, 0)
 

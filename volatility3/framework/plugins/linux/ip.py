@@ -12,9 +12,9 @@ from volatility3.framework.symbols.linux import net
 class Addr(plugins.PluginInterface):
     """Lists network interface information for all devices"""
 
-    _required_framework_version = (2, 0, 0)
+    _required_framework_version = (2, 22, 0)
 
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
