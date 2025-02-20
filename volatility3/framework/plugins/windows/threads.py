@@ -31,12 +31,6 @@ class Threads(thrdscan.ThrdScan):
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.ListRequirement(
-                name="pid",
-                description="Filter on specific process IDs",
-                element_type=int,
-                optional=True,
-            ),
             requirements.PluginRequirement(
                 name="thrdscan", plugin=thrdscan.ThrdScan, version=(1, 1, 0)
             ),
@@ -74,12 +68,10 @@ class Threads(thrdscan.ThrdScan):
         layer_name = module.layer_name
         symbol_table_name = module.symbol_table_name
 
-        filter_func = pslist.PsList.create_pid_filter(context.config.get("pid", None))
-
         for proc in pslist.PsList.list_processes(
             context=context,
             layer_name=layer_name,
             symbol_table=symbol_table_name,
-            filter_func=filter_func,
+            filter_func=None,
         ):
             yield from cls.list_threads(module, proc)
