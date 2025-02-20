@@ -556,7 +556,7 @@ class Sockstat(plugins.PluginInterface):
             try:
                 sock_type = sock.get_type()
                 family = sock.get_family()
-                sock_handler = SockHandlers(vmlinux, task)
+                sock_handler = SockHandlers(context, vmlinux.name, task)
                 sock_fields = sock_handler.process_sock(sock)
             except exceptions.InvalidAddressException:
                 continue
