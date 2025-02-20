@@ -16,7 +16,7 @@ class Threads(thrdscan.ThrdScan):
     """Lists process threads"""
 
     _required_framework_version = (2, 4, 0)
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -59,9 +59,7 @@ class Threads(thrdscan.ThrdScan):
 
     @classmethod
     def list_process_threads(
-        cls,
-        context: interfaces.context.ContextInterface,
-        module_name: str,
+        cls, context: interfaces.context.ContextInterface, module_name: str
     ) -> Iterable[interfaces.objects.ObjectInterface]:
         """Runs through all processes and lists threads for each process"""
         module = context.modules[module_name]
@@ -72,6 +70,5 @@ class Threads(thrdscan.ThrdScan):
             context=context,
             layer_name=layer_name,
             symbol_table=symbol_table_name,
-            filter_func=None,
         ):
             yield from cls.list_threads(module, proc)
