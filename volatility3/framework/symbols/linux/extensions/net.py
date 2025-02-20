@@ -261,7 +261,9 @@ class in_device(objects.StructType):
 
 
 class inet6_dev(objects.StructType):
-    def get_addresses(self) -> Generator[interfaces.objects.ObjectInterface]:
+    def get_addresses(
+        self,
+    ) -> Generator[interfaces.objects.ObjectInterface, None, None]:
         """Yield the IPv6 ifaddr addresses
 
         Yields:
