@@ -2404,7 +2404,7 @@ class inode(objects.StructType):
 
     def _time_member_to_datetime(
         self, member
-    ) -> datetime.datetime | interfaces.renderers.BaseAbsentValue:
+    ) -> Union[datetime.datetime, interfaces.renderers.BaseAbsentValue]:
         if self.has_member(f"{member}_sec") and self.has_member(f"{member}_nsec"):
             # kernels >= 6.11 it's i_*_sec -> time64_t and i_*_nsec -> u32
             # Ref Linux commit 3aa63a569c64e708df547a8913c84e64a06e7853

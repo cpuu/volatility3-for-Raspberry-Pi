@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from volatility3.framework import objects, exceptions, renderers, interfaces, constants
 from volatility3.framework.objects import utility
@@ -214,7 +214,7 @@ class net_device(objects.StructType):
 
         return net_ns_id
 
-    def get_operational_state(self) -> str | interfaces.renderers.BaseAbsentValue:
+    def get_operational_state(self) -> Union[str, interfaces.renderers.BaseAbsentValue]:
         """Return the netwok device oprational state (RFC 2863) string
 
         Returns:
