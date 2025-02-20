@@ -64,14 +64,16 @@ class LinuxKernelIntermedSymbols(intermed.IntermediateSymbolTable):
         # kernels < 4.18. Reuses timespec64 obj extension, since both has the same members
         self.optional_set_type_class("timespec", extensions.timespec64)
 
+        # Mount
+        self.set_type_class("vfsmount", extensions.vfsmount)
+        # Might not exist in older kernels or the current symbols
+        self.optional_set_type_class("mount", extensions.mount)
+        self.optional_set_type_class("mnt_namespace", extensions.mnt_namespace)
+        self.optional_set_type_class("rb_root", extensions.rb_root)
+
         # Network
         # FIXME: Deprecate all of this once the framework hits version 3
         self.set_type_class("net", extensions.net.net)
-        self.set_type_class("net_device", extensions.net.net_device)
-        self.set_type_class("in_device", extensions.net.in_device)
-        self.set_type_class("in_ifaddr", extensions.net.in_ifaddr)
-        self.set_type_class("inet6_dev", extensions.net.inet6_dev)
-        self.set_type_class("inet6_ifaddr", extensions.net.inet6_ifaddr)
         self.set_type_class("socket", extensions.net.socket)
         self.set_type_class("sock", extensions.net.sock)
         self.set_type_class("inet_sock", extensions.net.inet_sock)
@@ -82,13 +84,6 @@ class LinuxKernelIntermedSymbols(intermed.IntermediateSymbolTable):
         self.optional_set_type_class("packet_sock", extensions.net.packet_sock)
         self.optional_set_type_class("bt_sock", extensions.net.bt_sock)
         self.optional_set_type_class("xdp_sock", extensions.net.xdp_sock)
-
-        # Mount
-        self.set_type_class("vfsmount", extensions.vfsmount)
-        # Might not exist in older kernels or the current symbols
-        self.optional_set_type_class("mount", extensions.mount)
-        self.optional_set_type_class("mnt_namespace", extensions.mnt_namespace)
-        self.optional_set_type_class("rb_root", extensions.rb_root)
 
         # Only found in 6.1+ kernels
         self.optional_set_type_class("maple_tree", extensions.maple_tree)
