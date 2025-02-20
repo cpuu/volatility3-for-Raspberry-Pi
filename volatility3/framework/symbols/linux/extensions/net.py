@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Optional, Union
+from typing import Dict, Generator, List, Optional, Union
 
 from volatility3.framework import objects, exceptions, renderers, interfaces, constants
 from volatility3.framework.objects import utility
@@ -14,7 +14,7 @@ vollog = logging.getLogger(__name__)
 
 
 class net(objects.StructType):
-    def get_inode(self):
+    def get_inode(self) -> int:
         """Get the namespace id for this network namespace.
 
         Raises:
@@ -44,7 +44,7 @@ class net_device(objects.StructType):
         """
         return utility.array_to_string(self.name)
 
-    def _format_as_mac_address(self, hwaddr):
+    def _format_as_mac_address(self, hwaddr) -> str:
         return ":".join([f"{x:02x}" for x in hwaddr[: self.addr_len]])
 
     def get_mac_address(self) -> Optional[str]:
@@ -71,7 +71,7 @@ class net_device(objects.StructType):
 
         return self._format_as_mac_address(hwaddr)
 
-    def _get_flag_choices(self) -> Dict:
+    def _get_flag_choices(self) -> Dict[str, int]:
         """Return the net_device flags as a list of strings"""
         vmlinux = linux.LinuxUtilities.get_module_from_volobj_type(self._context, self)
         try:
@@ -84,7 +84,9 @@ class net_device(objects.StructType):
 
         return choices
 
-    def _get_net_device_flag_value(self, name):
+    def _get_net_device_flag_value(
+        self, name
+    ) -> Union[int, interfaces.renderers.BaseAbsentValue]:
         """Return the net_device flag value based on the flag name"""
         return self._get_flag_choices().get(name, renderers.UnparsableValue())
 
@@ -189,7 +191,7 @@ class net_device(objects.StructType):
         return sorted(net_device_flags)
 
     @property
-    def promisc(self):
+    def promisc(self) -> bool:
         """Return if this network interface is in promiscuous mode.
 
         Returns:
@@ -244,7 +246,9 @@ class net_device(objects.StructType):
 
 
 class in_device(objects.StructType):
-    def get_addresses(self):
+    def get_addresses(
+        self,
+    ) -> Generator[interfaces.objects.ObjectInterface, None, None]:
         """Yield the IPv4 ifaddr addresses
 
         Yields:
@@ -257,7 +261,7 @@ class in_device(objects.StructType):
 
 
 class inet6_dev(objects.StructType):
-    def get_addresses(self):
+    def get_addresses(self) -> Generator[interfaces.objects.ObjectInterface]:
         """Yield the IPv6 ifaddr addresses
 
         Yields:
@@ -298,7 +302,7 @@ class in_ifaddr(objects.StructType):
         "RT_SCOPE_SITE": "site",
     }
 
-    def get_scope_type(self):
+    def get_scope_type(self) -> str:
         """Get the scope type for this IPv4 address
 
         Returns:
@@ -315,7 +319,7 @@ class in_ifaddr(objects.StructType):
 
         return self._rtnl_rtscope_tab.get(rt_scope, "unknown")
 
-    def get_address(self):
+    def get_address(self) -> str:
         """Get an string with the IPv4 address
 
         Returns:
@@ -323,7 +327,7 @@ class in_ifaddr(objects.StructType):
         """
         return conversion.convert_ipv4(self.ifa_address)
 
-    def get_prefix_len(self):
+    def get_prefix_len(self) -> int:
         """Get the IPv4 address prefix len
 
         Returns:
@@ -333,7 +337,7 @@ class in_ifaddr(objects.StructType):
 
 
 class inet6_ifaddr(objects.StructType):
-    def get_scope_type(self):
+    def get_scope_type(self) -> str:
         """Get the scope type for this IPv6 address
 
         Returns:
@@ -348,7 +352,7 @@ class inet6_ifaddr(objects.StructType):
         else:
             return "global"
 
-    def get_address(self):
+    def get_address(self) -> str:
         """Get an string with the IPv6 address
 
         Returns:
@@ -356,7 +360,7 @@ class inet6_ifaddr(objects.StructType):
         """
         return conversion.convert_ipv6(self.addr.in6_u.u6_addr32)
 
-    def get_prefix_len(self):
+    def get_prefix_len(self) -> int:
         """Get the IPv6 address prefix len
 
         Returns:
@@ -366,7 +370,7 @@ class inet6_ifaddr(objects.StructType):
 
 
 class socket(objects.StructType):
-    def _get_vol_kernel(self):
+    def _get_vol_kernel(self) -> interfaces.context.ModuleInterface:
         symbol_table_arr = self.vol.type_name.split("!", 1)
         symbol_table = symbol_table_arr[0] if len(symbol_table_arr) == 2 else None
 
@@ -382,7 +386,7 @@ class socket(objects.StructType):
         kernel = self._context.modules[kernel_module_name]
         return kernel
 
-    def get_inode(self):
+    def get_inode(self) -> int:
         try:
             kernel = self._get_vol_kernel()
         except ValueError:
@@ -396,30 +400,32 @@ class socket(objects.StructType):
 
         return vfs_inode.i_ino
 
-    def get_state(self):
+    def get_state(self) -> str:
         socket_state_idx = self.state
         if 0 <= socket_state_idx < len(linux_constants.SOCKET_STATES):
             return linux_constants.SOCKET_STATES[socket_state_idx]
+        return "Unknown socket state"
 
 
 class sock(objects.StructType):
-    def get_family(self):
+    def get_family(self) -> str:
         family_idx = self.__sk_common.skc_family
         if 0 <= family_idx < len(linux_constants.SOCK_FAMILY):
             return linux_constants.SOCK_FAMILY[family_idx]
+        return "Unknown socket family"
 
-    def get_type(self):
+    def get_type(self) -> str:
         return linux_constants.SOCK_TYPES.get(self.sk_type, "")
 
-    def get_inode(self):
+    def get_inode(self) -> int:
         if not self.sk_socket:
             return 0
         return self.sk_socket.get_inode()
 
-    def get_protocol(self):
+    def get_protocol(self) -> Optional[str]:
         return None
 
-    def get_state(self):
+    def get_state(self) -> str:
         # Return the generic socket state
         if self.has_member("sk"):
             return self.sk.sk_socket.get_state()
@@ -427,17 +433,17 @@ class sock(objects.StructType):
 
 
 class unix_sock(objects.StructType):
-    def get_name(self):
+    def get_name(self) -> Optional[str]:
         if not self.addr:
             return None
         sockaddr_un = self.addr.name.cast("sockaddr_un")
         saddr = str(utility.array_to_string(sockaddr_un.sun_path))
         return saddr
 
-    def get_protocol(self):
+    def get_protocol(self) -> Optional[str]:
         return None
 
-    def get_state(self):
+    def get_state(self) -> str:
         """Return a string representing the sock state."""
 
         # Unix socket states reuse (a subset) of the inet_sock states contants
@@ -445,21 +451,23 @@ class unix_sock(objects.StructType):
             state_idx = self.sk.__sk_common.skc_state
             if 0 <= state_idx < len(linux_constants.TCP_STATES):
                 return linux_constants.TCP_STATES[state_idx]
-        else:
-            # Return the generic socket state
-            return self.sk.sk_socket.get_state()
+            else:
+                return "Unknown unix_sock stream state"
+        # Return the generic socket state
+        return self.sk.sk_socket.get_state()
 
-    def get_inode(self):
+    def get_inode(self) -> int:
         return self.sk.get_inode()
 
 
 class inet_sock(objects.StructType):
-    def get_family(self):
+    def get_family(self) -> str:
         family_idx = self.sk.__sk_common.skc_family
         if 0 <= family_idx < len(linux_constants.SOCK_FAMILY):
             return linux_constants.SOCK_FAMILY[family_idx]
+        return "Unknown inet_sock family"
 
-    def get_protocol(self):
+    def get_protocol(self) -> Optional[str]:
         # If INET6 family and a proto is defined, we use that specific IPv6 protocol.
         # Otherwise, we use the standard IP protocol.
         protocol = linux_constants.IP_PROTOCOLS.get(self.sk.sk_protocol)
@@ -467,23 +475,25 @@ class inet_sock(objects.StructType):
             protocol = linux_constants.IPV6_PROTOCOLS.get(self.sk.sk_protocol, protocol)
         return protocol
 
-    def get_state(self):
+    def get_state(self) -> str:
         """Return a string representing the sock state."""
 
         if self.sk.get_type() == "STREAM":
             state_idx = self.sk.__sk_common.skc_state
             if 0 <= state_idx < len(linux_constants.TCP_STATES):
                 return linux_constants.TCP_STATES[state_idx]
-        else:
-            # Return the generic socket state
-            return self.sk.sk_socket.get_state()
+            else:
+                return "Unknown inet_sock stream state"
+        # Return the generic socket state
+        return self.sk.sk_socket.get_state()
 
-    def get_src_port(self):
+    def get_src_port(self) -> Optional[int]:
         sport_le = getattr(self, "sport", getattr(self, "inet_sport", None))
         if sport_le is not None:
             return socket_module.htons(sport_le)
+        return None
 
-    def get_dst_port(self):
+    def get_dst_port(self) -> Optional[int]:
         sk_common = self.sk.__sk_common
         if hasattr(sk_common, "skc_portpair"):
             dport_le = sk_common.skc_portpair & 0xFFFF
@@ -497,7 +507,7 @@ class inet_sock(objects.StructType):
             return None
         return socket_module.htons(dport_le)
 
-    def get_src_addr(self):
+    def get_src_addr(self) -> Optional[str]:
         sk_common = self.sk.__sk_common
         family = sk_common.skc_family
         if family == socket_module.AF_INET:
@@ -523,7 +533,7 @@ class inet_sock(objects.StructType):
             return None
         return socket_module.inet_ntop(family, addr_bytes)
 
-    def get_dst_addr(self):
+    def get_dst_addr(self) -> Optional[str]:
         sk_common = self.sk.__sk_common
         family = sk_common.skc_family
         if family == socket_module.AF_INET:
@@ -554,16 +564,17 @@ class inet_sock(objects.StructType):
 
 
 class netlink_sock(objects.StructType):
-    def get_protocol(self):
+    def get_protocol(self) -> str:
         protocol_idx = self.sk.sk_protocol
         if 0 <= protocol_idx < len(linux_constants.NETLINK_PROTOCOLS):
             return linux_constants.NETLINK_PROTOCOLS[protocol_idx]
+        return "Unknown netlink_sock protocol"
 
     def get_state(self):
         # Return the generic socket state
         return self.sk.sk_socket.get_state()
 
-    def get_portid(self):
+    def get_portid(self) -> int:
         if self.has_member("pid"):
             # kernel < 3.7.10
             return self.pid
@@ -573,7 +584,7 @@ class netlink_sock(objects.StructType):
         else:
             raise AttributeError("Unable to find a source port id")
 
-    def get_dst_portid(self):
+    def get_dst_portid(self) -> int:
         if self.has_member("dst_pid"):
             # kernel < 3.7.10
             return self.dst_pid
@@ -595,7 +606,7 @@ class vsock_sock(objects.StructType):
 
 
 class packet_sock(objects.StructType):
-    def get_protocol(self):
+    def get_protocol(self) -> Optional[str]:
         eth_proto = socket_module.htons(self.num)
         if eth_proto == 0:
             return None
@@ -610,15 +621,17 @@ class packet_sock(objects.StructType):
 
 
 class bt_sock(objects.StructType):
-    def get_protocol(self):
+    def get_protocol(self) -> Optional[str]:
         type_idx = self.sk.sk_protocol
         if 0 <= type_idx < len(linux_constants.BLUETOOTH_PROTOCOLS):
             return linux_constants.BLUETOOTH_PROTOCOLS[type_idx]
+        return None
 
-    def get_state(self):
+    def get_state(self) -> Optional[str]:
         state_idx = self.sk.__sk_common.skc_state
         if 0 <= state_idx < len(linux_constants.BLUETOOTH_STATES):
             return linux_constants.BLUETOOTH_STATES[state_idx]
+        return None
 
 
 class xdp_sock(objects.StructType):
