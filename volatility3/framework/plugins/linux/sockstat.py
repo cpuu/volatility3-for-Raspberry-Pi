@@ -77,7 +77,9 @@ class SockHandlers(interfaces.configuration.VersionableInterface):
             net_device_symname = (
                 self._vmlinux.symbol_table_name + constants.BANG + "net_device"
             )
-            for net_dev in net.dev_base_head.to_list(net_device_symname, "dev_list"):
+            for net_dev in network.dev_base_head.to_list(
+                net_device_symname, "dev_list"
+            ):
                 if (
                     isinstance(netns_id, NotAvailableValue)
                     or network.get_inode() != netns_id
