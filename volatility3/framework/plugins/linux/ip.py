@@ -7,6 +7,7 @@ from volatility3.framework import interfaces, renderers, constants
 from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import plugins
 from volatility3.framework.symbols.linux import net
+from volatility3.framework.symbols.linux.extensions import net as net_extensions
 
 
 class Addr(plugins.PluginInterface):
@@ -29,7 +30,7 @@ class Addr(plugins.PluginInterface):
             ),
         ]
 
-    def _gather_net_dev_info(self, net_dev):
+    def _gather_net_dev_info(self, net_dev: net_extensions.net_device):
         mac_addr = net_dev.get_mac_address()
         promisc = net_dev.promisc
         operational_state = net_dev.get_operational_state()
@@ -61,6 +62,7 @@ class Addr(plugins.PluginInterface):
 
         net_type_symname = vmlinux.symbol_table_name + constants.BANG + "net"
         net_device_symname = vmlinux.symbol_table_name + constants.BANG + "net_device"
+        net.NetSymbols.apply(self.context.symbol_space[vmlinux.symbol_table_name])
 
         # 'net_namespace_list' exists from kernels >= 2.6.24
         net_namespace_list = vmlinux.object_from_symbol("net_namespace_list")
