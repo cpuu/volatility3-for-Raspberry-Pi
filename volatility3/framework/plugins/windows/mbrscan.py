@@ -21,7 +21,7 @@ class MBRScan(interfaces.plugins.PluginInterface):
     """Scans for and parses potential Master Boot Records (MBRs)"""
 
     _required_framework_version = (2, 22, 0)
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:

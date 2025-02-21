@@ -18,6 +18,7 @@ class Malfind(interfaces.plugins.PluginInterface):
     """Lists process memory ranges that potentially contain injected code."""
 
     _required_framework_version = (2, 22, 0)
+    _version = (1, 1, 0)
 
     @classmethod
     def get_requirements(cls):
