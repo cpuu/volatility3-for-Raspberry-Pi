@@ -105,8 +105,8 @@ class YaraScanner(interfaces.layers.ScannerInterface):
 class YaraScan(plugins.PluginInterface):
     """Scans kernel memory using yara rules (string or file)."""
 
-    _required_framework_version = (2, 0, 0)
-    _version = (2, 0, 0)
+    _required_framework_version = (2, 22, 0)
+    _version = (2, 0, 1)
     _yara_x = USE_YARA_X
 
     @classmethod
@@ -201,7 +201,13 @@ class YaraScan(plugins.PluginInterface):
         for offset, rule_name, name, value in layer.scan(
             context=self.context, scanner=YaraScanner(rules=rules)
         ):
-            yield 0, (format_hints.Hex(offset), rule_name, name, value)
+            layer_data = renderers.LayerData(
+                context=self.context,
+                offset=offset,
+                layer_name=layer.name,
+                length=len(value),
+            )
+            yield 0, (format_hints.Hex(offset), rule_name, name, layer_data)
 
     def run(self):
         return renderers.TreeGrid(
@@ -209,7 +215,7 @@ class YaraScan(plugins.PluginInterface):
                 ("Offset", format_hints.Hex),
                 ("Rule", str),
                 ("Component", str),
-                ("Value", bytes),
+                ("Value", renderers.LayerData),
             ],
             self._generator(),
         )
