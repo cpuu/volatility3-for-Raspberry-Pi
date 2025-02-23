@@ -13,7 +13,7 @@ from volatility3.framework.objects import utility
 from volatility3.framework.symbols import linux
 from volatility3.plugins.linux import lsof
 from volatility3.plugins.linux import pslist
-from volatility3.framework.symbols.linux import net
+from volatility3.framework.symbols.linux import network
 
 
 vollog = logging.getLogger(__name__)
@@ -475,7 +475,7 @@ class Sockstat(plugins.PluginInterface):
                 name="linuxutils", component=linux.LinuxUtilities, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="linux_net", component=net.NetSymbols, version=(1, 0, 0)
+                name="linux_net", component=network.NetSymbols, version=(1, 0, 0)
             ),
             requirements.BooleanRequirement(
                 name="unix",
@@ -618,7 +618,7 @@ class Sockstat(plugins.PluginInterface):
         """
         vmlinux = self.context.modules[kernel_module_name]
         symbol_table = self.context.symbol_space[vmlinux.symbol_table_name]
-        net.NetSymbols.apply(symbol_table)
+        network.NetSymbols.apply(symbol_table)
 
         filter_func = pslist.PsList.create_pid_filter(pids)
         socket_generator = self.list_sockets(

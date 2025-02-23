@@ -6,8 +6,8 @@ from typing import List
 from volatility3.framework import interfaces, renderers, constants
 from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import plugins
-from volatility3.framework.symbols.linux import net
-from volatility3.framework.symbols.linux.extensions import net as net_extensions
+from volatility3.framework.symbols.linux import network
+from volatility3.framework.symbols.linux.extensions import network as net_extensions
 
 
 class Addr(plugins.PluginInterface):
@@ -26,7 +26,7 @@ class Addr(plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="Net", component=net.NetSymbols, version=(1, 0, 0)
+                name="Net", component=network.NetSymbols, version=(1, 0, 0)
             ),
         ]
 
@@ -62,7 +62,7 @@ class Addr(plugins.PluginInterface):
 
         net_type_symname = vmlinux.symbol_table_name + constants.BANG + "net"
         net_device_symname = vmlinux.symbol_table_name + constants.BANG + "net_device"
-        net.NetSymbols.apply(self.context.symbol_space[vmlinux.symbol_table_name])
+        network.NetSymbols.apply(self.context.symbol_space[vmlinux.symbol_table_name])
 
         # 'net_namespace_list' exists from kernels >= 2.6.24
         net_namespace_list = vmlinux.object_from_symbol("net_namespace_list")
@@ -102,7 +102,7 @@ class Link(plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="Net", component=net.NetSymbols, version=(1, 0, 0)
+                name="Net", component=network.NetSymbols, version=(1, 0, 0)
             ),
         ]
 

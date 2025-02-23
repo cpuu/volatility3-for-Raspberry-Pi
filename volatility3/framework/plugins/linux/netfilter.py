@@ -17,7 +17,7 @@ from volatility3.framework import (
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.configuration import requirements
 from volatility3.framework.symbols import linux
-from volatility3.framework.symbols.linux import net
+from volatility3.framework.symbols.linux import network
 from volatility3.plugins.linux import lsmod
 
 vollog = logging.getLogger(__name__)
@@ -101,7 +101,7 @@ class AbstractNetfilter(ABC):
             )
 
         linux_net_required_version = Netfilter._required_linuxnet_version
-        linux_net_current_version = net.NetSymbols.version
+        linux_net_current_version = network.NetSymbols.version
         if not requirements.VersionRequirement.matches_required(
             linux_net_required_version, linux_net_current_version
         ):
@@ -124,7 +124,7 @@ class AbstractNetfilter(ABC):
             )
 
         symbol_table = self._context.symbol_space[self.vmlinux.symbol_table_name]
-        net.NetSymbols.apply(symbol_table)
+        network.NetSymbols.apply(symbol_table)
 
         modules = lsmod.Lsmod.list_modules(context, kernel_module_name)
         self.handlers = linux.LinuxUtilities.generate_kernel_handler_info(
@@ -204,11 +204,9 @@ class AbstractNetfilter(ABC):
             module_name [str]: Linux kernel module name
             hooked [bool]: "True" if the network stack has been hijacked
         """
-        for netns, network in self.get_net_namespaces():
+        for netns, net in self.get_net_namespaces():
             for proto_idx, proto_name, hook_idx, hook_name in self._proto_hook_loop():
-                hooks_container = self.get_hooks_container(
-                    network, proto_name, hook_name
-                )
+                hooks_container = self.get_hooks_container(net, proto_name, hook_name)
 
                 for hook_container in hooks_container:
                     for hook_ops in self.get_hook_ops(
@@ -313,9 +311,9 @@ class AbstractNetfilter(ABC):
         """
         nethead = self.vmlinux.object_from_symbol("net_namespace_list")
         symbol_net_name = self.get_symbol_fullname("net")
-        for network in nethead.to_list(symbol_net_name, "list"):
-            net_ns_id = network.ns.inum
-            yield net_ns_id, network
+        for net in nethead.to_list(symbol_net_name, "list"):
+            net_ns_id = net.ns.inum
+            yield net_ns_id, net
 
     def get_hooks_container(self, net, proto_name, hook_name):
         """Returns the data structure used in a specific kernel implementation to store
@@ -737,7 +735,7 @@ class Netfilter(interfaces.plugins.PluginInterface):
             ),
             requirements.VersionRequirement(
                 name="linuxnet",
-                component=net.NetSymbols,
+                component=network.NetSymbols,
                 version=cls._required_linuxnet_version,
             ),
         ]

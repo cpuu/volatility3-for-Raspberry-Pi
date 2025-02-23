@@ -73,17 +73,17 @@ class LinuxKernelIntermedSymbols(intermed.IntermediateSymbolTable):
 
         # Network
         # FIXME: Deprecate all of this once the framework hits version 3
-        self.set_type_class("net", extensions.net.net)
-        self.set_type_class("socket", extensions.net.socket)
-        self.set_type_class("sock", extensions.net.sock)
-        self.set_type_class("inet_sock", extensions.net.inet_sock)
-        self.set_type_class("unix_sock", extensions.net.unix_sock)
+        self.set_type_class("net", extensions.network.net)
+        self.set_type_class("socket", extensions.network.socket)
+        self.set_type_class("sock", extensions.network.sock)
+        self.set_type_class("inet_sock", extensions.network.inet_sock)
+        self.set_type_class("unix_sock", extensions.network.unix_sock)
         # Might not exist in older kernels or the current symbols
-        self.optional_set_type_class("netlink_sock", extensions.net.netlink_sock)
-        self.optional_set_type_class("vsock_sock", extensions.net.vsock_sock)
-        self.optional_set_type_class("packet_sock", extensions.net.packet_sock)
-        self.optional_set_type_class("bt_sock", extensions.net.bt_sock)
-        self.optional_set_type_class("xdp_sock", extensions.net.xdp_sock)
+        self.optional_set_type_class("netlink_sock", extensions.network.netlink_sock)
+        self.optional_set_type_class("vsock_sock", extensions.network.vsock_sock)
+        self.optional_set_type_class("packet_sock", extensions.network.packet_sock)
+        self.optional_set_type_class("bt_sock", extensions.network.bt_sock)
+        self.optional_set_type_class("xdp_sock", extensions.network.xdp_sock)
 
         # Only found in 6.1+ kernels
         self.optional_set_type_class("maple_tree", extensions.maple_tree)
