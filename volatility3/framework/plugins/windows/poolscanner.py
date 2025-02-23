@@ -205,6 +205,7 @@ class PoolScanner(plugins.PluginInterface):
                 b"AtmT",
                 type_name=symbol_table + constants.BANG + "_RTL_ATOM_TABLE",
                 size=(200, None),
+                # TODO - update this after the GUI code goes on
                 page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
             ),
             # processes on windows before windows 8
@@ -214,7 +215,7 @@ class PoolScanner(plugins.PluginInterface):
                 object_type="Process",
                 size=(600, None),
                 skip_type_test=True,
-                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.NONPAGED | PoolType.FREE,
             ),
             # processes on windows starting with windows 8
             PoolConstraint(
@@ -223,7 +224,7 @@ class PoolScanner(plugins.PluginInterface):
                 object_type="Process",
                 size=(600, None),
                 skip_type_test=True,
-                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.NONPAGED | PoolType.FREE,
             ),
             # threads on windows before windows8
             PoolConstraint(
@@ -232,7 +233,7 @@ class PoolScanner(plugins.PluginInterface):
                 object_type="Thread",
                 size=(600, None),  # -> 0x0258 - size of struct in win5.1
                 skip_type_test=True,
-                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.NONPAGED | PoolType.FREE,
             ),
             # threads on windows starting with windows8
             PoolConstraint(
@@ -240,7 +241,7 @@ class PoolScanner(plugins.PluginInterface):
                 type_name=symbol_table + constants.BANG + "_ETHREAD",
                 object_type="Thread",
                 size=(600, None),  # -> 0x0258 - size of struct in win5.1
-                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.NONPAGED | PoolType.FREE,
             ),
             # files on windows before windows 8
             PoolConstraint(
@@ -248,7 +249,7 @@ class PoolScanner(plugins.PluginInterface):
                 type_name=symbol_table + constants.BANG + "_FILE_OBJECT",
                 object_type="File",
                 size=(150, None),
-                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.NONPAGED | PoolType.FREE,
             ),
             # files on windows starting with windows 8
             PoolConstraint(
@@ -256,7 +257,7 @@ class PoolScanner(plugins.PluginInterface):
                 type_name=symbol_table + constants.BANG + "_FILE_OBJECT",
                 object_type="File",
                 size=(150, None),
-                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.NONPAGED | PoolType.FREE,
             ),
             # mutants on windows before windows 8
             PoolConstraint(
@@ -264,7 +265,7 @@ class PoolScanner(plugins.PluginInterface):
                 type_name=symbol_table + constants.BANG + "_KMUTANT",
                 object_type="Mutant",
                 size=(64, None),
-                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.NONPAGED | PoolType.FREE,
             ),
             # mutants on windows starting with windows 8
             PoolConstraint(
@@ -272,7 +273,7 @@ class PoolScanner(plugins.PluginInterface):
                 type_name=symbol_table + constants.BANG + "_KMUTANT",
                 object_type="Mutant",
                 size=(64, None),
-                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.NONPAGED | PoolType.FREE,
             ),
             # drivers on windows before windows 8
             PoolConstraint(
@@ -280,7 +281,7 @@ class PoolScanner(plugins.PluginInterface):
                 type_name=symbol_table + constants.BANG + "_DRIVER_OBJECT",
                 object_type="Driver",
                 size=(248, None),
-                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.NONPAGED | PoolType.FREE,
                 additional_structures=["_DRIVER_EXTENSION"],
             ),
             # drivers on windows starting with windows 8
@@ -289,14 +290,14 @@ class PoolScanner(plugins.PluginInterface):
                 type_name=symbol_table + constants.BANG + "_DRIVER_OBJECT",
                 object_type="Driver",
                 size=(248, None),
-                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.NONPAGED | PoolType.FREE,
             ),
             # kernel modules
             PoolConstraint(
                 b"MmLd",
                 type_name=symbol_table + constants.BANG + "_LDR_DATA_TABLE_ENTRY",
                 size=(76, None),
-                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.NONPAGED | PoolType.FREE,
             ),
             # symlinks on windows before windows 8
             PoolConstraint(
@@ -304,7 +305,7 @@ class PoolScanner(plugins.PluginInterface):
                 type_name=symbol_table + constants.BANG + "_OBJECT_SYMBOLIC_LINK",
                 object_type="SymbolicLink",
                 size=(72, None),
-                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.NONPAGED | PoolType.FREE,
             ),
             # symlinks on windows starting with windows 8
             PoolConstraint(
@@ -312,14 +313,14 @@ class PoolScanner(plugins.PluginInterface):
                 type_name=symbol_table + constants.BANG + "_OBJECT_SYMBOLIC_LINK",
                 object_type="SymbolicLink",
                 size=(72, None),
-                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.NONPAGED | PoolType.FREE,
             ),
             # registry hives
             PoolConstraint(
                 b"CM10",
                 type_name=symbol_table + constants.BANG + "_CMHIVE",
                 size=(800, None),
-                page_type=PoolType.PAGED | PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.PAGED | PoolType.FREE,
                 skip_type_test=True,
             ),
         ]
