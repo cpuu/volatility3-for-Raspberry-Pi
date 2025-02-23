@@ -33,10 +33,10 @@ class SockHandlers(interfaces.configuration.VersionableInterface):
         self._task = task
 
         if not requirements.VersionRequirement.matches_required(
-            net.NetSymbols.version, self._net_version_required
+            network.NetSymbols.version, self._net_version_required
         ):
             raise ValueError(
-                f"Version mismatch of volatility library NetSymbols version ({net.NetSymbols.version}) and needed version ({self._net_version_required})"
+                f"Version mismatch of volatility library NetSymbols version ({network.NetSymbols.version}) and needed version ({self._net_version_required})"
             )
 
         network.NetSymbols.apply(self._symbol_table)
