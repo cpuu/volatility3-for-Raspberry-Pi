@@ -2,7 +2,6 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 
-import time
 import bz2
 import contextlib
 import gzip
