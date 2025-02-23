@@ -2,6 +2,7 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 
+import time
 import bz2
 import contextlib
 import gzip
@@ -198,7 +199,22 @@ class ResourceAccessor:
                             cache_file.write(block)
                             block = fp.read(block_size)
                 else:
-                    vollog.debug(f"Using already cached file at: {temp_filename}")
+                    vollog.debug(
+                        f"Trying to use already cached file at: {temp_filename}"
+                    )
+                    count = 0
+                    fp.seek(0, os.SEEK_END)
+                    expected_filesize = fp.tell()
+                    stop = False
+                    while count < constants.DOWNLAOD_TIMEOUT and not stop:
+                        time.sleep(1)
+                        if os.stat(temp_filename).st_size == expected_filesize:
+                            stop = True
+                    if not stop:
+                        raise ValueError(
+                            f"Cached file existed, but was not the correct filesize, even after {constants.DOWNLOAD_TIMEOUT} seconds"
+                        )
+
                 # Re-open the cache with a different mode
                 # Since we don't want people thinking they're able to save to the cache file,
                 # open it in read mode only and allow breakages to happen if they wanted to write
