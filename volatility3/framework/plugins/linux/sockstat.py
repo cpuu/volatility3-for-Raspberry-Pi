@@ -39,7 +39,7 @@ class SockHandlers(interfaces.configuration.VersionableInterface):
                 f"Version mismatch of volatility library NetSymbols version ({net.NetSymbols.version}) and needed version ({self._net_version_required})"
             )
 
-        net.NetSymbols.apply(self._symbol_table)
+        network.NetSymbols.apply(self._symbol_table)
 
         try:
             netns_id = task.nsproxy.net_ns.get_inode()
@@ -73,16 +73,14 @@ class SockHandlers(interfaces.configuration.VersionableInterface):
         netdevices_map = {}
         nethead = self._vmlinux.object_from_symbol(symbol_name="net_namespace_list")
         net_symname = self._vmlinux.symbol_table_name + constants.BANG + "net"
-        for network in nethead.to_list(net_symname, "list"):
+        for net in nethead.to_list(net_symname, "list"):
             net_device_symname = (
                 self._vmlinux.symbol_table_name + constants.BANG + "net_device"
             )
-            for net_dev in network.dev_base_head.to_list(
-                net_device_symname, "dev_list"
-            ):
+            for net_dev in net.dev_base_head.to_list(net_device_symname, "dev_list"):
                 if (
                     isinstance(netns_id, NotAvailableValue)
-                    or network.get_inode() != netns_id
+                    or net.get_inode() != netns_id
                 ):
                     continue
                 dev_name = utility.array_to_string(net_dev.name)

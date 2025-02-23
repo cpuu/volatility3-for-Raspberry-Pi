@@ -132,7 +132,7 @@ class Link(plugins.PluginInterface):
     def _generator(self):
         vmlinux = self.context.modules[self.config["kernel"]]
 
-        net.NetSymbols.apply(self.context.symbol_space[vmlinux.symbol_table_name])
+        network.NetSymbols.apply(self.context.symbol_space[vmlinux.symbol_table_name])
 
         net_type_symname = vmlinux.symbol_table_name + constants.BANG + "net"
         net_device_symname = vmlinux.symbol_table_name + constants.BANG + "net_device"
