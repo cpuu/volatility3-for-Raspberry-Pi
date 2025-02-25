@@ -54,7 +54,7 @@ class FDInternal:
     """
 
     task: interfaces.objects.ObjectInterface
-    fd_fields: Tuple[int, int, str]
+    fd_fields: Tuple[int, interfaces.objects.ObjectInterface, str]
 
     def to_user(self) -> FDUser:
         """Augment the FD information to be presented to the user
