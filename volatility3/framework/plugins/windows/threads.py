@@ -16,7 +16,7 @@ class Threads(thrdscan.ThrdScan):
     """Lists process threads"""
 
     _required_framework_version = (2, 4, 0)
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -30,12 +30,6 @@ class Threads(thrdscan.ThrdScan):
                 name="kernel",
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
-            ),
-            requirements.ListRequirement(
-                name="pid",
-                description="Filter on specific process IDs",
-                element_type=int,
-                optional=True,
             ),
             requirements.PluginRequirement(
                 name="thrdscan", plugin=thrdscan.ThrdScan, version=(1, 1, 0)
@@ -65,21 +59,16 @@ class Threads(thrdscan.ThrdScan):
 
     @classmethod
     def list_process_threads(
-        cls,
-        context: interfaces.context.ContextInterface,
-        module_name: str,
+        cls, context: interfaces.context.ContextInterface, module_name: str
     ) -> Iterable[interfaces.objects.ObjectInterface]:
         """Runs through all processes and lists threads for each process"""
         module = context.modules[module_name]
         layer_name = module.layer_name
         symbol_table_name = module.symbol_table_name
 
-        filter_func = pslist.PsList.create_pid_filter(context.config.get("pid", None))
-
         for proc in pslist.PsList.list_processes(
             context=context,
             layer_name=layer_name,
             symbol_table=symbol_table_name,
-            filter_func=filter_func,
         ):
             yield from cls.list_threads(module, proc)
