@@ -1345,7 +1345,7 @@ information about triggers, actions, run times, and creation times."""
                 args,
                 (
                     action_set.context
-                    if action_set is not None
+                    if (action_set is not None and action_set.context is not None)
                     else renderers.NotAvailableValue()
                 ),
                 working_directory,
