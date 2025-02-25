@@ -88,24 +88,6 @@ class OsDistinguisher:
         return True
 
 
-is_windows_8_1_or_later = OsDistinguisher(
-    version_check=lambda x: x >= (6, 3),
-    fallback_checks=[("_KPRCB", "PendingTickFlags", True)],
-)
-
-is_vista_or_later = OsDistinguisher(
-    version_check=lambda x: x >= (6, 0),
-    fallback_checks=[("KdCopyDataBlock", None, True)],
-)
-
-is_win10 = OsDistinguisher(
-    version_check=lambda x: (10, 0) <= x,
-    fallback_checks=[
-        ("ObHeaderCookie", None, True),
-        ("_HANDLE_TABLE", "HandleCount", False),
-    ],
-)
-
 is_windows_xp = OsDistinguisher(
     version_check=lambda x: (5, 1) <= x < (5, 2),
     fallback_checks=[
@@ -146,6 +128,32 @@ is_2003 = OsDistinguisher(
         ("KdCopyDataBlock", None, False),
         ("_HANDLE_TABLE", "HandleCount", True),
         ("_MM_AVL_TABLE", None, True),
+    ],
+)
+
+is_vista_or_later = OsDistinguisher(
+    version_check=lambda x: x >= (6, 0),
+    fallback_checks=[("KdCopyDataBlock", None, True)],
+)
+
+is_windows_8_1_or_later = OsDistinguisher(
+    version_check=lambda x: x >= (6, 3),
+    fallback_checks=[("_KPRCB", "PendingTickFlags", True)],
+)
+
+is_win10 = OsDistinguisher(
+    version_check=lambda x: (10, 0) <= x,
+    fallback_checks=[
+        ("ObHeaderCookie", None, True),
+        ("_HANDLE_TABLE", "HandleCount", False),
+    ],
+)
+
+is_win10_10586_or_later = OsDistinguisher(
+    version_check=lambda x: x >= (10, 0, 10586),
+    fallback_checks=[
+        ("_EPROCESS", "SecurityDomain", False),
+        ("_EPROCESS", "ImageFilePointer", False),
     ],
 )
 
@@ -192,14 +200,6 @@ is_win10_17134_or_later = OsDistinguisher(
     fallback_checks=[
         ("_EPROCESS", "ProcessFirstResume", True),
         ("_EPROCESS", "HighMemoryPriority", True),
-    ],
-)
-
-is_win10_10586_or_later = OsDistinguisher(
-    version_check=lambda x: x >= (10, 0, 10586),
-    fallback_checks=[
-        ("_EPROCESS", "SecurityDomain", False),
-        ("_EPROCESS", "ImageFilePointer", False),
     ],
 )
 
