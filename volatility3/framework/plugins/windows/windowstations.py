@@ -64,7 +64,8 @@ class WindowStations(interfaces.plugins.PluginInterface):
         Returns:
             The name of the constructed GUI table
         """
-        native_types = context.symbol_space[symbol_table].natives
+
+        native_types = intermed.native.x64NativeTable
 
         if not symbols.symbol_table_is_64bit(context, symbol_table):
             raise NotImplementedError(
