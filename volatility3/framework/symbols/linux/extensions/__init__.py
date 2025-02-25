@@ -9,7 +9,6 @@ import functools
 import binascii
 import stat
 import datetime
-import socket as socket_module
 import uuid
 from typing import (
     Generator,
@@ -272,7 +271,7 @@ class module(generic.GenericIntelProcess):
             yield (sym_name, sym_address)
 
     @functools.lru_cache
-    def get_module_address_boundaries(self) -> Tuple[int, int]:
+    def get_module_address_boundaries(self) -> Optional[Tuple[int, int]]:
         """Return the module address boundaries based on its symbol addresses"""
 
         if not self.section_strtab or self.num_symtab < 1:
@@ -730,7 +729,9 @@ class task_struct(generic.GenericIntelProcess):
 
         raise exceptions.VolatilityException("Unsupported")
 
-    def get_boottime(self, root_time_namespace: bool = True) -> datetime.datetime:
+    def get_boottime(
+        self, root_time_namespace: bool = True
+    ) -> Optional[datetime.datetime]:
         """Returns the boot time in UTC as a datetime.
 
         Args:
@@ -754,7 +755,7 @@ class task_struct(generic.GenericIntelProcess):
 
         return boottime.to_datetime()
 
-    def get_create_time(self) -> datetime.datetime:
+    def get_create_time(self) -> Optional[datetime.datetime]:
         """Retrieves the task's start time from its time namespace.
         Args:
             context: The context to retrieve required elements (layers, symbol tables) from
@@ -770,6 +771,8 @@ class task_struct(generic.GenericIntelProcess):
         # The kernel exports only tv_sec to procfs, see kernel's show_stat().
         # This means user-space tools, like those in the procps package (e.g., ps, top, etc.),
         # only use the boot time seconds to compute dates relatives to this.
+        if boottime is None:
+            return None
         boottime = boottime.replace(microsecond=0)
 
         task_start_time_timedelta = self._get_task_start_time()
@@ -1238,7 +1241,7 @@ class qstr(objects.StructType):
         else:
             str_length = 255
         try:
-            ret = objects.utility.pointer_to_string(self.name, str_length)
+            ret = utility.pointer_to_string(self.name, str_length)
         except (exceptions.InvalidAddressException, ValueError):
             ret = ""
         return ret
@@ -1319,7 +1322,7 @@ class dentry(objects.StructType):
         dentry_type_name = self.get_symbol_table_name() + constants.BANG + "dentry"
         yield from list_head_member.to_list(dentry_type_name, walk_member)
 
-    def get_inode(self) -> interfaces.objects.ObjectInterface:
+    def get_inode(self) -> Optional[interfaces.objects.ObjectInterface]:
         """Returns the inode associated with this dentry"""
 
         inode_ptr = self.d_inode
@@ -1344,7 +1347,7 @@ class struct_file(objects.StructType):
 
         raise AttributeError("Unable to find file -> vfs mount")
 
-    def get_inode(self) -> interfaces.objects.ObjectInterface:
+    def get_inode(self) -> Optional[interfaces.objects.ObjectInterface]:
         """Returns an inode associated with this file"""
 
         inode_ptr = None
@@ -1872,7 +1875,7 @@ class mnt_namespace(objects.StructType):
 
     def get_mount_points(
         self,
-    ) -> Iterator[interfaces.objects.ObjectInterface]:
+    ) -> Iterator[Optional[interfaces.objects.ObjectInterface]]:
         """Yields the mount points for this mount namespace.
 
         Yields:
@@ -1906,280 +1909,6 @@ class mnt_namespace(objects.StructType):
             raise exceptions.VolatilityException(
                 "Unsupported kernel mount namespace implementation"
             )
-
-
-class net(objects.StructType):
-    def get_inode(self):
-        if self.has_member("proc_inum"):
-            # 3.8.13 <= kernel < 3.19.8
-            return self.proc_inum
-        elif self.has_member("ns") and self.ns.has_member("inum"):
-            # kernel >= 3.19.8
-            return self.ns.inum
-        else:
-            # kernel < 3.8.13
-            raise AttributeError("Unable to find net_namespace inode")
-
-
-class socket(objects.StructType):
-    def _get_vol_kernel(self):
-        symbol_table_arr = self.vol.type_name.split("!", 1)
-        symbol_table = symbol_table_arr[0] if len(symbol_table_arr) == 2 else None
-
-        module_names = list(
-            self._context.modules.get_modules_by_symbol_tables(symbol_table)
-        )
-        if not module_names:
-            raise ValueError(f"No module using the symbol table {symbol_table}")
-        kernel_module_name = module_names[0]
-        kernel = self._context.modules[kernel_module_name]
-        return kernel
-
-    def get_inode(self):
-        try:
-            kernel = self._get_vol_kernel()
-        except ValueError:
-            return 0
-        socket_alloc = linux.LinuxUtilities.container_of(
-            self.vol.offset, "socket_alloc", "socket", kernel
-        )
-        vfs_inode = socket_alloc.vfs_inode
-
-        return vfs_inode.i_ino
-
-    def get_state(self):
-        socket_state_idx = self.state
-        if 0 <= socket_state_idx < len(linux_constants.SOCKET_STATES):
-            return linux_constants.SOCKET_STATES[socket_state_idx]
-
-
-class sock(objects.StructType):
-    def get_family(self):
-        family_idx = self.__sk_common.skc_family
-        if 0 <= family_idx < len(linux_constants.SOCK_FAMILY):
-            return linux_constants.SOCK_FAMILY[family_idx]
-
-    def get_type(self):
-        return linux_constants.SOCK_TYPES.get(self.sk_type, "")
-
-    def get_inode(self):
-        if not self.sk_socket:
-            return 0
-        return self.sk_socket.get_inode()
-
-    def get_protocol(self):
-        return None
-
-    def get_state(self):
-        # Return the generic socket state
-        if self.has_member("sk"):
-            return self.sk.sk_socket.get_state()
-        return self.sk_socket.get_state()
-
-
-class unix_sock(objects.StructType):
-    def get_name(self):
-        if not self.addr:
-            return None
-        sockaddr_un = self.addr.name.cast("sockaddr_un")
-        saddr = str(utility.array_to_string(sockaddr_un.sun_path))
-        return saddr
-
-    def get_protocol(self):
-        return None
-
-    def get_state(self):
-        """Return a string representing the sock state."""
-
-        # Unix socket states reuse (a subset) of the inet_sock states contants
-        if self.sk.get_type() == "STREAM":
-            state_idx = self.sk.__sk_common.skc_state
-            if 0 <= state_idx < len(linux_constants.TCP_STATES):
-                return linux_constants.TCP_STATES[state_idx]
-        else:
-            # Return the generic socket state
-            return self.sk.sk_socket.get_state()
-
-    def get_inode(self):
-        return self.sk.get_inode()
-
-
-class inet_sock(objects.StructType):
-    def get_family(self):
-        family_idx = self.sk.__sk_common.skc_family
-        if 0 <= family_idx < len(linux_constants.SOCK_FAMILY):
-            return linux_constants.SOCK_FAMILY[family_idx]
-
-    def get_protocol(self):
-        # If INET6 family and a proto is defined, we use that specific IPv6 protocol.
-        # Otherwise, we use the standard IP protocol.
-        protocol = linux_constants.IP_PROTOCOLS.get(self.sk.sk_protocol)
-        if self.get_family() == "AF_INET6":
-            protocol = linux_constants.IPV6_PROTOCOLS.get(self.sk.sk_protocol, protocol)
-        return protocol
-
-    def get_state(self):
-        """Return a string representing the sock state."""
-
-        if self.sk.get_type() == "STREAM":
-            state_idx = self.sk.__sk_common.skc_state
-            if 0 <= state_idx < len(linux_constants.TCP_STATES):
-                return linux_constants.TCP_STATES[state_idx]
-        else:
-            # Return the generic socket state
-            return self.sk.sk_socket.get_state()
-
-    def get_src_port(self):
-        sport_le = getattr(self, "sport", getattr(self, "inet_sport", None))
-        if sport_le is not None:
-            return socket_module.htons(sport_le)
-
-    def get_dst_port(self):
-        sk_common = self.sk.__sk_common
-        if hasattr(sk_common, "skc_portpair"):
-            dport_le = sk_common.skc_portpair & 0xFFFF
-        elif hasattr(self, "dport"):
-            dport_le = self.dport
-        elif hasattr(self, "inet_dport"):
-            dport_le = self.inet_dport
-        elif hasattr(sk_common, "skc_dport"):
-            dport_le = sk_common.skc_dport
-        else:
-            return None
-        return socket_module.htons(dport_le)
-
-    def get_src_addr(self):
-        sk_common = self.sk.__sk_common
-        family = sk_common.skc_family
-        if family == socket_module.AF_INET:
-            addr_size = 4
-            if hasattr(self, "rcv_saddr"):
-                saddr = self.rcv_saddr
-            elif hasattr(self, "inet_rcv_saddr"):
-                saddr = self.inet_rcv_saddr
-            else:
-                saddr = sk_common.skc_rcv_saddr
-        elif family == socket_module.AF_INET6:
-            addr_size = 16
-            saddr = self.pinet6.saddr
-        else:
-            return None
-        parent_layer = self._context.layers[self.vol.layer_name]
-        try:
-            addr_bytes = parent_layer.read(saddr.vol.offset, addr_size)
-        except exceptions.InvalidAddressException:
-            vollog.debug(
-                f"Unable to read socket src address from {saddr.vol.offset:#x}"
-            )
-            return None
-        return socket_module.inet_ntop(family, addr_bytes)
-
-    def get_dst_addr(self):
-        sk_common = self.sk.__sk_common
-        family = sk_common.skc_family
-        if family == socket_module.AF_INET:
-            if hasattr(self, "daddr") and self.daddr:
-                daddr = self.daddr
-            elif hasattr(self, "inet_daddr") and self.inet_daddr:
-                daddr = self.inet_daddr
-            else:
-                daddr = sk_common.skc_daddr
-            addr_size = 4
-        elif family == socket_module.AF_INET6:
-            if hasattr(self.pinet6, "daddr"):
-                daddr = self.pinet6.daddr
-            else:
-                daddr = sk_common.skc_v6_daddr
-            addr_size = 16
-        else:
-            return None
-        parent_layer = self._context.layers[self.vol.layer_name]
-        try:
-            addr_bytes = parent_layer.read(daddr.vol.offset, addr_size)
-        except exceptions.InvalidAddressException:
-            vollog.debug(
-                f"Unable to read socket dst address from {daddr.vol.offset:#x}"
-            )
-            return None
-        return socket_module.inet_ntop(family, addr_bytes)
-
-
-class netlink_sock(objects.StructType):
-    def get_protocol(self):
-        protocol_idx = self.sk.sk_protocol
-        if 0 <= protocol_idx < len(linux_constants.NETLINK_PROTOCOLS):
-            return linux_constants.NETLINK_PROTOCOLS[protocol_idx]
-
-    def get_state(self):
-        # Return the generic socket state
-        return self.sk.sk_socket.get_state()
-
-    def get_portid(self):
-        if self.has_member("pid"):
-            # kernel < 3.7.10
-            return self.pid
-        if self.has_member("portid"):
-            # kernel >= 3.7.10
-            return self.portid
-        else:
-            raise AttributeError("Unable to find a source port id")
-
-    def get_dst_portid(self):
-        if self.has_member("dst_pid"):
-            # kernel < 3.7.10
-            return self.dst_pid
-        if self.has_member("dst_portid"):
-            # kernel >= 3.7.10
-            return self.dst_portid
-        else:
-            raise AttributeError("Unable to find a destination port id")
-
-
-class vsock_sock(objects.StructType):
-    def get_protocol(self):
-        # The protocol should always be 0 for vsocks
-        return None
-
-    def get_state(self):
-        # Return the generic socket state
-        return self.sk.sk_socket.get_state()
-
-
-class packet_sock(objects.StructType):
-    def get_protocol(self):
-        eth_proto = socket_module.htons(self.num)
-        if eth_proto == 0:
-            return None
-        elif eth_proto in linux_constants.ETH_PROTOCOLS:
-            return linux_constants.ETH_PROTOCOLS[eth_proto]
-        else:
-            return f"0x{eth_proto:x}"
-
-    def get_state(self):
-        # Return the generic socket state
-        return self.sk.sk_socket.get_state()
-
-
-class bt_sock(objects.StructType):
-    def get_protocol(self):
-        type_idx = self.sk.sk_protocol
-        if 0 <= type_idx < len(linux_constants.BLUETOOTH_PROTOCOLS):
-            return linux_constants.BLUETOOTH_PROTOCOLS[type_idx]
-
-    def get_state(self):
-        state_idx = self.sk.__sk_common.skc_state
-        if 0 <= state_idx < len(linux_constants.BLUETOOTH_STATES):
-            return linux_constants.BLUETOOTH_STATES[state_idx]
-
-
-class xdp_sock(objects.StructType):
-    def get_protocol(self):
-        # The protocol should always be 0 for xdp_sock
-        return None
-
-    def get_state(self):
-        # xdp_sock.state is an enum
-        return self.state.lookup()
 
 
 class bpf_prog(objects.StructType):
@@ -2673,7 +2402,9 @@ class inode(objects.StructType):
         else:
             return None
 
-    def _time_member_to_datetime(self, member) -> datetime.datetime:
+    def _time_member_to_datetime(
+        self, member
+    ) -> Union[datetime.datetime, interfaces.renderers.BaseAbsentValue]:
         if self.has_member(f"{member}_sec") and self.has_member(f"{member}_nsec"):
             # kernels >= 6.11 it's i_*_sec -> time64_t and i_*_nsec -> u32
             # Ref Linux commit 3aa63a569c64e708df547a8913c84e64a06e7853
@@ -2952,7 +2683,7 @@ class IDR(objects.StructType):
 
         return (1 << bits) - 1
 
-    def idr_find(self, idr_id: int) -> int:
+    def idr_find(self, idr_id: int) -> Optional[int]:
         """Finds an ID within the IDR data structure.
         Based on idr_find_slowpath(), 3.9 <= Kernel < 4.11
         Args:
@@ -3028,7 +2759,9 @@ class IDR(objects.StructType):
 
 
 class rb_root(objects.StructType):
-    def _walk_nodes(self, root_node: int) -> Iterator[int]:
+    def _walk_nodes(
+        self, root_node: interfaces.objects.ObjectInterface
+    ) -> Iterator[int]:
         """Traverses the Red-Black tree from the root node and yields a pointer to each
         node in this tree.
 
