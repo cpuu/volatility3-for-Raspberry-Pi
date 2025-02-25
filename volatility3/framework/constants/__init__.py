@@ -120,6 +120,9 @@ OFFLINE = False
 REMOTE_ISF_URL = None  # 'http://localhost:8000/banners.json'
 """Remote URL to query for a list of ISF addresses"""
 
+DOWNLOAD_TIMEOUT = 30
+"""Length of time (in seconds) to wait for another process to download a resource before using it"""
+
 ###
 # DEPRECATED VALUES
 ###
