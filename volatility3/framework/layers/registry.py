@@ -262,7 +262,7 @@ class RegistryHive(linear.LinearlyMappedLayer):
                     self.name,
                     hex(offset & 0x7FFFFFFF),
                     hex(self._get_hive_maxaddr(volatile)),
-                    "volative" if volatile else "non-volatile",
+                    "volatile" if volatile else "non-volatile",
                     self.get_name(),
                 ),
             )

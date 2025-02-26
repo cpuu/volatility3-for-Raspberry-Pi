@@ -199,7 +199,7 @@ class CM_KEY_NODE(objects.StructType):
         # We could change the array type to a struct with both parts
         try:
             signature = node.cast("string", max_length=2, encoding="latin-1")
-        except (exceptions.InvalidAddressException, RegistryFormatException):
+        except (exceptions.InvalidAddressException, RegistryFormatException, RegistryInvalidIndex):
             return None
 
         listjump = None
@@ -329,7 +329,7 @@ class CM_KEY_VALUE(objects.StructType):
                 data = layer.read(self.Data.vol.offset, datalen)
         elif layer.hive.Version == 5 and datalen > 0x4000:
             # We're bigdata
-            big_data = layer.get_node(self.Data)
+            big_data = layer.get_node(self.Data).cast("_CM_BIG_DATA")
             # Oddly, we get a list of addresses, at which are addresses, which then point to data blocks
             for i in range(big_data.Count):
                 # The value 4 should actually be unsigned-int.size, but since it's a file format that shouldn't change
