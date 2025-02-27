@@ -874,6 +874,12 @@ class EPROCESS(generic.GenericIntelProcess, pool.ExecutiveObject):
 
         for peb in pebs:
             sym_table = self.get_symbol_table_name()
+            # Fixes #1636
+            try:
+                peb.Ldr
+            except exceptions.InvalidAddressException:
+                continue
+
             if peb.Ldr.vol.type_name.split(constants.BANG)[-1] == ("unsigned long"):
                 sym_table = self.set_types(peb)
 
