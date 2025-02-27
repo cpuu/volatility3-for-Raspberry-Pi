@@ -32,6 +32,12 @@ Exemptions from this rule:
         * `collections.abc` module
         * `typing_extensions` module
 
+Function calls
+--------------
+
+For longer function calls, where line length is no longer an issue, favour using keyword arguments for clarity over unnamed positional arguments.
+This helps coders learning the code from examples to know what parameters to pass in and avoids ordering mistakes.
+
 Global Mutable State
 --------------------
 
