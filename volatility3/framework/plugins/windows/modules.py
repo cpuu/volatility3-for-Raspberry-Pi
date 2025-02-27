@@ -2,7 +2,7 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 import logging
-from typing import Generator, Iterable, List, Optional
+from typing import Generator, Iterable, List, Optional, Dict
 
 from volatility3.framework import symbols, constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
@@ -18,7 +18,9 @@ class Modules(interfaces.plugins.PluginInterface):
     """Lists the loaded kernel modules."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (2, 1, 0)
+
+    # 3.0.0 - changed signature of get_session_layers, added get_session_layers_map
+    _version = (3, 0, 0)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -33,7 +35,7 @@ class Modules(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="pslist", component=pslist.PsList, version=(2, 0, 0)
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.BooleanRequirement(
                 name="dump",
@@ -76,8 +78,6 @@ class Modules(interfaces.plugins.PluginInterface):
         return file_output
 
     def _generator(self):
-        kernel = self.context.modules[self.config["kernel"]]
-
         pe_table_name = None
         session_layers = None
 
@@ -92,13 +92,12 @@ class Modules(interfaces.plugins.PluginInterface):
 
             session_layers = list(
                 self.get_session_layers(
-                    self.context, kernel.layer_name, kernel.symbol_table_name
+                    self.context,
+                    self.config["kernel"],
                 )
             )
 
-        for mod in self._enumeration_method(
-            self.context, kernel.layer_name, kernel.symbol_table_name
-        ):
+        for mod in self._enumeration_method(self.context, self.config["kernel"]):
             if self.config["base"] and self.config["base"] != mod.DllBase:
                 continue
 
@@ -163,11 +162,10 @@ class Modules(interfaces.plugins.PluginInterface):
         return kernel_space_start & layer.address_mask
 
     @classmethod
-    def get_session_layers(
+    def _do_get_session_layers(
         cls,
         context: interfaces.context.ContextInterface,
-        layer_name: str,
-        symbol_table: str,
+        kernel_module_name: str,
         pids: Optional[List[int]] = None,
     ) -> Generator[str, None, None]:
         """Build a cache of possible virtual layers, in priority starting with
@@ -176,20 +174,20 @@ class Modules(interfaces.plugins.PluginInterface):
 
         Args:
             context: The context to retrieve required elements (layers, symbol tables) from
-            layer_name: The name of the layer on which to operate
-            symbol_table: The name of the table containing the kernel symbols
+            kernel_module_name: The name of the module for the kernel
             pids: A list of process identifiers to include exclusively or None for no filter
 
         Returns:
-            A list of session layer names
+            A generator of session layer names
         """
         seen_ids: List[interfaces.objects.ObjectInterface] = []
         filter_func = pslist.PsList.create_pid_filter(pids or [])
 
+        kernel = context.modules[kernel_module_name]
+
         for proc in pslist.PsList.list_processes(
-            context=context,
-            layer_name=layer_name,
-            symbol_table=symbol_table,
+            context,
+            kernel_module_name,
             filter_func=filter_func,
         ):
             proc_id = "Unknown"
@@ -201,8 +199,8 @@ class Modules(interfaces.plugins.PluginInterface):
                 # not all processes have a valid session pointer.
                 try:
                     session_space = context.object(
-                        symbol_table + constants.BANG + "_MM_SESSION_SPACE",
-                        layer_name=layer_name,
+                        kernel.symbol_table_name + constants.BANG + "_MM_SESSION_SPACE",
+                        layer_name=kernel.layer_name,
                         offset=proc.Session,
                     )
                     session_id = session_space.SessionId
@@ -218,8 +216,10 @@ class Modules(interfaces.plugins.PluginInterface):
                     # create an unsigned long at that offset and use that
                     # instead.
                     session_id = context.object(
-                        layer_name=layer_name,
-                        object_type=symbol_table + constants.BANG + "unsigned long",
+                        layer_name=kernel.layer_name,
+                        object_type=kernel.symbol_table_name
+                        + constants.BANG
+                        + "unsigned long",
                         offset=proc.Session + 8,
                     )
 
@@ -235,7 +235,52 @@ class Modules(interfaces.plugins.PluginInterface):
 
             # save the layer if we haven't seen the session yet
             seen_ids.append(session_id)
+            yield session_id, proc_layer_name
+
+    @classmethod
+    def get_session_layers(
+        cls,
+        context: interfaces.context.ContextInterface,
+        kernel_module_name: str,
+        pids: Optional[List[int]] = None,
+    ) -> Generator[str, None, None]:
+        """
+        Args:
+            context: The context to retrieve required elements (layers, symbol tables) from
+            kernel_module_name: The name of the module for the kernel
+            pids: A list of process identifiers to include exclusively or None for no filter
+
+        Yields the names of the unique memory layers that map sessions
+        """
+        for _session_id, proc_layer_name in cls._do_get_session_layers(
+            context, kernel_module_name, pids
+        ):
             yield proc_layer_name
+
+    @classmethod
+    def get_session_layers_map(
+        cls,
+        context: interfaces.context.ContextInterface,
+        kernel_module_name: str,
+        pids: Optional[List[int]] = None,
+    ) -> Dict[int, str]:
+        """
+        Args:
+            context: The context to retrieve required elements (layers, symbol tables) from
+            kernel_module_name: The name of the module for the kernel
+            pids: A list of process identifiers to include exclusively or None for no filter
+
+        Wraps `_do_get_session_layers` to produce a dictionary where each key is a session_id
+        and the value is the name of the layer for that session
+        """
+        sessions: Dict[int, str] = {}
+
+        for session_id, proc_layer_name in cls._do_get_session_layers(
+            context, kernel_module_name, pids
+        ):
+            sessions[session_id] = proc_layer_name
+
+        return sessions
 
     @classmethod
     def find_session_layer(
@@ -268,26 +313,29 @@ class Modules(interfaces.plugins.PluginInterface):
     def list_modules(
         cls,
         context: interfaces.context.ContextInterface,
-        layer_name: str,
-        symbol_table: str,
+        kernel_module_name: str,
     ) -> Iterable[interfaces.objects.ObjectInterface]:
         """Lists all the modules in the primary layer.
 
         Args:
             context: The context to retrieve required elements (layers, symbol tables) from
-            layer_name: The name of the layer on which to operate
-            symbol_table: The name of the table containing the kernel symbols
-
+            kernel_module_name: The name of the module for the kernel
         Returns:
             A list of Modules as retrieved from PsLoadedModuleList
         """
 
-        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
+        kernel = context.modules[kernel_module_name]
+
+        kvo = context.layers[kernel.layer_name].config.get(
+            "kernel_virtual_offset", None
+        )
         if not kvo:
             raise ValueError(
                 "Intel layer does not have an associated kernel virtual offset, failing"
             )
-        ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
+        ntkrnlmp = context.module(
+            kernel.symbol_table_name, layer_name=kernel.layer_name, offset=kvo
+        )
 
         try:
             # use this type if its available (starting with windows 10)
