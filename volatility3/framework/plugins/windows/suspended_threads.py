@@ -33,7 +33,7 @@ class SuspendedThreads(interfaces.plugins.PluginInterface):
                 name="pslist", component=pslist.PsList, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="pe_symbols", component=pe_symbols.PESymbols, version=(1, 0, 0)
+                name="pe_symbols", component=pe_symbols.PESymbols, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="threads", component=threads.Threads, version=(1, 0, 0)
@@ -96,7 +96,7 @@ class SuspendedThreads(interfaces.plugins.PluginInterface):
                 # will not have suspended threads
                 if not proc_modules:
                     proc_modules = pe_symbols.PESymbols.get_process_modules(
-                        self.context, kernel.layer_name, kernel.symbol_table_name, None
+                        self.context, self.config["kernel"], None
                     )
 
                     path_and_symbol = functools.partial(
