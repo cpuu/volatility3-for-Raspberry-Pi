@@ -39,7 +39,7 @@ class CmdScan(interfaces.plugins.PluginInterface):
                 name="pslist", component=pslist.PsList, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="consoles", plugin=consoles.Consoles, version=(1, 0, 0)
+                name="consoles", plugin=consoles.Consoles, version=(2, 0, 0)
             ),
             requirements.BooleanRequirement(
                 name="no_registry",
@@ -288,8 +288,7 @@ class CmdScan(interfaces.plugins.PluginInterface):
             max_history, _ = consoles.Consoles.get_console_settings_from_registry(
                 self.context,
                 self.config_path,
-                kernel.layer_name,
-                kernel.symbol_table_name,
+                self.config["kernel"],
                 max_history,
                 [],
             )
