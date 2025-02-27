@@ -124,8 +124,8 @@ class Timers(interfaces.plugins.PluginInterface):
         kernel = self.context.modules[self.config["kernel"]]
 
         collection = ssdt.SSDT.build_module_collection(
-            self.context,
-            self.config["kernel"],
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
         )
 
         # FIXME - the list_timers API is gross. Fix after GUI merge

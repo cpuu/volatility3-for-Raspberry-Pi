@@ -76,9 +76,9 @@ class GetServiceSIDs(interfaces.plugins.PluginInterface):
     def _generator(self):
         # Get the system hive
         for hive in hivelist.HiveList.list_hives(
-            self.context,
-            self.config_path,
-            self.config["kernel"],
+            context=self.context,
+            base_config_path=self.config_path,
+            kernel_module_name=self.config["kernel"],
             filter_string="machine\\system",
             hive_offsets=None,
         ):

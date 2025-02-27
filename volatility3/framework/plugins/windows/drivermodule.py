@@ -43,7 +43,8 @@ class DriverModule(interfaces.plugins.PluginInterface):
         which allows us to detect the disconnect between a malicious driver and its hidden module.
         """
         collection = ssdt.SSDT.build_module_collection(
-            self.context, self.config["kernel"]
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
         )
 
         kernel_space_start = modules.Modules.get_kernel_space_start(

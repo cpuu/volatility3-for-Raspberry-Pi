@@ -245,9 +245,9 @@ class PrintKey(interfaces.plugins.PluginInterface):
         recurse: bool = False,
     ):
         for hive in hivelist.HiveList.list_hives(
-            self.context,
-            self.config_path,
-            self.config["kernel"],
+            context=self.context,
+            base_config_path=self.config_path,
+            kernel_module_name=self.config["kernel"],
             hive_offsets=hive_offsets,
         ):
             try:

@@ -803,7 +803,9 @@ class PESymbols(interfaces.plugins.PluginInterface):
             filter_modules_check = None
 
         session_layers = list(
-            modules.Modules.get_session_layers(context, kernel_module_name)
+            modules.Modules.get_session_layers(
+                context=context, kernel_module_name=kernel_module_name
+            )
         )
 
         # special handling for the kernel
@@ -917,7 +919,9 @@ class PESymbols(interfaces.plugins.PluginInterface):
         Args:
             Generator[Tuple[interfaces.objects.ObjectInterface, str, ranges_type]]: Yields tuple of process objects, layers, and VADs mapping files
         """
-        procs = pslist.PsList.list_processes(context, kernel_module_name)
+        procs = pslist.PsList.list_processes(
+            context=context, kernel_module_name=kernel_module_name
+        )
 
         for proc in procs:
             try:

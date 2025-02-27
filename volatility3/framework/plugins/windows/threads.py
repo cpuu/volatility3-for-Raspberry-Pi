@@ -69,8 +69,8 @@ class Threads(thrdscan.ThrdScan):
         filter_func = pslist.PsList.create_pid_filter(context.config.get("pid", None))
 
         for proc in pslist.PsList.list_processes(
-            context,
-            kernel_module_name,
+            context=context,
+            kernel_module_name=kernel_module_name,
             filter_func=filter_func,
         ):
             yield from cls.list_threads(module, proc)

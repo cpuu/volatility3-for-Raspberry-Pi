@@ -83,8 +83,8 @@ class SSDT(plugins.PluginInterface):
         kernel = self.context.modules[self.config["kernel"]]
 
         collection = self.build_module_collection(
-            self.context,
-            self.config["kernel"],
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
         )
 
         ntkrnlmp = kernel
@@ -101,7 +101,7 @@ class SSDT(plugins.PluginInterface):
         # on 64-bit systems the indexes are also 32-bits but they're offsets from the
         # base address of the table and can be negative, so we need a signed data type
         is_kernel_64 = symbols.symbol_table_is_64bit(
-            self.context, kernel.symbol_table_name
+            context=self.context, symbol_table_name=kernel.symbol_table_name
         )
         if is_kernel_64:
             array_subtype = "long"

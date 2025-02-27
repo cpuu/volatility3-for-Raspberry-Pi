@@ -61,7 +61,9 @@ class SuspendedThreads(interfaces.plugins.PluginInterface):
         proc_modules = None
 
         # walk the threads of each process checking for suspended threads
-        for proc in pslist.PsList.list_processes(self.context, self.config["kernel"]):
+        for proc in pslist.PsList.list_processes(
+            context=self.context, kernel_module_name=self.config["kernel"]
+        ):
             for thread in threads.Threads.list_threads(kernel, proc):
                 try:
                     # we only care if the thread is suspended
@@ -92,7 +94,9 @@ class SuspendedThreads(interfaces.plugins.PluginInterface):
                 # will not have suspended threads
                 if not proc_modules:
                     proc_modules = pe_symbols.PESymbols.get_process_modules(
-                        self.context, self.config["kernel"], None
+                        context=self.context,
+                        kernel_module_name=self.config["kernel"],
+                        filter_modules=None,
                     )
 
                     path_and_symbol = functools.partial(

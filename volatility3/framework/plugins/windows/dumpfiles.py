@@ -371,8 +371,8 @@ class DumpFiles(interfaces.plugins.PluginInterface):
                 [self.config.get("pid", None)]
             )
             procs = pslist.PsList.list_processes(
-                self.context,
-                self.config["kernel"],
+                context=self.context,
+                kernel_module_name=self.config["kernel"],
                 filter_func=filter_func,
             )
 

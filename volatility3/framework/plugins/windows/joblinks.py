@@ -46,8 +46,8 @@ class JobLinks(interfaces.plugins.PluginInterface):
         memory = self.context.layers[kernel.layer_name]
 
         for proc in pslist.PsList.list_processes(
-            self.context,
-            self.config["kernel"],
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
         ):
             try:
                 if not self.config["physical"]:

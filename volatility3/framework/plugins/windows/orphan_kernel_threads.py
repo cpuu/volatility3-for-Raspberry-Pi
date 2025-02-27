@@ -60,8 +60,8 @@ class Threads(thrdscan.ThrdScan):
             A generator of thread objects of orphaned threads
         """
         collection = ssdt.SSDT.build_module_collection(
-            context,
-            kernel_module_name,
+            context=context,
+            kernel_module_name=kernel_module_name,
         )
 
         kernel_space_start = modules.Modules.get_kernel_space_start(

@@ -70,7 +70,7 @@ class SvcList(svcscan.SvcScan):
         kernel = context.modules[kernel_module_name]
 
         if not symbols.symbol_table_is_64bit(
-            context, kernel.symbol_table_name
+            context=context, symbol_table_name=kernel.symbol_table_name
         ) or not versions.is_win10_15063_or_later(
             context=context, symbol_table=kernel.symbol_table_name
         ):
@@ -80,8 +80,8 @@ class SvcList(svcscan.SvcScan):
             return
 
         for proc in pslist.PsList.list_processes(
-            context,
-            kernel_module_name,
+            context=context,
+            kernel_module_name=kernel_module_name,
             filter_func=filter_func,
         ):
             try:

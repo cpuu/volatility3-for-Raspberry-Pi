@@ -104,9 +104,9 @@ class GetSIDs(interfaces.plugins.PluginInterface):
 
         sids = {}
         for hive in hivelist.HiveList.list_hives(
-            self.context,
-            self.config_path,
-            self.config["kernel"],
+            context=self.context,
+            base_config_path=self.config_path,
+            kernel_module_name=self.config["kernel"],
             filter_string="config\\software",
             hive_offsets=None,
         ):
@@ -220,8 +220,8 @@ class GetSIDs(interfaces.plugins.PluginInterface):
             [("PID", int), ("Process", str), ("SID", str), ("Name", str)],
             self._generator(
                 pslist.PsList.list_processes(
-                    self.context,
-                    self.config["kernel"],
+                    context=self.context,
+                    kernel_module_name=self.config["kernel"],
                     filter_func=filter_func,
                 )
             ),

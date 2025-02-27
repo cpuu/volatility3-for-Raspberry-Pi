@@ -45,8 +45,8 @@ class Sessions(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface)
         sessions = {}
 
         for proc in pslist.PsList.list_processes(
-            self.context,
-            self.config["kernel"],
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
             filter_func=filter_func,
         ):
             session_id = proc.get_session_id()

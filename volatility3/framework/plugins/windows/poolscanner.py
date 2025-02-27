@@ -417,7 +417,9 @@ class PoolScanner(plugins.PluginInterface):
         if not is_windows_10:
             scan_layer = context.layers[scan_layer].config["memory_layer"]
 
-        if symbols.symbol_table_is_64bit(context, kernel_symbol_table_name):
+        if symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=kernel_symbol_table_name
+        ):
             alignment = 0x10
         else:
             alignment = 8
@@ -565,7 +567,9 @@ class PoolScanner(plugins.PluginInterface):
         except exceptions.SymbolError:
             # We have to manually load a symbol table
 
-            if symbols.symbol_table_is_64bit(context, symbol_table):
+            if symbols.symbol_table_is_64bit(
+                context=context, symbol_table_name=symbol_table
+            ):
                 is_win_7 = versions.is_windows_7(context, symbol_table)
                 if is_win_7:
                     pool_header_json_filename = "poolheader-x64-win7"

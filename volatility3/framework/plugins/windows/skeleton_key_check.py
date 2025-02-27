@@ -568,7 +568,9 @@ class Skeleton_Key_Check(interfaces.plugins.PluginInterface):
         """
         kernel = self.context.modules[self.config["kernel"]]
 
-        if not symbols.symbol_table_is_64bit(self.context, kernel.symbol_table_name):
+        if not symbols.symbol_table_is_64bit(
+            context=self.context, symbol_table_name=kernel.symbol_table_name
+        ):
             vollog.info("This plugin only supports 64bit Windows memory samples")
             return None
 
@@ -670,8 +672,8 @@ class Skeleton_Key_Check(interfaces.plugins.PluginInterface):
             ],
             self._generator(
                 pslist.PsList.list_processes(
-                    self.context,
-                    self.config["kernel"],
+                    context=self.context,
+                    kernel_module_name=self.config["kernel"],
                     filter_func=self._lsass_proc_filter,
                 )
             ),

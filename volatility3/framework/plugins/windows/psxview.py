@@ -182,7 +182,9 @@ We recommend using -r pretty if you are looking at this plugin's output in a ter
         kernel = self.context.modules[self.config["kernel"]]
 
         kdbg_list_processes = list(
-            pslist.PsList.list_processes(self.context, self.config["kernel"])
+            pslist.PsList.list_processes(
+                context=self.context, kernel_module_name=self.config["kernel"]
+            )
         )
 
         # get processes from each source

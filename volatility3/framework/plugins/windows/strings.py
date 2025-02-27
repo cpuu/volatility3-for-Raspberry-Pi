@@ -73,8 +73,8 @@ class Strings(interfaces.plugins.PluginInterface):
             line = strings_fp.readline()
 
         revmap = self.generate_mapping(
-            self.context,
-            self.config["kernel"],
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
             progress_callback=self._progress_callback,
             pid_list=self.config["pid"],
         )
@@ -161,9 +161,11 @@ class Strings(interfaces.plugins.PluginInterface):
 
             # TODO: Include kernel modules
 
-            for process in pslist.PsList.list_processes(context, kernel_module_name):
+            for process in pslist.PsList.list_processes(
+                context=context, kernel_module_name=kernel_module_name
+            ):
                 if not filter(process):
-                    proc_id = "Unknown"
+                    kernel_module_name = proc_id = "Unknown"
                     try:
                         proc_id = process.UniqueProcessId
                         proc_layer_name = process.add_process_layer()

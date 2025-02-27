@@ -78,7 +78,9 @@ class POOL_HEADER(objects.StructType):
 
         # otherwise we have an executive object in the pool
         else:
-            if symbols.symbol_table_is_64bit(self._context, symbol_table_name):
+            if symbols.symbol_table_is_64bit(
+                context=self._context, symbol_table_name=symbol_table_name
+            ):
                 alignment = 16
             else:
                 alignment = 8

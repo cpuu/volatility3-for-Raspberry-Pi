@@ -151,10 +151,10 @@ class unhooked_system_calls(interfaces.plugins.PluginInterface):
 
     def _generator(self) -> Generator[Tuple[int, Tuple[str, str, int]], None, None]:
         found_symbols = pe_symbols.PESymbols.addresses_for_process_symbols(
-            self.context,
-            self.config_path,
-            self.config["kernel"],
-            unhooked_system_calls.system_calls,
+            context=self.context,
+            config_path=self.config_path,
+            kernel_module_name=self.config["kernel"],
+            symbols=unhooked_system_calls.system_calls,
         )
 
         # code_bytes[dll_name][func_name][func_bytes]

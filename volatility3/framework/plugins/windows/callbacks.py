@@ -187,7 +187,9 @@ class Callbacks(interfaces.plugins.PluginInterface):
             The name of the constructed symbol table
         """
         native_types = context.symbol_space[nt_symbol_table].natives
-        is_64bit = symbols.symbol_table_is_64bit(context, nt_symbol_table)
+        is_64bit = symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=nt_symbol_table
+        )
         table_mapping = {"nt_symbols": nt_symbol_table}
 
         if is_64bit:
@@ -691,7 +693,8 @@ class Callbacks(interfaces.plugins.PluginInterface):
         )
 
         collection = ssdt.SSDT.build_module_collection(
-            self.context, self.config["kernel"]
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
         )
 
         callback_methods = (

@@ -84,7 +84,9 @@ class PsTree(interfaces.plugins.PluginInterface):
         """Generates the Tree of processes."""
         kernel = self.context.modules[self.config["kernel"]]
 
-        for proc in pslist.PsList.list_processes(self.context, self.config["kernel"]):
+        for proc in pslist.PsList.list_processes(
+            context=self.context, kernel_module_name=self.config["kernel"]
+        ):
             if not self.config.get("physical", pslist.PsList.PHYSICAL_DEFAULT):
                 offset = proc.vol.offset
             else:

@@ -354,12 +354,12 @@ class DirectSystemCalls(interfaces.plugins.PluginInterface):
         kernel = context.modules[kernel_module_name]
 
         is_32bit_arch = not symbols.symbol_table_is_64bit(
-            context, kernel.symbol_table_name
+            context=context, symbol_table_name=kernel.symbol_table_name
         )
 
         for proc in pslist.PsList.list_processes(
-            context,
-            kernel_module_name,
+            context=context,
+            kernel_module_name=kernel_module_name,
             filter_func=filter_func,
         ):
             proc_name = utility.array_to_string(proc.ImageFileName)

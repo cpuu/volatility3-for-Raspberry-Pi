@@ -138,8 +138,8 @@ class SuspiciousThreads(interfaces.plugins.PluginInterface):
         filter_func = pslist.PsList.create_pid_filter(self.config.get("pid", None))
 
         for proc in pslist.PsList.list_processes(
-            self.context,
-            self.config["kernel"],
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
             filter_func=filter_func,
         ):
             ranges = self._get_ranges(kernel, all_ranges, proc)

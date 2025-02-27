@@ -93,7 +93,9 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
             The name of the constructed shimcache table
         """
         native_types = context.symbol_space[symbol_table_name].natives
-        is_64bit = symbols.symbol_table_is_64bit(context, symbol_table_name)
+        is_64bit = symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=symbol_table_name
+        )
         table_mapping = {"nt_symbols": symbol_table_name}
 
         try:
@@ -260,7 +262,11 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
         mod_page_offset, mod_page_size = mod_page
 
         addr_size = (
-            8 if symbols.symbol_table_is_64bit(context, kernel.symbol_table_name) else 4
+            8
+            if symbols.symbol_table_is_64bit(
+                context=context, symbol_table_name=kernel.symbol_table_name
+            )
+            else 4
         )
 
         shim_head = None
@@ -322,7 +328,9 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
         ).size
         ersrc_alignment = (
             0x20
-            if symbols.symbol_table_is_64bit(context, kernel.symbol_table_name)
+            if symbols.symbol_table_is_64bit(
+                context=context, symbol_table_name=kernel.symbol_table_name
+            )
             else 0x10
             # 0x20 if context.symbol_space.get_type("pointer").size == 8 else 0x10
         )
@@ -420,7 +428,9 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
             data_sec_offset + data_sec_size,
             (
                 8
-                if symbols.symbol_table_is_64bit(context, kernel.symbol_table_name)
+                if symbols.symbol_table_is_64bit(
+                    context=context, symbol_table_name=kernel.symbol_table_name
+                )
                 else 4
             ),
         ):
@@ -448,7 +458,9 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
         # On Windows 8 x64, the first cache contains the shim cache.
         # On Windows 8 x86, 8.1 x86/x64, and 10, the second cache contains the shim cache.
         if (
-            not symbols.symbol_table_is_64bit(context, kernel.symbol_table_name)
+            not symbols.symbol_table_is_64bit(
+                context=context, symbol_table_name=kernel.symbol_table_name
+            )
             and not is_8_1_or_later
         ):
             valid_head = shim_heads[1]

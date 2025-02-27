@@ -259,9 +259,11 @@ class Amcache(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         """Retrieves the `Amcache.hve` registry hive from the kernel module, if it can be located."""
         return next(
             hivelist.HiveList.list_hives(
-                context,
-                interfaces.configuration.path_join(config_path, "hivelist"),
-                kernel_module_name,
+                context=context,
+                base_config_path=interfaces.configuration.path_join(
+                    config_path, "hivelist"
+                ),
+                kernel_module_name=kernel_module_name,
                 filter_string="amcache",
             ),
             None,

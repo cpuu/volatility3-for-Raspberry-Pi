@@ -161,7 +161,9 @@ class PEDump(interfaces.plugins.PluginInterface):
         """
         Extracts a PE file from kernel memory at the given base address
         """
-        session_layers = modules.Modules.get_session_layers(context, kernel_module_name)
+        session_layers = modules.Modules.get_session_layers(
+            context=context, kernel_module_name=kernel_module_name
+        )
 
         session_layer_name = modules.Modules.find_session_layer(
             context, session_layers, base
@@ -195,8 +197,7 @@ class PEDump(interfaces.plugins.PluginInterface):
 
         for proc in pslist.PsList.list_processes(
             context=context,
-            layer_name=kernel.layer_name,
-            symbol_table_name=kernel.symbol_table_name,
+            kernel_module_name=kernel.name,
             filter_func=filter_func,
         ):
             pid = proc.UniqueProcessId
@@ -237,11 +238,11 @@ class PEDump(interfaces.plugins.PluginInterface):
 
         if self.config["kernel_module"]:
             pe_files = self.dump_kernel_pe_at_base(
-                self.context,
-                self.config["kernel"],
-                pe_table_name,
-                self.open,
-                self.config["base"],
+                context=self.context,
+                kernel_module_name=self.config["kernel"],
+                pe_table_name=pe_table_name,
+                open_method=self.open,
+                base=self.config["base"],
             )
         else:
             filter_func = pslist.PsList.create_pid_filter(self.config.get("pid", None))

@@ -60,8 +60,8 @@ class VadYaraScan(interfaces.plugins.PluginInterface):
         sanity_check = 1024 * 1024 * 1024  # 1 GB
 
         for task in pslist.PsList.list_processes(
-            self.context,
-            self.config["kernel"],
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
             filter_func=filter_func,
         ):
             layer_name = task.add_process_layer()

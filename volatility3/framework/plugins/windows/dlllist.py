@@ -13,7 +13,7 @@ from volatility3.framework.renderers import conversion, format_hints
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.windows.extensions import pe
 from volatility3.plugins import timeliner
-from volatility3.plugins.windows import info, pslist, psscan, pedump
+from volatility3.plugins.windows import info, pedump, pslist, psscan
 
 vollog = logging.getLogger(__name__)
 
@@ -192,7 +192,9 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
     def generate_timeline(self):
         for row in self._generator(
-            pslist.PsList.list_processes(self.context, self.config["kernel"])
+            pslist.PsList.list_processes(
+                context=self.context, kernel_module_name=self.config["kernel"]
+            )
         ):
             _depth, row_data = row
             if not isinstance(row_data[6], datetime.datetime):
@@ -217,8 +219,8 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             )
         else:
             procs = pslist.PsList.list_processes(
-                self.context,
-                self.config["kernel"],
+                context=self.context,
+                kernel_module_name=self.config["kernel"],
                 filter_func=filter_func,
             )
 

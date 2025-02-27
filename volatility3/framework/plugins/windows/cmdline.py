@@ -106,8 +106,8 @@ class CmdLine(interfaces.plugins.PluginInterface):
             [("PID", int), ("Process", str), ("Args", str)],
             self._generator(
                 pslist.PsList.list_processes(
-                    self.context,
-                    self.config["kernel"],
+                    context=self.context,
+                    kernel_module_name=self.config["kernel"],
                     filter_func=filter_func,
                 )
             ),

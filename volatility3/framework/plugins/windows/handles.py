@@ -78,7 +78,7 @@ class Handles(interfaces.plugins.PluginInterface):
         except AttributeError:
             # starting with windows 8
             is_64bit = symbols.symbol_table_is_64bit(
-                self.context, kernel.symbol_table_name
+                context=self.context, symbol_table_name=kernel.symbol_table_name
             )
 
             if is_64bit:
@@ -393,8 +393,8 @@ class Handles(interfaces.plugins.PluginInterface):
             )
         else:
             procs = pslist.PsList.list_processes(
-                self.context,
-                self.config["kernel"],
+                context=self.context,
+                kernel_module_name=self.config["kernel"],
                 filter_func=filter_func,
             )
 

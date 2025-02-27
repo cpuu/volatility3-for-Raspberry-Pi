@@ -70,9 +70,9 @@ class Certificates(interfaces.plugins.PluginInterface):
 
     def _generator(self) -> Iterator[Tuple[int, Tuple[str, str, str, str]]]:
         for hive in hivelist.HiveList.list_hives(
-            self.context,
-            self.config_path,
-            self.config["kernel"],
+            context=self.context,
+            base_config_path=self.config_path,
+            kernel_module_name=self.config["kernel"],
         ):
             for top_key in [
                 "Microsoft\\SystemCertificates",

@@ -172,7 +172,7 @@ class Malfind(interfaces.plugins.PluginInterface):
         }
 
         is_32bit_arch = not symbols.symbol_table_is_64bit(
-            self.context, kernel.symbol_table_name
+            context=self.context, symbol_table_name=kernel.symbol_table_name
         )
 
         for proc in procs:
@@ -256,8 +256,8 @@ class Malfind(interfaces.plugins.PluginInterface):
             ],
             self._generator(
                 pslist.PsList.list_processes(
-                    self.context,
-                    self.config["kernel"],
+                    context=self.context,
+                    kernel_module_name=self.config["kernel"],
                     filter_func=filter_func,
                 )
             ),

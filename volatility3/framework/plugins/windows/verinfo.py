@@ -253,13 +253,15 @@ class VerInfo(interfaces.plugins.PluginInterface):
                 )
 
     def run(self):
-        procs = pslist.PsList.list_processes(self.context, self.config["kernel"])
+        procs = pslist.PsList.list_processes(
+            context=self.context, kernel_module_name=self.config["kernel"]
+        )
 
         mods = modules.Modules.list_modules(self.context, self.config["kernel"])
 
         # populate the session layers for kernel modules
         session_layers = modules.Modules.get_session_layers(
-            self.context, self.config["kernel"]
+            context=self.context, kernel_module_name=self.config["kernel"]
         )
 
         return renderers.TreeGrid(

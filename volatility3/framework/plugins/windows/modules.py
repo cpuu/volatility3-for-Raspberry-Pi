@@ -92,7 +92,7 @@ class Modules(interfaces.plugins.PluginInterface):
 
             session_layers = list(
                 self.get_session_layers(
-                    self.context,
+                    context=self.context,
                     kernel_module_name=self.config["kernel"],
                 )
             )
@@ -140,7 +140,9 @@ class Modules(interfaces.plugins.PluginInterface):
         module = context.modules[module_name]
 
         # default is used if/when MmSystemRangeStart is paged out
-        if symbols.symbol_table_is_64bit(context, module.symbol_table_name):
+        if symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=module.symbol_table_name
+        ):
             object_type = "unsigned long long"
             default_start = 0xFFFF800000000000
         else:
@@ -188,8 +190,8 @@ class Modules(interfaces.plugins.PluginInterface):
         kernel = context.modules[kernel_module_name]
 
         for proc in pslist.PsList.list_processes(
-            context,
-            kernel_module_name,
+            context=context,
+            kernel_module_name=kernel_module_name,
             filter_func=filter_func,
         ):
             proc_id = "Unknown"

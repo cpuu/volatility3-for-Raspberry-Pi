@@ -50,7 +50,9 @@ class HiveScan(interfaces.plugins.PluginInterface):
 
         kernel = context.modules[kernel_name]
 
-        is_64bit = symbols.symbol_table_is_64bit(context, kernel.symbol_table_name)
+        is_64bit = symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=kernel.symbol_table_name
+        )
         is_windows_8_1_or_later = versions.is_windows_8_1_or_later(
             context=context, symbol_table=kernel.symbol_table_name
         )

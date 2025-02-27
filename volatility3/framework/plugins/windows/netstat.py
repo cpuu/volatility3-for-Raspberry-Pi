@@ -319,7 +319,9 @@ class NetStat(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         Returns:
             The list of TCP endpoint objects from the `layer_name` layer's `PartitionTable`
         """
-        if symbols.symbol_table_is_64bit(context, net_symbol_table):
+        if symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=net_symbol_table
+        ):
             alignment = 0x10
         else:
             alignment = 8

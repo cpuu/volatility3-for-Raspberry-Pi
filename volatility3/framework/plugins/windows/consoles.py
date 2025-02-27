@@ -149,7 +149,9 @@ class Consoles(interfaces.plugins.PluginInterface):
             The filename of the symbol table to use and the associated class types.
         """
 
-        is_64bit = symbols.symbol_table_is_64bit(context, nt_symbol_table)
+        is_64bit = symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=nt_symbol_table
+        )
 
         if is_64bit:
             arch = "x64"
@@ -824,9 +826,9 @@ class Consoles(interfaces.plugins.PluginInterface):
         )
 
         for hive in hivelist.HiveList.list_hives(
-            context,
-            config_path,
-            kernel_module_name,
+            context=context,
+            base_config_path=config_path,
+            kernel_module_name=kernel_module_name,
             hive_offsets=None,
         ):
             try:
@@ -943,8 +945,8 @@ class Consoles(interfaces.plugins.PluginInterface):
             ],
             self._generator(
                 pslist.PsList.list_processes(
-                    self.context,
-                    self.config["kernel"],
+                    context=self.context,
+                    kernel_module_name=self.config["kernel"],
                     filter_func=self._conhost_proc_filter,
                 )
             ),

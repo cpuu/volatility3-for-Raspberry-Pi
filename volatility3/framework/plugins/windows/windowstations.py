@@ -67,7 +67,9 @@ class WindowStations(interfaces.plugins.PluginInterface):
 
         native_types = intermed.native.x64NativeTable
 
-        if not symbols.symbol_table_is_64bit(context, symbol_table):
+        if not symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=symbol_table
+        ):
             raise NotImplementedError(
                 "This plugin only supports x64 versions of Windows"
             )
@@ -86,10 +88,10 @@ class WindowStations(interfaces.plugins.PluginInterface):
         vollog.debug(f"Using GUI table {symbol_filename}")
 
         return intermed.IntermediateSymbolTable.create(
-            context,
-            config_path,
-            os.path.join("windows", "gui"),
-            symbol_filename,
+            context=context,
+            config_path=config_path,
+            sub_path=os.path.join("windows", "gui"),
+            filename=symbol_filename,
             class_types=gui.class_types,
             native_types=native_types,
             table_mapping=table_mapping,
@@ -152,11 +154,11 @@ class WindowStations(interfaces.plugins.PluginInterface):
         session_map = cls.get_session_map(context, kernel_module_name, gui_table_name)
 
         for result in poolscanner.PoolScanner.generate_pool_scan_extended(
-            context,
-            kernel.layer_name,
-            kernel.symbol_table_name,
-            gui_table_name,
-            constraints,
+            context=context,
+            kernel_layer_name=kernel.layer_name,
+            kernel_symbol_table_name=kernel.symbol_table_name,
+            object_symbol_table_name=gui_table_name,
+            constraints=constraints,
         ):
             _constraint, mem_object, _header = result
 

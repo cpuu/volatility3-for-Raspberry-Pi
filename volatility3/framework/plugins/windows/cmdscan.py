@@ -286,11 +286,11 @@ class CmdScan(interfaces.plugins.PluginInterface):
 
         if no_registry is False:
             max_history, _ = consoles.Consoles.get_console_settings_from_registry(
-                self.context,
-                self.config_path,
-                self.config["kernel"],
-                max_history,
-                [],
+                context=self.context,
+                config_path=self.config_path,
+                kernel_module_name=self.config["kernel"],
+                max_history=max_history,
+                max_buffers=[],
             )
 
         vollog.debug(f"Possible CommandHistorySize values: {max_history}")
@@ -370,8 +370,8 @@ class CmdScan(interfaces.plugins.PluginInterface):
             ],
             self._generator(
                 pslist.PsList.list_processes(
-                    self.context,
-                    self.config["kernel"],
+                    context=self.context,
+                    kernel_module_name=self.config["kernel"],
                     filter_func=self._conhost_proc_filter,
                 )
             ),

@@ -95,9 +95,9 @@ class HiveList(interfaces.plugins.PluginInterface):
                 # Construct the hive
                 hive = next(
                     self.list_hives(
-                        self.context,
-                        self.config_path,
-                        self.config["kernel"],
+                        context=self.context,
+                        base_config_path=self.config_path,
+                        kernel_module_name=self.config["kernel"],
                         hive_offsets=[hive_object.vol.offset],
                     )
                 )
@@ -162,10 +162,10 @@ class HiveList(interfaces.plugins.PluginInterface):
                 hive_offsets = [
                     hive.vol.offset
                     for hive in cls.list_hive_objects(
-                        context,
-                        kernel.layer_name,
-                        kernel.symbol_table_name,
-                        filter_string,
+                        context=context,
+                        layer_name=kernel.layer_name,
+                        symbol_table=kernel.symbol_table_name,
+                        filter_string=filter_string,
                     )
                 ]
             except ImportError:

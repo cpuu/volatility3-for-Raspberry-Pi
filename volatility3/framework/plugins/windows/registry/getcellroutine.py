@@ -37,13 +37,15 @@ class GetCellRoutine(interfaces.plugins.PluginInterface):
 
     def _generator(self):
         collection = ssdt.SSDT.build_module_collection(
-            self.context, self.config["kernel"]
+            context=self.context, kernel_module_name=self.config["kernel"]
         )
 
         # walk each hive and validate that the GetCellRoutine handler
         # is inside of the kernel (ntoskrnl)
         for hive_object in hivelist.HiveList.list_hives(
-            self.context, self.config_path, self.config["kernel"]
+            context=self.context,
+            base_config_path=self.config_path,
+            kernel_module_name=self.config["kernel"],
         ):
             hive = hive_object.hive
 

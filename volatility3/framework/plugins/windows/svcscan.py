@@ -121,7 +121,9 @@ class SvcScan(interfaces.plugins.PluginInterface):
             A symbol table containing the symbols necessary for services
         """
         native_types = context.symbol_space[symbol_table_name].natives
-        is_64bit = symbols.symbol_table_is_64bit(context, symbol_table_name)
+        is_64bit = symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=symbol_table_name
+        )
 
         try:
             symbol_filename = next(
@@ -148,9 +150,11 @@ class SvcScan(interfaces.plugins.PluginInterface):
     ) -> Optional[objects.StructType]:
 
         for hive in hivelist.HiveList.list_hives(
-            context,
-            interfaces.configuration.path_join(config_path, "hivelist"),
-            kernel_module_name,
+            context=context,
+            base_config_path=interfaces.configuration.path_join(
+                config_path, "hivelist"
+            ),
+            kernel_module_name=kernel_module_name,
             filter_string="machine\\system",
         ):
             # Get ControlSet\Services.
@@ -300,7 +304,7 @@ class SvcScan(interfaces.plugins.PluginInterface):
 
         for task in pslist.PsList.list_processes(
             context,
-            kernel_module_name,
+            kernel_module_name=kernel_module_name,
             filter_func=filter_func,
         ):
             proc_id = "Unknown"

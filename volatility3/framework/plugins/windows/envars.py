@@ -60,9 +60,9 @@ class Envars(interfaces.plugins.PluginInterface):
         values = []
 
         for hive in hivelist.HiveList.list_hives(
-            self.context,
-            self.config_path,
-            self.config["kernel"],
+            context=self.context,
+            base_config_path=self.config_path,
+            kernel_module_name=self.config["kernel"],
             hive_offsets=None,
         ):
             ## The global variables
@@ -225,8 +225,8 @@ class Envars(interfaces.plugins.PluginInterface):
             ],
             self._generator(
                 pslist.PsList.list_processes(
-                    self.context,
-                    self.config["kernel"],
+                    context=self.context,
+                    kernel_module_name=self.config["kernel"],
                     filter_func=filter_func,
                 )
             ),

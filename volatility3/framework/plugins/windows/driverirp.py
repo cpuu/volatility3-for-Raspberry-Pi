@@ -71,11 +71,13 @@ class DriverIrp(interfaces.plugins.PluginInterface):
 
     def _generator(self):
         collection = ssdt.SSDT.build_module_collection(
-            self.context, self.config["kernel"]
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
         )
 
         kernel_space_start = modules.Modules.get_kernel_space_start(
-            self.context, self.config["kernel"]
+            context=self.context,
+            module_name=self.config["kernel"],
         )
 
         for driver in driverscan.DriverScan.scan_drivers(

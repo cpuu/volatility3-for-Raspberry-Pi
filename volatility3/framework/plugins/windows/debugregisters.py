@@ -117,7 +117,9 @@ class DebugRegisters(interfaces.plugins.PluginInterface):
 
         proc_modules = None
 
-        procs = pslist.PsList.list_processes(self.context, self.config["kernel"])
+        procs = pslist.PsList.list_processes(
+            context=self.context, kernel_module_name=self.config["kernel"]
+        )
 
         for proc in procs:
             for thread in threads.Threads.list_threads(kernel, proc):
