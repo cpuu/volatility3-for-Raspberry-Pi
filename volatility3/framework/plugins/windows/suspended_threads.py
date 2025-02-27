@@ -36,7 +36,7 @@ class SuspendedThreads(interfaces.plugins.PluginInterface):
                 name="pe_symbols", component=pe_symbols.PESymbols, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="threads", component=threads.Threads, version=(1, 0, 0)
+                name="threads", component=threads.Threads, version=(2, 0, 0)
             ),
         ]
 
