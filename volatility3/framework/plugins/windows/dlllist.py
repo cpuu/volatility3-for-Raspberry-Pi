@@ -40,7 +40,7 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 name="psscan", component=psscan.PsScan, version=(1, 1, 0)
             ),
             requirements.VersionRequirement(
-                name="pedump", component=pedump.PEDump, version=(1, 0, 0)
+                name="pedump", component=pedump.PEDump, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="info", component=info.Info, version=(1, 0, 0)

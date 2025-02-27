@@ -55,7 +55,7 @@ class ModScan(modules.Modules):
                 default=None,
             ),
             requirements.VersionRequirement(
-                name="pedump", component=pedump.PEDump, version=(1, 0, 0)
+                name="pedump", component=pedump.PEDump, version=(2, 0, 0)
             ),
         ]
 

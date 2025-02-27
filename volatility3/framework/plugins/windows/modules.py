@@ -37,6 +37,9 @@ class Modules(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="pedump", component=pedump.PEDump, version=(2, 0, 0)
+            ),
             requirements.BooleanRequirement(
                 name="dump",
                 description="Extract listed modules",
@@ -53,9 +56,6 @@ class Modules(interfaces.plugins.PluginInterface):
                 description="module name/sub string",
                 optional=True,
                 default=None,
-            ),
-            requirements.VersionRequirement(
-                name="pedump", component=pedump.PEDump, version=(1, 0, 0)
             ),
         ]
 
