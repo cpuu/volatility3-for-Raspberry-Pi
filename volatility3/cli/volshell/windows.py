@@ -18,7 +18,7 @@ class Volshell(generic.Volshell):
         return [
             requirements.ModuleRequirement(name="kernel", description="Windows kernel"),
             requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
+                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.IntRequirement(
                 name="pid", description="Process ID", optional=True
@@ -38,11 +38,7 @@ class Volshell(generic.Volshell):
     def list_processes(self):
         """Returns a list of EPROCESS objects from the primary layer"""
         # We always use the main kernel memory and associated symbols
-        return list(
-            pslist.PsList.list_processes(
-                self.context, self.current_layer, self.current_symbol_table
-            )
-        )
+        return list(pslist.PsList.list_processes(self.context, self.config["kernel"]))
 
     def get_process(self, pid=None, virtaddr=None, physaddr=None):
         """Returns the _EPROCESS object that matches the pid. If a physical or a virtual address is provided, construct the _EPROCESS object at said address. Only one parameter is allowed.

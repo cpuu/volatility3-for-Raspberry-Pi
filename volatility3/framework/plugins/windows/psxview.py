@@ -53,7 +53,7 @@ We recommend using -r pretty if you are looking at this plugin's output in a ter
                 name="info", component=info.Info, version=(1, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="pslist", component=pslist.PsList, version=(2, 0, 0)
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="psscan", component=psscan.PsScan, version=(1, 0, 0)
@@ -181,23 +181,20 @@ We recommend using -r pretty if you are looking at this plugin's output in a ter
     def _generator(self):
         kernel = self.context.modules[self.config["kernel"]]
 
-        layer_name = kernel.layer_name
-        symbol_table = kernel.symbol_table_name
-
         kdbg_list_processes = list(
-            pslist.PsList.list_processes(
-                context=self.context, layer_name=layer_name, symbol_table=symbol_table
-            )
+            pslist.PsList.list_processes(self.context, self.config["kernel"])
         )
 
         # get processes from each source
         processes: Dict[str, Dict[int, extensions.EPROCESS]] = {}
 
         processes["pslist"] = self._check_pslist(kdbg_list_processes)
-        processes["psscan"] = self._check_psscan(layer_name, symbol_table)
+        processes["psscan"] = self._check_psscan(
+            kernel.layer_name, kernel.symbol_table_name
+        )
         processes["thrdscan"] = self._check_thrdscan()
         processes["csrss"] = self._check_csrss_handles(
-            kdbg_list_processes, layer_name, symbol_table
+            kdbg_list_processes, kernel.layer_name, kernel.symbol_table_name
         )
 
         # Unique set of all offsets from all sources

@@ -28,7 +28,7 @@ class IAT(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="pslist", component=pslist.PsList, version=(2, 0, 0)
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.ListRequirement(
                 name="pid",
@@ -126,8 +126,6 @@ class IAT(interfaces.plugins.PluginInterface):
                 continue
 
     def run(self):
-        kernel = self.context.modules[self.config["kernel"]]
-
         return renderers.TreeGrid(
             [
                 ("PID", int),
@@ -139,9 +137,8 @@ class IAT(interfaces.plugins.PluginInterface):
             ],
             self._generator(
                 pslist.PsList.list_processes(
-                    context=self.context,
-                    layer_name=kernel.layer_name,
-                    symbol_table=kernel.symbol_table_name,
+                    self.context,
+                    self.config["kernel"],
                     filter_func=pslist.PsList.create_pid_filter(
                         self.config.get("pid", None)
                     ),

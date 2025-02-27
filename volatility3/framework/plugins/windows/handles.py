@@ -36,7 +36,7 @@ class Handles(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
+                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="psscan", component=psscan.PsScan, version=(1, 1, 0)
@@ -393,9 +393,8 @@ class Handles(interfaces.plugins.PluginInterface):
             )
         else:
             procs = pslist.PsList.list_processes(
-                context=self.context,
-                layer_name=kernel.layer_name,
-                symbol_table=kernel.symbol_table_name,
+                self.context,
+                self.config["kernel"],
                 filter_func=filter_func,
             )
 

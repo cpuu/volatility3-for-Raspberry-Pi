@@ -34,7 +34,7 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="pslist", component=pslist.PsList, version=(2, 0, 0)
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="psscan", component=psscan.PsScan, version=(1, 1, 0)
@@ -191,13 +191,8 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 )
 
     def generate_timeline(self):
-        kernel = self.context.modules[self.config["kernel"]]
         for row in self._generator(
-            pslist.PsList.list_processes(
-                context=self.context,
-                layer_name=kernel.layer_name,
-                symbol_table=kernel.symbol_table_name,
-            )
+            pslist.PsList.list_processes(self.context, self.config["kernel"])
         ):
             _depth, row_data = row
             if not isinstance(row_data[6], datetime.datetime):
@@ -222,9 +217,8 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             )
         else:
             procs = pslist.PsList.list_processes(
-                context=self.context,
-                layer_name=kernel.layer_name,
-                symbol_table=kernel.symbol_table_name,
+                self.context,
+                self.config["kernel"],
                 filter_func=filter_func,
             )
 

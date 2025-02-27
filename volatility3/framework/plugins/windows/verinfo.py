@@ -43,7 +43,7 @@ class VerInfo(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
+                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="modules", plugin=modules.Modules, version=(3, 0, 0)
@@ -253,11 +253,7 @@ class VerInfo(interfaces.plugins.PluginInterface):
                 )
 
     def run(self):
-        kernel = self.context.modules[self.config["kernel"]]
-
-        procs = pslist.PsList.list_processes(
-            self.context, kernel.layer_name, kernel.symbol_table_name
-        )
+        procs = pslist.PsList.list_processes(self.context, self.config["kernel"])
 
         mods = modules.Modules.list_modules(self.context, self.config["kernel"])
 

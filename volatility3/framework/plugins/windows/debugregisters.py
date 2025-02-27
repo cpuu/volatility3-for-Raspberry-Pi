@@ -35,7 +35,7 @@ class DebugRegisters(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="pslist", component=pslist.PsList, version=(2, 0, 0)
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="threads", plugin=threads.Threads, version=(2, 0, 0)
@@ -117,11 +117,7 @@ class DebugRegisters(interfaces.plugins.PluginInterface):
 
         proc_modules = None
 
-        procs = pslist.PsList.list_processes(
-            context=self.context,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
-        )
+        procs = pslist.PsList.list_processes(self.context, self.config["kernel"])
 
         for proc in procs:
             for thread in threads.Threads.list_threads(kernel, proc):

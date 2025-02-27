@@ -2,7 +2,7 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 import logging
-from typing import List
+from typing import List, Optional
 
 from volatility3.framework import constants, exceptions, renderers, interfaces
 from volatility3.framework.configuration import requirements
@@ -28,7 +28,7 @@ class CmdLine(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
+                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.ListRequirement(
                 name="pid",
@@ -41,7 +41,7 @@ class CmdLine(interfaces.plugins.PluginInterface):
     @classmethod
     def get_cmdline(
         cls, context: interfaces.context.ContextInterface, kernel_table_name: str, proc
-    ):
+    ) -> Optional[str]:
         """Extracts the cmdline from PEB
 
         Args:
@@ -54,15 +54,16 @@ class CmdLine(interfaces.plugins.PluginInterface):
         """
 
         proc_layer_name = proc.add_process_layer()
+        if not proc_layer_name:
+            return None
 
         peb = context.object(
             kernel_table_name + constants.BANG + "_PEB",
             layer_name=proc_layer_name,
             offset=proc.Peb,
         )
-        result_text = peb.ProcessParameters.CommandLine.get_string()
 
-        return result_text
+        return peb.ProcessParameters.CommandLine.get_string()
 
     def _generator(self, procs):
         kernel = self.context.modules[self.config["kernel"]]
@@ -99,16 +100,14 @@ class CmdLine(interfaces.plugins.PluginInterface):
             yield (0, (proc.UniqueProcessId, process_name, result_text))
 
     def run(self):
-        kernel = self.context.modules[self.config["kernel"]]
         filter_func = pslist.PsList.create_pid_filter(self.config.get("pid", None))
 
         return renderers.TreeGrid(
             [("PID", int), ("Process", str), ("Args", str)],
             self._generator(
                 pslist.PsList.list_processes(
-                    context=self.context,
-                    layer_name=kernel.layer_name,
-                    symbol_table=kernel.symbol_table_name,
+                    self.context,
+                    self.config["kernel"],
                     filter_func=filter_func,
                 )
             ),

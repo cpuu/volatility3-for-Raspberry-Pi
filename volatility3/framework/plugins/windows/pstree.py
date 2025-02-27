@@ -40,7 +40,7 @@ class PsTree(interfaces.plugins.PluginInterface):
                 optional=True,
             ),
             requirements.VersionRequirement(
-                name="pslist", component=pslist.PsList, version=(2, 0, 0)
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.ListRequirement(
                 name="pid",
@@ -84,9 +84,7 @@ class PsTree(interfaces.plugins.PluginInterface):
         """Generates the Tree of processes."""
         kernel = self.context.modules[self.config["kernel"]]
 
-        for proc in pslist.PsList.list_processes(
-            self.context, kernel.layer_name, kernel.symbol_table_name
-        ):
+        for proc in pslist.PsList.list_processes(self.context, self.config["kernel"]):
             if not self.config.get("physical", pslist.PsList.PHYSICAL_DEFAULT):
                 offset = proc.vol.offset
             else:

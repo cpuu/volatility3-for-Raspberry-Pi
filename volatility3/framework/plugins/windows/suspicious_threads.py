@@ -38,6 +38,9 @@ class SuspiciousThreads(interfaces.plugins.PluginInterface):
                 name="thrdscan", plugin=thrdscan.ThrdScan, version=(1, 1, 0)
             ),
             requirements.PluginRequirement(
+                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
+            ),
+            requirements.PluginRequirement(
                 name="threads", plugin=threads.Threads, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
@@ -135,9 +138,8 @@ class SuspiciousThreads(interfaces.plugins.PluginInterface):
         filter_func = pslist.PsList.create_pid_filter(self.config.get("pid", None))
 
         for proc in pslist.PsList.list_processes(
-            context=self.context,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            self.context,
+            self.config["kernel"],
             filter_func=filter_func,
         ):
             ranges = self._get_ranges(kernel, all_ranges, proc)

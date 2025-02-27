@@ -84,7 +84,7 @@ class GetSIDs(interfaces.plugins.PluginInterface):
                 optional=True,
             ),
             requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
+                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
@@ -215,15 +215,13 @@ class GetSIDs(interfaces.plugins.PluginInterface):
 
     def run(self):
         filter_func = pslist.PsList.create_pid_filter(self.config.get("pid", None))
-        kernel = self.context.modules[self.config["kernel"]]
 
         return renderers.TreeGrid(
             [("PID", int), ("Process", str), ("SID", str), ("Name", str)],
             self._generator(
                 pslist.PsList.list_processes(
-                    context=self.context,
-                    layer_name=kernel.layer_name,
-                    symbol_table=kernel.symbol_table_name,
+                    self.context,
+                    self.config["kernel"],
                     filter_func=filter_func,
                 )
             ),

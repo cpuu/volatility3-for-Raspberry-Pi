@@ -64,7 +64,7 @@ class VadInfo(interfaces.plugins.PluginInterface):
                 optional=True,
             ),
             requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
+                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.BooleanRequirement(
                 name="dump",
@@ -273,8 +273,6 @@ class VadInfo(interfaces.plugins.PluginInterface):
                 )
 
     def run(self) -> renderers.TreeGrid:
-        kernel = self.context.modules[self.config["kernel"]]
-
         filter_func = pslist.PsList.create_pid_filter(self.config.get("pid", None))
 
         return renderers.TreeGrid(
@@ -294,9 +292,8 @@ class VadInfo(interfaces.plugins.PluginInterface):
             ],
             self._generator(
                 pslist.PsList.list_processes(
-                    context=self.context,
-                    layer_name=kernel.layer_name,
-                    symbol_table=kernel.symbol_table_name,
+                    self.context,
+                    self.config["kernel"],
                     filter_func=filter_func,
                 )
             ),

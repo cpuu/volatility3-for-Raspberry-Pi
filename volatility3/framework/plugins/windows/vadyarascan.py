@@ -30,7 +30,7 @@ class VadYaraScan(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
+                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="yarascanner", component=yarascan.YaraScanner, version=(2, 0, 0)
@@ -53,8 +53,6 @@ class VadYaraScan(interfaces.plugins.PluginInterface):
         return yarascan_requirements + vadyarascan_requirements
 
     def _generator(self):
-        kernel = self.context.modules[self.config["kernel"]]
-
         rules = yarascan.YaraScan.process_yara_options(dict(self.config))
 
         filter_func = pslist.PsList.create_pid_filter(self.config.get("pid", None))
@@ -62,9 +60,8 @@ class VadYaraScan(interfaces.plugins.PluginInterface):
         sanity_check = 1024 * 1024 * 1024  # 1 GB
 
         for task in pslist.PsList.list_processes(
-            context=self.context,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            self.context,
+            self.config["kernel"],
             filter_func=filter_func,
         ):
             layer_name = task.add_process_layer()
