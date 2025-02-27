@@ -34,14 +34,14 @@ class SuspiciousThreads(interfaces.plugins.PluginInterface):
                 element_type=int,
                 optional=True,
             ),
-            requirements.PluginRequirement(
-                name="thrdscan", plugin=thrdscan.ThrdScan, version=(1, 1, 0)
+            requirements.VersionRequirement(
+                name="thrdscan", component=thrdscan.ThrdScan, version=(1, 1, 0)
             ),
-            requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
-            requirements.PluginRequirement(
-                name="threads", plugin=threads.Threads, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="threads", component=threads.Threads, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="vadinfo", component=vadinfo.VadInfo, version=(2, 0, 0)
