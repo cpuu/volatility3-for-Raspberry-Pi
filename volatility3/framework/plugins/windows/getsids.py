@@ -87,7 +87,7 @@ class GetSIDs(interfaces.plugins.PluginInterface):
                 name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(1, 0, 0)
+                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
             ),
         ]
 
@@ -101,14 +101,12 @@ class GetSIDs(interfaces.plugins.PluginInterface):
 
         key = "Microsoft\\Windows NT\\CurrentVersion\\ProfileList"
         val = "ProfileImagePath"
-        kernel = self.context.modules[self.config["kernel"]]
 
         sids = {}
         for hive in hivelist.HiveList.list_hives(
-            context=self.context,
-            base_config_path=self.config_path,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            self.context,
+            self.config_path,
+            self.config["kernel"],
             filter_string="config\\software",
             hive_offsets=None,
         ):

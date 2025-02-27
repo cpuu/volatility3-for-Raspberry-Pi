@@ -69,18 +69,16 @@ class GetServiceSIDs(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(1, 0, 0)
+                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
             ),
         ]
 
     def _generator(self):
-        kernel = self.context.modules[self.config["kernel"]]
         # Get the system hive
         for hive in hivelist.HiveList.list_hives(
-            context=self.context,
-            base_config_path=self.config_path,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            self.context,
+            self.config_path,
+            self.config["kernel"],
             filter_string="machine\\system",
             hive_offsets=None,
         ):

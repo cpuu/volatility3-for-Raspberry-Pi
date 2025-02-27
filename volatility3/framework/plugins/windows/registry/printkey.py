@@ -31,7 +31,7 @@ class PrintKey(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(1, 0, 0)
+                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
             ),
             requirements.IntRequirement(
                 name="offset", description="Hive Offset", default=None, optional=True
@@ -240,8 +240,6 @@ class PrintKey(interfaces.plugins.PluginInterface):
 
     def _registry_walker(
         self,
-        layer_name: str,
-        symbol_table: str,
         hive_offsets: Optional[List[int]] = None,
         key: Optional[str] = None,
         recurse: bool = False,
@@ -249,8 +247,7 @@ class PrintKey(interfaces.plugins.PluginInterface):
         for hive in hivelist.HiveList.list_hives(
             self.context,
             self.config_path,
-            layer_name=layer_name,
-            symbol_table=symbol_table,
+            self.config["kernel"],
             hive_offsets=hive_offsets,
         ):
             try:
@@ -292,7 +289,6 @@ class PrintKey(interfaces.plugins.PluginInterface):
 
     def run(self):
         offset = self.config.get("offset", None)
-        kernel = self.context.modules[self.config["kernel"]]
 
         return TreeGrid(
             columns=[
@@ -305,8 +301,6 @@ class PrintKey(interfaces.plugins.PluginInterface):
                 ("Volatile", bool),
             ],
             generator=self._registry_walker(
-                kernel.layer_name,
-                kernel.symbol_table_name,
                 hive_offsets=None if offset is None else [offset],
                 key=self.config.get("key", None),
                 recurse=self.config.get("recurse", None),

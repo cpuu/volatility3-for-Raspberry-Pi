@@ -43,7 +43,7 @@ class Envars(interfaces.plugins.PluginInterface):
                 name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(1, 0, 0)
+                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
             ),
         ]
 
@@ -58,13 +58,11 @@ class Envars(interfaces.plugins.PluginInterface):
         """
 
         values = []
-        kernel = self.context.modules[self.config["kernel"]]
 
         for hive in hivelist.HiveList.list_hives(
-            context=self.context,
-            base_config_path=self.config_path,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            self.context,
+            self.config_path,
+            self.config["kernel"],
             hive_offsets=None,
         ):
             ## The global variables

@@ -28,7 +28,7 @@ class GetCellRoutine(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(1, 0, 0)
+                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="ssdt", plugin=ssdt.SSDT, version=(2, 0, 0)
@@ -43,10 +43,7 @@ class GetCellRoutine(interfaces.plugins.PluginInterface):
         # walk each hive and validate that the GetCellRoutine handler
         # is inside of the kernel (ntoskrnl)
         for hive_object in hivelist.HiveList.list_hives(
-            context=self.context,
-            base_config_path=self.config_path,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            self.context, self.config_path, self.config["kernel"]
         ):
             hive = hive_object.hive
 
