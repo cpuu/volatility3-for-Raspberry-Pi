@@ -35,7 +35,7 @@ class Timers(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="ssdt", plugin=ssdt.SSDT, version=(1, 0, 0)
+                name="ssdt", plugin=ssdt.SSDT, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="kpcrs", plugin=kpcrs.KPCRs, version=(1, 0, 0)
@@ -122,15 +122,18 @@ class Timers(interfaces.plugins.PluginInterface):
 
     def _generator(self) -> Iterator[Tuple]:
         kernel = self.context.modules[self.config["kernel"]]
-        layer_name = kernel.layer_name
-        symbol_table = kernel.symbol_table_name
 
         collection = ssdt.SSDT.build_module_collection(
-            self.context, kernel.layer_name, kernel.symbol_table_name
+            self.context,
+            self.config["kernel"],
         )
 
+        # FIXME - the list_timers API is gross. Fix after GUI merge
         for timer in self.list_timers(
-            self.context, self.config["kernel"], layer_name, symbol_table
+            self.context,
+            self.config["kernel"],
+            kernel.layer_name,
+            kernel.symbol_table_name,
         ):
             if not timer.valid_type():
                 continue

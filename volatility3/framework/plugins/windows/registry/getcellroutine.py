@@ -31,15 +31,13 @@ class GetCellRoutine(interfaces.plugins.PluginInterface):
                 name="hivelist", plugin=hivelist.HiveList, version=(1, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="ssdt", plugin=ssdt.SSDT, version=(1, 0, 0)
+                name="ssdt", plugin=ssdt.SSDT, version=(2, 0, 0)
             ),
         ]
 
     def _generator(self):
-        kernel = self.context.modules[self.config["kernel"]]
-
         collection = ssdt.SSDT.build_module_collection(
-            self.context, kernel.layer_name, kernel.symbol_table_name
+            self.context, self.config["kernel"]
         )
 
         # walk each hive and validate that the GetCellRoutine handler

@@ -39,7 +39,7 @@ class Callbacks(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="ssdt", plugin=ssdt.SSDT, version=(1, 0, 0)
+                name="ssdt", plugin=ssdt.SSDT, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="poolscanner", plugin=poolscanner.PoolScanner, version=(1, 0, 0)
@@ -691,7 +691,7 @@ class Callbacks(interfaces.plugins.PluginInterface):
         )
 
         collection = ssdt.SSDT.build_module_collection(
-            self.context, kernel.layer_name, kernel.symbol_table_name
+            self.context, self.config["kernel"]
         )
 
         callback_methods = (

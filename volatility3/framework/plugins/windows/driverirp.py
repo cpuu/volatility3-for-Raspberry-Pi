@@ -59,7 +59,7 @@ class DriverIrp(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="ssdt", plugin=ssdt.SSDT, version=(1, 0, 0)
+                name="ssdt", plugin=ssdt.SSDT, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="driverscan", plugin=driverscan.DriverScan, version=(2, 0, 0)
@@ -70,10 +70,8 @@ class DriverIrp(interfaces.plugins.PluginInterface):
         ]
 
     def _generator(self):
-        kernel = self.context.modules[self.config["kernel"]]
-
         collection = ssdt.SSDT.build_module_collection(
-            self.context, kernel.layer_name, kernel.symbol_table_name
+            self.context, self.config["kernel"]
         )
 
         kernel_space_start = modules.Modules.get_kernel_space_start(

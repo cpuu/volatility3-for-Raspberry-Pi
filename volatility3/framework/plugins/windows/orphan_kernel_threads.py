@@ -35,7 +35,7 @@ class Threads(thrdscan.ThrdScan):
                 name="thrdscan", plugin=thrdscan.ThrdScan, version=(1, 1, 0)
             ),
             requirements.PluginRequirement(
-                name="ssdt", plugin=ssdt.SSDT, version=(1, 0, 0)
+                name="ssdt", plugin=ssdt.SSDT, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="modules", plugin=modules.Modules, version=(2, 1, 0)
@@ -57,13 +57,7 @@ class Threads(thrdscan.ThrdScan):
         Returns:
             A generator of thread objects of orphaned threads
         """
-        module = context.modules[module_name]
-        layer_name = module.layer_name
-        symbol_table_name = module.symbol_table_name
-
-        collection = ssdt.SSDT.build_module_collection(
-            context, layer_name, symbol_table_name
-        )
+        collection = ssdt.SSDT.build_module_collection(context, module_name)
 
         kernel_space_start = modules.Modules.get_kernel_space_start(
             context, module_name
