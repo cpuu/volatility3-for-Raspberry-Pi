@@ -182,6 +182,36 @@ class PoolScanner(plugins.PluginInterface):
                 ),
             )
 
+    @staticmethod
+    def gui_poolscanner_constraints(
+        gui_table: str, tags_filter: Optional[List[bytes]] = None
+    ) -> List[PoolConstraint]:
+        """
+        Constraints for objects managed by the GUI subsystem (win32k*.sys)
+        """
+        builtins = [
+            PoolConstraint(
+                b"Wind",
+                type_name=gui_table + constants.BANG + "tagWINDOWSTATION",
+                size=(0x90, None),
+                page_type=PoolType.PAGED,
+                object_type="WindowStation",
+                skip_type_test=True,
+            ),
+            PoolConstraint(
+                b"Desk",
+                type_name=gui_table + constants.BANG + "tagDESKTOP",
+                page_type=PoolType.PAGED,
+                object_type="Desktop",
+                skip_type_test=True,
+            ),
+        ]
+
+        if not tags_filter:
+            return builtins
+
+        return [constraint for constraint in builtins if constraint.tag in tags_filter]
+
     @classmethod
     def builtin_constraints(
         cls, symbol_table: str, tags_filter: Optional[List[bytes]] = None
