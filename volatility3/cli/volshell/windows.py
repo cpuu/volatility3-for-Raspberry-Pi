@@ -38,7 +38,9 @@ class Volshell(generic.Volshell):
     def list_processes(self):
         """Returns a list of EPROCESS objects from the primary layer"""
         # We always use the main kernel memory and associated symbols
-        return list(pslist.PsList.list_processes(self.context, self.config["kernel"]))
+        return list(
+            pslist.PsList.list_processes(self.context, self.current_kernel_name)
+        )
 
     def get_process(self, pid=None, virtaddr=None, physaddr=None):
         """Returns the _EPROCESS object that matches the pid. If a physical or a virtual address is provided, construct the _EPROCESS object at said address. Only one parameter is allowed.
