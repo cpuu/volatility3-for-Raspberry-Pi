@@ -2,7 +2,7 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 import logging
-from typing import Generator, Iterable, List, Optional, Dict
+from typing import Generator, Iterable, List, Optional, Dict, Tuple
 
 from volatility3.framework import symbols, constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
@@ -93,11 +93,13 @@ class Modules(interfaces.plugins.PluginInterface):
             session_layers = list(
                 self.get_session_layers(
                     self.context,
-                    self.config["kernel"],
+                    kernel_module_name=self.config["kernel"],
                 )
             )
 
-        for mod in self._enumeration_method(self.context, self.config["kernel"]):
+        for mod in self._enumeration_method(
+            self.context, kernel_module_name=self.config["kernel"]
+        ):
             if self.config["base"] and self.config["base"] != mod.DllBase:
                 continue
 
@@ -167,7 +169,7 @@ class Modules(interfaces.plugins.PluginInterface):
         context: interfaces.context.ContextInterface,
         kernel_module_name: str,
         pids: Optional[List[int]] = None,
-    ) -> Generator[str, None, None]:
+    ) -> Generator[Tuple[int, str], None, None]:
         """Build a cache of possible virtual layers, in priority starting with
         the primary/kernel layer. Then keep one layer per session by cycling
         through the process list.
@@ -273,14 +275,7 @@ class Modules(interfaces.plugins.PluginInterface):
         Wraps `_do_get_session_layers` to produce a dictionary where each key is a session_id
         and the value is the name of the layer for that session
         """
-        sessions: Dict[int, str] = {}
-
-        for session_id, proc_layer_name in cls._do_get_session_layers(
-            context, kernel_module_name, pids
-        ):
-            sessions[session_id] = proc_layer_name
-
-        return sessions
+        return dict(cls._do_get_session_layers(context, kernel_module_name, pids))
 
     @classmethod
     def find_session_layer(
