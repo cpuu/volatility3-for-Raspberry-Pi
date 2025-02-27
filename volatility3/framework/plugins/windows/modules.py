@@ -326,22 +326,19 @@ class Modules(interfaces.plugins.PluginInterface):
             raise ValueError(
                 "Intel layer does not have an associated kernel virtual offset, failing"
             )
-        ntkrnlmp = context.module(
-            kernel.symbol_table_name, layer_name=kernel.layer_name, offset=kvo
-        )
 
         try:
             # use this type if its available (starting with windows 10)
-            ldr_entry_type = ntkrnlmp.get_type("_KLDR_DATA_TABLE_ENTRY")
+            ldr_entry_type = kernel.get_type("_KLDR_DATA_TABLE_ENTRY")
         except exceptions.SymbolError:
-            ldr_entry_type = ntkrnlmp.get_type("_LDR_DATA_TABLE_ENTRY")
+            ldr_entry_type = kernel.get_type("_LDR_DATA_TABLE_ENTRY")
 
         type_name = ldr_entry_type.type_name.split(constants.BANG)[1]
 
-        list_head = ntkrnlmp.get_symbol("PsLoadedModuleList").address
-        list_entry = ntkrnlmp.object(object_type="_LIST_ENTRY", offset=list_head)
+        list_head = kernel.get_symbol("PsLoadedModuleList").address
+        list_entry = kernel.object(object_type="_LIST_ENTRY", offset=list_head)
         reloff = ldr_entry_type.relative_child_offset("InLoadOrderLinks")
-        module = ntkrnlmp.object(
+        module = kernel.object(
             object_type=type_name, offset=list_entry.vol.offset - reloff, absolute=True
         )
 
