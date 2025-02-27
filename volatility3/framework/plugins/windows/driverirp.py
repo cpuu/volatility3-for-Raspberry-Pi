@@ -65,7 +65,7 @@ class DriverIrp(interfaces.plugins.PluginInterface):
                 name="driverscan", plugin=driverscan.DriverScan, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="modules", plugin=modules.Modules, version=(2, 1, 0)
+                name="modules", plugin=modules.Modules, version=(3, 0, 0)
             ),
         ]
 
