@@ -61,7 +61,7 @@ class Skeleton_Key_Check(interfaces.plugins.PluginInterface):
                 name="pdbutil", component=pdbutil.PDBUtility, version=(1, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="pe_symbols", component=pe_symbols.PESymbols, version=(1, 1, 0)
+                name="pe_symbols", component=pe_symbols.PESymbols, version=(2, 0, 0)
             ),
         ]
 

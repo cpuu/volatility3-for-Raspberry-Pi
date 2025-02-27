@@ -41,7 +41,7 @@ class DebugRegisters(interfaces.plugins.PluginInterface):
                 name="threads", component=threads.Threads, version=(1, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="pe_symbols", component=pe_symbols.PESymbols, version=(1, 0, 0)
+                name="pe_symbols", component=pe_symbols.PESymbols, version=(2, 0, 0)
             ),
         ]
 
@@ -140,7 +140,7 @@ class DebugRegisters(interfaces.plugins.PluginInterface):
                 # this lookup takes a while, so only perform if we need to
                 if not proc_modules:
                     proc_modules = pe_symbols.PESymbols.get_process_modules(
-                        self.context, kernel.layer_name, kernel.symbol_table_name, None
+                        self.context, self.config["kernel"], None
                     )
                     path_and_symbol = partial(
                         pe_symbols.PESymbols.path_and_symbol_for_address,
