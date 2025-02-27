@@ -35,7 +35,10 @@ class SuspiciousThreads(interfaces.plugins.PluginInterface):
                 optional=True,
             ),
             requirements.PluginRequirement(
-                name="threads", plugin=threads.Threads, version=(1, 0, 0)
+                name="thrdscan", plugin=thrdscan.ThrdScan, version=(1, 1, 0)
+            ),
+            requirements.PluginRequirement(
+                name="threads", plugin=threads.Threads, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="vadinfo", component=vadinfo.VadInfo, version=(2, 0, 0)
