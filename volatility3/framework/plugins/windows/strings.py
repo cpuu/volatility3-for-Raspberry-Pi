@@ -165,7 +165,7 @@ class Strings(interfaces.plugins.PluginInterface):
                 context=context, kernel_module_name=kernel_module_name
             ):
                 if not filter(process):
-                    kernel_module_name = proc_id = "Unknown"
+                    proc_id = "Unknown"
                     try:
                         proc_id = process.UniqueProcessId
                         proc_layer_name = process.add_process_layer()
@@ -180,7 +180,7 @@ class Strings(interfaces.plugins.PluginInterface):
                         for mapval in proc_layer.mapping(
                             0x0, proc_layer.maximum_address, ignore_errors=True
                         ):
-                            mapped_offset, _, offset, mapped_size, maplayer = mapval
+                            mapped_offset, _, offset, mapped_size, _maplayer = mapval
                             for val in range(
                                 mapped_offset, mapped_offset + mapped_size, 0x1000
                             ):
