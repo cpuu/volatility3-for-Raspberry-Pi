@@ -223,24 +223,17 @@ class Handles(interfaces.plugins.PluginInterface):
 
         kernel = self.context.modules[self.config["kernel"]]
 
-        virtual = kernel.layer_name
-        kvo = kernel.offset
-
-        ntkrnlmp = self.context.module(
-            kernel.symbol_table_name, layer_name=virtual, offset=kvo
-        )
-
         if level > 0:
-            subtype = ntkrnlmp.get_type("pointer")
+            subtype = kernel.get_type("pointer")
             count = 0x1000 / subtype.size
         else:
-            subtype = ntkrnlmp.get_type("_HANDLE_TABLE_ENTRY")
+            subtype = kernel.get_type("_HANDLE_TABLE_ENTRY")
             count = 0x1000 / subtype.size
 
-        if not self.context.layers[virtual].is_valid(offset):
+        if not self.context.layers[kernel.layer_name].is_valid(offset):
             return None
 
-        table = ntkrnlmp.object(
+        table = kernel.object(
             object_type="array",
             offset=offset,
             subtype=subtype,
@@ -248,7 +241,7 @@ class Handles(interfaces.plugins.PluginInterface):
             absolute=True,
         )
 
-        layer_object = self.context.layers[virtual]
+        layer_object = self.context.layers[kernel.layer_name]
         masked_offset = offset & layer_object.maximum_address
 
         for i in range(len(table)):
@@ -262,7 +255,7 @@ class Handles(interfaces.plugins.PluginInterface):
             # The code above this calls `is_valid` on the `offset`
             # It is sent but then does not validate `entry` before
             # sending it to `_get_item`
-            if not self.context.layers[virtual].is_valid(entry.vol.offset):
+            if not self.context.layers[kernel.layer_name].is_valid(entry.vol.offset):
                 continue
 
             if level > 0:
