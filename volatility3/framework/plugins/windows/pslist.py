@@ -228,11 +228,7 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
         kernel = context.modules[kernel_module_name]
 
-        # We only use the object factory to demonstrate how to use one
-        kvo = context.layers[kernel.layer_name].config.get(
-            "kernel_virtual_offset", None
-        )
-        if not kvo:
+        if not kernel.offset:
             raise ValueError(
                 "Intel layer does not have an associated kernel virtual offset, failing"
             )

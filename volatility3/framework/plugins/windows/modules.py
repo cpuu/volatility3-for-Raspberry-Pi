@@ -322,11 +322,7 @@ class Modules(interfaces.plugins.PluginInterface):
         """
 
         kernel = context.modules[kernel_module_name]
-
-        kvo = context.layers[kernel.layer_name].config.get(
-            "kernel_virtual_offset", None
-        )
-        if not kvo:
+        if not kernel.offset:
             raise ValueError(
                 "Intel layer does not have an associated kernel virtual offset, failing"
             )
