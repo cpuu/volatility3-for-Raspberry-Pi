@@ -133,7 +133,7 @@ class ObjectInterface(metaclass=abc.ABCMeta):
 
     def __getattr__(self, attr: str) -> Any:
         """Method for ensuring volatility members can be returned."""
-        raise AttributeError()
+        raise AttributeError(f"Unable to find {attr} for type {self.vol.type_name}")
 
     @property
     def vol(self) -> ReadOnlyMapping:
