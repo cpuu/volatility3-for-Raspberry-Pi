@@ -15,7 +15,7 @@ class Addr(plugins.PluginInterface):
 
     _required_framework_version = (2, 22, 0)
 
-    _version = (1, 0, 1)
+    _version = (1, 0, 2)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -47,7 +47,7 @@ class Addr(plugins.PluginInterface):
             prefix_len = in_ifaddr.get_prefix_len()
             scope_type = in_ifaddr.get_scope_type()
             ip_addr = in_ifaddr.get_address()
-            yield net_ns_id, iface_ifindex, iface_name, mac_addr, promisc, ip_addr, prefix_len, scope_type, operational_state
+            yield net_ns_id or renderers.NotAvailableValue(), iface_ifindex, iface_name, mac_addr, promisc, ip_addr, prefix_len, scope_type, operational_state
 
         # Interface IPv6 Addresses
         inet6_dev = net_dev.ip6_ptr.dereference().cast("inet6_dev")
@@ -55,7 +55,7 @@ class Addr(plugins.PluginInterface):
             prefix_len = inet6_ifaddr.get_prefix_len()
             scope_type = inet6_ifaddr.get_scope_type()
             ip6_addr = inet6_ifaddr.get_address()
-            yield net_ns_id, iface_ifindex, iface_name, mac_addr, promisc, ip6_addr, prefix_len, scope_type, operational_state
+            yield net_ns_id or renderers.NotAvailableValue(), iface_ifindex, iface_name, mac_addr, promisc, ip6_addr, prefix_len, scope_type, operational_state
 
     def _generator(self):
         vmlinux = self.context.modules[self.config["kernel"]]
@@ -127,7 +127,7 @@ class Link(plugins.PluginInterface):
         ]
         flags_str = ",".join(flags_list)
 
-        yield net_ns_id, iface_name, mac_addr, operational_state, mtu, qdisc_name, qlen, flags_str
+        yield net_ns_id or renderers.NotAvailableValue(), iface_name, mac_addr, operational_state, mtu, qdisc_name or renderers.NotAvailableValue(), qlen, flags_str
 
     def _generator(self):
         vmlinux = self.context.modules[self.config["kernel"]]
