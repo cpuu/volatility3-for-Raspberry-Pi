@@ -446,7 +446,7 @@ class elf_linkmap(objects.StructType):
         idx = buf.find(b"\x00")
         if idx != -1:
             buf = buf[:idx]
-        return buf.decode()
+        return buf.decode("utf-8", errors="ignore")
 
 
 class_types = {
