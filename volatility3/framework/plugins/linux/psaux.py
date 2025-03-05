@@ -78,7 +78,7 @@ class PsAux(plugins.PluginInterface):
                 return renderers.UnreadableValue()
 
             # the arguments are null byte terminated, replace the nulls with spaces
-            s = argv.decode().split("\x00")
+            s = argv.decode(encoding="utf8", errors="replace").split("\x00")
             args = " ".join(s)
         else:
             # kernel thread
