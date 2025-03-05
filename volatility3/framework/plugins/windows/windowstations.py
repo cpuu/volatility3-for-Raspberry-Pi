@@ -65,8 +65,6 @@ class WindowStations(interfaces.plugins.PluginInterface):
             The name of the constructed GUI table
         """
 
-        native_types = intermed.native.x64NativeTable
-
         if not symbols.symbol_table_is_64bit(
             context=context, symbol_table_name=symbol_table
         ):
@@ -93,7 +91,6 @@ class WindowStations(interfaces.plugins.PluginInterface):
             sub_path=os.path.join("windows", "gui"),
             filename=symbol_filename,
             class_types=gui.class_types,
-            native_types=native_types,
             table_mapping=table_mapping,
         )
 
