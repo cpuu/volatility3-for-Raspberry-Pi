@@ -702,7 +702,11 @@ class IDStorage(ABC):
         node = self.nodep_to_node(nodep)
         node_slots = node.slots
         for off in range(self.CHUNK_SIZE):
-            slot = node_slots[off]
+            try:
+                slot = node_slots[off]
+            except exceptions.InvalidAddressException:
+                continue
+
             if slot == 0:
                 continue
 
