@@ -56,7 +56,7 @@ class TestWindowsPslist:
             "Wow64": False,
             "__children": [],
         }
-        assert test_volatility.match_output_row(json.loads(out), expected_row)
+        assert test_volatility.match_output_row(expected_row, json.loads(out))
 
 
 class TestWindowsPsscan:
