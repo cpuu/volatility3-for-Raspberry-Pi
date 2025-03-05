@@ -152,8 +152,8 @@ is_win10 = OsDistinguisher(
 is_win10_10586_or_later = OsDistinguisher(
     version_check=lambda x: x >= (10, 0, 10586),
     fallback_checks=[
-        ("_EPROCESS", "SecurityDomain", False),
-        ("_EPROCESS", "ImageFilePointer", False),
+        ("_UNLOADED_DRIVERS", None, False),
+        ("ObHeaderCookie", None, True),
     ],
 )
 
