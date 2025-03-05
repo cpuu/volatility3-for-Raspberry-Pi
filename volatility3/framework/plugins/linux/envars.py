@@ -95,7 +95,9 @@ class Envars(plugins.PluginInterface):
         envar_data = envar_data.rstrip(b"\x00")
         for envar_pair in envar_data.split(b"\x00"):
             try:
-                env_key, env_value = envar_pair.decode().split("=", 1)
+                env_key, env_value = envar_pair.decode(
+                    encoding="utf8", errors="replace"
+                ).split("=", 1)
             except ValueError:
                 # Some legitimate programs, like 'avahi-daemon', avoid reallocating the args
                 # and instead exploit the fact that the environment variables area is contiguous
