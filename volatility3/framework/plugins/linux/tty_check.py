@@ -81,9 +81,11 @@ class tty_check(plugins.PluginInterface):
                 if tty_dev == 0:
                     continue
 
-                name = utility.array_to_string(tty_dev.name)
-
-                recv_buf = tty_dev.ldisc.ops.receive_buf
+                try:
+                    name = utility.array_to_string(tty_dev.name)
+                    recv_buf = tty_dev.ldisc.ops.receive_buf
+                except exceptions.InvalidAddressException:
+                    continue
 
                 module_name, symbol_name = (
                     linux_utilities_modules.Modules.lookup_module_address(
