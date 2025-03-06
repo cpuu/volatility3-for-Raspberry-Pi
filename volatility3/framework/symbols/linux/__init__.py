@@ -1,6 +1,7 @@
 # This file is Copyright 2019 Volatility Foundation and licensed under the Volatility Software License 1.0
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
+
 import math
 import string
 import contextlib
@@ -367,9 +368,8 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
                 yield fd_num, filp, full_path
 
     @classmethod
-    @Deprecation.deprecated_method(
-        replacement=linux_utilities_modules.Modules.mask_mods_list,
-        replacement_version=(1, 0, 0),
+    @Deprecation.method_being_removed(
+        "This method is not needed. The correct API for mapping kernel pointers to modules is `linux_utilities_modules.Modules.run_module_scanners`"
     )
     def mask_mods_list(
         cls,
@@ -385,6 +385,9 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         return linux_utilities_modules.Modules.mask_mods_list(context, layer_name, mods)
 
     @classmethod
+    @Deprecation.method_being_removed(
+        "The correct API for mapping kernel pointers to modules is `linux_utilities_modules.Modules.run_module_scanners`"
+    )
     def generate_kernel_handler_info(
         cls,
         context: interfaces.context.ContextInterface,
@@ -392,6 +395,8 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         mods_list: Iterator[interfaces.objects.ObjectInterface],
     ) -> List[Tuple[str, int, int]]:
         """
+        This method is being deprecated. Use `linux_utilities_modules.Modules.run_module_scanners` to map kernel pointers to modules")
+
         A helper function that gets the beginning and end address of the kernel module
         """
 
@@ -414,7 +419,7 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
     @classmethod
     @Deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.lookup_module_address,
-        replacement_version=(1, 0, 0),
+        replacement_version=(2, 0, 0),
     )
     def lookup_module_address(
         cls,

@@ -9,11 +9,9 @@ from typing import Dict, Iterable, List, Optional
 from dataclasses import dataclass
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
-from volatility3.plugins.linux import hidden_modules, modxview
 from volatility3.framework import constants, exceptions, interfaces
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints, NotAvailableValue, TreeGrid
-from volatility3.framework.symbols.linux import extensions
 from volatility3.framework.objects import utility
 from volatility3.framework.constants import architectures
 
@@ -54,15 +52,7 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
                 component=linux_utilities_modules.Modules,
-                version=(1, 1, 0),
-            ),
-            requirements.PluginRequirement(
-                name="modxview", plugin=modxview.Modxview, version=(1, 0, 0)
-            ),
-            requirements.PluginRequirement(
-                name="hidden_modules",
-                plugin=hidden_modules.Hidden_modules,
-                version=(1, 0, 0),
+                version=(2, 0, 0),
             ),
         ]
 
@@ -105,15 +95,15 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
     def parse_tracepoint(
         cls,
         context: interfaces.context.ContextInterface,
-        kernel_name: str,
-        known_modules: Dict[str, List[extensions.module]],
+        kernel_module_name: str,
+        known_modules: Dict[str, List[linux_utilities_modules.Modules.ModuleInfo]],
         tracepoint: interfaces.objects.ObjectInterface,
         run_hidden_modules: bool = True,
     ) -> Optional[Iterable[ParsedTracepointFunc]]:
         """Parse a tracepoint struct to highlight tracepoints kernel hooking.
 
         Args:
-            known_modules: A dict of known modules, used to locate callbacks origin. Typically obtained through modxview.run_modules_scanners().
+            known_modules: A dict of known modules, used to locate callbacks origin. Typically obtained through run_modules_scanners().
             tracepoint: The tracepoint struct to parse
             run_hidden_modules: Whether to run the hidden_modules plugin or not. Note: it won't be run, even if specified, \
             if the "hidden_modules" key is present in known_modules.
@@ -121,11 +111,10 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
         Yields:
             An iterable of ParsedTracepointFunc dataclasses, containing a selection of useful fields related to a tracepoint struct
         """
-        kernel = context.modules[kernel_name]
-        kernel_layer = context.layers[kernel.layer_name]
+        kernel = context.modules[kernel_module_name]
 
         for tracepoint_func in cls.iterate_tracepoint_funcs(
-            context, kernel_layer.name, tracepoint
+            context, kernel.layer_name, tracepoint
         ):
             try:
                 tracepoint_name = utility.pointer_to_string(tracepoint.name, count=512)
@@ -139,56 +128,19 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
             probe_handler_symbol = module_address = module_name = None
 
             # Try to lookup within the known modules if the probe_handler address fits
-            module = linux_utilities_modules.Modules.module_lookup_by_address(
-                context,
-                kernel.layer_name,
-                modxview.Modxview.flatten_run_modules_results(known_modules),
-                probe_handler_address,
-            )
-            # Run hidden_modules plugin if a probe handler origin couldn't be determined (only done once, results are re-used afterwards)
-            if (
-                module is None
-                and run_hidden_modules
-                and "hidden_modules" not in known_modules
-            ):
-                vollog.info(
-                    "A probe handler module origin could not be determined. hidden_modules plugin will be run to detect additional modules.",
-                )
-                known_modules_addresses = set(
-                    kernel_layer.canonicalize(module.vol.offset)
-                    for module in modxview.Modxview.flatten_run_modules_results(
-                        known_modules
-                    )
-                )
-                modules_memory_boundaries = (
-                    hidden_modules.Hidden_modules.get_modules_memory_boundaries(
-                        context, kernel_name
-                    )
-                )
-                known_modules["hidden_modules"] = list(
-                    hidden_modules.Hidden_modules.get_hidden_modules(
-                        context,
-                        kernel_name,
-                        known_modules_addresses,
-                        modules_memory_boundaries,
-                    )
-                )
-                # Lookup the updated list to see if hidden_modules was able
-                # to find the missing module
-                module = linux_utilities_modules.Modules.module_lookup_by_address(
+            mod_info, probe_handler_symbol = (
+                linux_utilities_modules.Modules.module_lookup_by_address(
                     context,
-                    kernel.layer_name,
-                    modxview.Modxview.flatten_run_modules_results(known_modules),
+                    kernel_module_name,
+                    known_modules,
                     probe_handler_address,
                 )
+            )
 
             # Fetch more information about the module
-            if module is not None:
-                module_address = module.vol.offset
-                module_name = module.get_name()
-                probe_handler_symbol = module.get_symbol_by_address(
-                    probe_handler_address
-                )
+            if mod_info is not None:
+                module_address = mod_info.offset
+                module_name = mod_info.name
             else:
                 vollog.debug(
                     f"Could not determine tracepoint@{tracepoint.vol.offset:#x} probe handler {probe_handler_address:#x} module origin.",
@@ -276,7 +228,7 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
             )
             return
 
-        known_modules = modxview.Modxview.run_modules_scanners(
+        known_modules = linux_utilities_modules.Modules.run_modules_scanners(
             self.context, kernel_name, run_hidden_modules=False
         )
         tracepoints = self.iterate_tracepoints_array(self.context, kernel_name)

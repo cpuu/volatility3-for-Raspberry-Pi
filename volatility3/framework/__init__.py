@@ -70,6 +70,19 @@ class Deprecation:
     """Deprecation related methods."""
 
     @staticmethod
+    def method_being_removed(message: str):
+
+        def decorator(deprecated_func):
+            @functools.wraps(deprecated_func)
+            def wrapper(*args, **kwargs):
+                warnings.warn(f"This API ({deprecated_func.__module__}.{deprecated_func.__qualname__}) will be removed in a release very soon. {message}", FutureWarning)
+                return deprecated_func(*args, **kwargs)
+
+            return wrapper
+
+        return decorator
+
+    @staticmethod
     def deprecated_method(
         replacement: Callable,
         replacement_version: Tuple[int, int, int] = None,
