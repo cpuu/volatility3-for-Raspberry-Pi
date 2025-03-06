@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from volatility3.plugins.linux import hidden_modules, modxview
-from volatility3.framework import constants, exceptions, interfaces, renderers
+from volatility3.framework import constants, exceptions, interfaces
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints, NotAvailableValue, TreeGrid
 from volatility3.framework.symbols.linux import extensions
@@ -197,7 +197,7 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
             if hasattr(tracepoint_func, "prio"):
                 prio = tracepoint_func.prio
             else:
-                prio = renderers.NotAvailableValue()
+                prio = None
 
             yield ParsedTracepointFunc(
                 tracepoint_name,
@@ -293,7 +293,7 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
                     format_hints.Hex(tracepoint_parsed.tracepoint_address),
                     tracepoint_parsed.probe_name or NotAvailableValue(),
                     format_hints.Hex(tracepoint_parsed.probe_address),
-                    tracepoint_parsed.probe_priority,
+                    tracepoint_parsed.probe_priority or NotAvailableValue(),
                     tracepoint_parsed.module_name or NotAvailableValue(),
                     (
                         format_hints.Hex(tracepoint_parsed.module_address)
