@@ -43,10 +43,10 @@ class VerInfo(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
+                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="modules", plugin=modules.Modules, version=(2, 0, 0)
+                name="modules", plugin=modules.Modules, version=(3, 0, 0)
             ),
             requirements.BooleanRequirement(
                 name="extensive",
@@ -253,19 +253,15 @@ class VerInfo(interfaces.plugins.PluginInterface):
                 )
 
     def run(self):
-        kernel = self.context.modules[self.config["kernel"]]
-
         procs = pslist.PsList.list_processes(
-            self.context, kernel.layer_name, kernel.symbol_table_name
+            context=self.context, kernel_module_name=self.config["kernel"]
         )
 
-        mods = modules.Modules.list_modules(
-            self.context, kernel.layer_name, kernel.symbol_table_name
-        )
+        mods = modules.Modules.list_modules(self.context, self.config["kernel"])
 
         # populate the session layers for kernel modules
         session_layers = modules.Modules.get_session_layers(
-            self.context, kernel.layer_name, kernel.symbol_table_name
+            context=self.context, kernel_module_name=self.config["kernel"]
         )
 
         return renderers.TreeGrid(

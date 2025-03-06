@@ -52,7 +52,7 @@ class Skeleton_Key_Check(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="pslist", component=pslist.PsList, version=(2, 0, 0)
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="vadinfo", component=vadinfo.VadInfo, version=(2, 0, 0)
@@ -61,7 +61,7 @@ class Skeleton_Key_Check(interfaces.plugins.PluginInterface):
                 name="pdbutil", component=pdbutil.PDBUtility, version=(1, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="pe_symbols", component=pe_symbols.PESymbols, version=(1, 1, 0)
+                name="pe_symbols", component=pe_symbols.PESymbols, version=(2, 0, 0)
             ),
         ]
 
@@ -568,7 +568,9 @@ class Skeleton_Key_Check(interfaces.plugins.PluginInterface):
         """
         kernel = self.context.modules[self.config["kernel"]]
 
-        if not symbols.symbol_table_is_64bit(self.context, kernel.symbol_table_name):
+        if not symbols.symbol_table_is_64bit(
+            context=self.context, symbol_table_name=kernel.symbol_table_name
+        ):
             vollog.info("This plugin only supports 64bit Windows memory samples")
             return None
 
@@ -660,8 +662,6 @@ class Skeleton_Key_Check(interfaces.plugins.PluginInterface):
         return process_name != "lsass.exe"
 
     def run(self):
-        kernel = self.context.modules[self.config["kernel"]]
-
         return renderers.TreeGrid(
             [
                 ("PID", int),
@@ -673,8 +673,7 @@ class Skeleton_Key_Check(interfaces.plugins.PluginInterface):
             self._generator(
                 pslist.PsList.list_processes(
                     context=self.context,
-                    layer_name=kernel.layer_name,
-                    symbol_table=kernel.symbol_table_name,
+                    kernel_module_name=self.config["kernel"],
                     filter_func=self._lsass_proc_filter,
                 )
             ),

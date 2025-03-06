@@ -68,7 +68,7 @@ class DumpFiles(interfaces.plugins.PluginInterface):
                 optional=True,
             ),
             requirements.VersionRequirement(
-                name="pslist", component=pslist.PsList, version=(2, 0, 0)
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="handles", component=handles.Handles, version=(2, 0, 0)
@@ -352,7 +352,6 @@ class DumpFiles(interfaces.plugins.PluginInterface):
         offsets = list()
         # a list of processes matching the pid filter. all files for these process(es) will be dumped.
         procs = list()
-        kernel = self.context.modules[self.config["kernel"]]
 
         if self.config["filter"] and (
             self.config["virtaddr"] or self.config["physaddr"]
@@ -372,9 +371,8 @@ class DumpFiles(interfaces.plugins.PluginInterface):
                 [self.config.get("pid", None)]
             )
             procs = pslist.PsList.list_processes(
-                self.context,
-                kernel.layer_name,
-                kernel.symbol_table_name,
+                context=self.context,
+                kernel_module_name=self.config["kernel"],
                 filter_func=filter_func,
             )
 

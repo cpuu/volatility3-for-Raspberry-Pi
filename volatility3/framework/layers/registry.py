@@ -66,7 +66,7 @@ class RegistryHive(linear.LinearlyMappedLayer):
         # Win10 17063 introduced the Registry process to map most hives.  Check
         # if it exists and update RegistryHive._base_layer
         for proc in pslist.PsList.list_processes(
-            self.context, self.config["base_layer"], self.config["nt_symbols"]
+            context=self.context, kernel_module_name=self.config["kernel_module_name"]
         ):
             proc_name = proc.ImageFileName.cast(
                 "string", max_length=proc.ImageFileName.vol.count, errors="replace"

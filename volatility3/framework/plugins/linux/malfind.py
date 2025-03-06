@@ -64,7 +64,7 @@ class Malfind(interfaces.plugins.PluginInterface):
         # determine if we're on a 32 or 64 bit kernel
         vmlinux = self.context.modules[self.config["kernel"]]
         is_32bit_arch = not symbols.symbol_table_is_64bit(
-            self.context, vmlinux.symbol_table_name
+            context=self.context, symbol_table_name=vmlinux.symbol_table_name
         )
 
         for task in tasks:

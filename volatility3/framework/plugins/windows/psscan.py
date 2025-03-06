@@ -34,7 +34,7 @@ class PsScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
+                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="info", component=info.Info, version=(1, 0, 0)

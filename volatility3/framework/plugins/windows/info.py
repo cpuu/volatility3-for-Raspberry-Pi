@@ -207,7 +207,14 @@ class Info(plugins.PluginInterface):
         yield (0, ("Symbols", table.config["isf_url"]))
         yield (
             0,
-            ("Is64Bit", str(symbols.symbol_table_is_64bit(self.context, symbol_table))),
+            (
+                "Is64Bit",
+                str(
+                    symbols.symbol_table_is_64bit(
+                        context=self.context, symbol_table_name=symbol_table
+                    )
+                ),
+            ),
         )
         yield (
             0,

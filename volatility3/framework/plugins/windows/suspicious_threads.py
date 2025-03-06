@@ -34,8 +34,14 @@ class SuspiciousThreads(interfaces.plugins.PluginInterface):
                 element_type=int,
                 optional=True,
             ),
-            requirements.PluginRequirement(
-                name="threads", plugin=threads.Threads, version=(1, 0, 0)
+            requirements.VersionRequirement(
+                name="thrdscan", component=thrdscan.ThrdScan, version=(1, 1, 0)
+            ),
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
+            ),
+            requirements.VersionRequirement(
+                name="threads", component=threads.Threads, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="vadinfo", component=vadinfo.VadInfo, version=(2, 0, 0)
@@ -133,8 +139,7 @@ class SuspiciousThreads(interfaces.plugins.PluginInterface):
 
         for proc in pslist.PsList.list_processes(
             context=self.context,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            kernel_module_name=self.config["kernel"],
             filter_func=filter_func,
         ):
             ranges = self._get_ranges(kernel, all_ranges, proc)

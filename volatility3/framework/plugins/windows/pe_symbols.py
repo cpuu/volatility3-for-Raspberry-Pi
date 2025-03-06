@@ -244,7 +244,8 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
     _required_framework_version = (2, 7, 0)
 
-    _version = (1, 1, 0)
+    # 2.0.0 - changed signature of get_kernel_modules, get_all_vads_with_file_paths, addresses_for_process_symbols, get_process_modules
+    _version = (2, 0, 0)
 
     # used for special handling of the kernel PDB file. See later notes
     os_module_name = "ntoskrnl.exe"
@@ -259,10 +260,10 @@ class PESymbols(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="pslist", component=pslist.PsList, version=(2, 0, 0)
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="modules", component=modules.Modules, version=(2, 0, 0)
+                name="modules", component=modules.Modules, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="pdbutil", component=pdbutil.PDBUtility, version=(1, 0, 0)
@@ -297,7 +298,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
         cls,
         context: interfaces.context.ContextInterface,
         pe_table_name: str,
-        layer_name: str,
+        process_layer_name: str,
         base_address: int,
     ) -> Optional[pefile.PE]:
         """
@@ -305,7 +306,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
         Args:
             pe_table_name: name of the pe types table
-            layer_name: name of the process layer
+            process_layer_name: name of the process layer
             base_address: base address of the module
 
         Returns:
@@ -317,7 +318,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
             dos_header = context.object(
                 pe_table_name + constants.BANG + "_IMAGE_DOS_HEADER",
                 offset=base_address,
-                layer_name=layer_name,
+                layer_name=process_layer_name,
             )
 
             for offset, data in dos_header.reconstruct():
@@ -388,8 +389,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
         cls,
         context: interfaces.context.ContextInterface,
         config_path: str,
-        layer_name: str,
-        symbol_table_name: str,
+        kernel_module_name: str,
         symbols: filter_modules_type,
     ) -> found_symbols_type:
         """
@@ -405,7 +405,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
             found_symbols_type: The dictionary of symbols that were resolved
         """
         collected_modules = PESymbols.get_process_modules(
-            context, layer_name, symbol_table_name, symbols
+            context, kernel_module_name, symbols
         )
 
         found_symbols, missing_symbols = PESymbols.find_symbols(
@@ -483,12 +483,12 @@ class PESymbols(interfaces.plugins.PluginInterface):
             instance for it
         """
 
-        layer_name = module_info[0]
+        process_layer_name = module_info[0]
         module_start = module_info[1]
 
         # we need a valid PE with an export table
         pe_module = PESymbols.get_pefile_obj(
-            context, pe_table_name, layer_name, module_start
+            context, pe_table_name, process_layer_name, module_start
         )
         if not pe_module:
             return None
@@ -500,7 +500,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
             return None
 
         return ExportSymbolFinder(
-            layer_name,
+            process_layer_name,
             mod_name.lower(),
             module_start,
             pe_module.DIRECTORY_ENTRY_EXPORT.symbols,
@@ -783,8 +783,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
     def get_kernel_modules(
         cls,
         context: interfaces.context.ContextInterface,
-        layer_name: str,
-        symbol_table: str,
+        kernel_module_name: str,
         filter_modules: Optional[filter_modules_type],
     ) -> collected_modules_type:
         """
@@ -804,7 +803,9 @@ class PESymbols(interfaces.plugins.PluginInterface):
             filter_modules_check = None
 
         session_layers = list(
-            modules.Modules.get_session_layers(context, layer_name, symbol_table)
+            modules.Modules.get_session_layers(
+                context=context, kernel_module_name=kernel_module_name
+            )
         )
 
         # special handling for the kernel
@@ -813,7 +814,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
         )
 
         for index, mod in enumerate(
-            modules.Modules.list_modules(context, layer_name, symbol_table)
+            modules.Modules.list_modules(context, kernel_module_name)
         ):
             try:
                 mod_name = str(mod.BaseDllName.get_string().lower())
@@ -906,8 +907,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
     def get_all_vads_with_file_paths(
         cls,
         context: interfaces.context.ContextInterface,
-        layer_name: str,
-        symbol_table_name: str,
+        kernel_module_name: str,
     ) -> Generator[
         Tuple[interfaces.objects.ObjectInterface, str, ranges_type],
         None,
@@ -920,9 +920,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
             Generator[Tuple[interfaces.objects.ObjectInterface, str, ranges_type]]: Yields tuple of process objects, layers, and VADs mapping files
         """
         procs = pslist.PsList.list_processes(
-            context=context,
-            layer_name=layer_name,
-            symbol_table=symbol_table_name,
+            context=context, kernel_module_name=kernel_module_name
         )
 
         for proc in procs:
@@ -939,8 +937,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
     def get_process_modules(
         cls,
         context: interfaces.context.ContextInterface,
-        layer_name: str,
-        symbol_table: str,
+        kernel_module_name: str,
         filter_modules: Optional[filter_modules_type],
     ) -> collected_modules_type:
         """
@@ -960,7 +957,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
             filter_modules_check = None
 
         for _proc, proc_layer_name, vads in PESymbols.get_all_vads_with_file_paths(
-            context, layer_name, symbol_table
+            context, kernel_module_name
         ):
             for vad_start, vad_size, filepath in vads:
                 filename = PESymbols.filename_for_path(filepath)
@@ -977,8 +974,6 @@ class PESymbols(interfaces.plugins.PluginInterface):
         return proc_modules
 
     def _generator(self) -> Generator[Tuple[int, Tuple[str, str, int]], None, None]:
-        kernel = self.context.modules[self.config["kernel"]]
-
         if self.config["symbols"]:
             filter_module = {
                 self.config["module"].lower(): {
@@ -1003,7 +998,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
             module_resolver = self.get_process_modules
 
         collected_modules = module_resolver(
-            self.context, kernel.layer_name, kernel.symbol_table_name, filter_module
+            self.context, self.config["kernel"], filter_module
         )
 
         found_symbols, _missing_symbols = PESymbols.find_symbols(

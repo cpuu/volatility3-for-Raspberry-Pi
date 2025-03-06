@@ -33,7 +33,7 @@ class Passphrase(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="modules", component=modules.Modules, version=(2, 0, 0)
+                name="modules", component=modules.Modules, version=(3, 0, 0)
             ),
             requirements.IntRequirement(
                 name="min-length",
@@ -121,7 +121,7 @@ class Passphrase(interfaces.plugins.PluginInterface):
     def _generator(self):
         kernel = self.context.modules[self.config["kernel"]]
         mods: Iterable[ObjectInterface] = modules.Modules.list_modules(
-            self.context, kernel.layer_name, kernel.symbol_table_name
+            self.context, self.config["kernel"]
         )
         truecrypt_module_base = next(
             mod.DllBase

@@ -29,7 +29,7 @@ class ProcessGhosting(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="pslist", component=pslist.PsList, version=(2, 0, 0)
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
         ]
 
@@ -83,7 +83,6 @@ class ProcessGhosting(interfaces.plugins.PluginInterface):
 
     def run(self):
         filter_func = pslist.PsList.create_active_process_filter()
-        kernel = self.context.modules[self.config["kernel"]]
 
         return renderers.TreeGrid(
             [
@@ -96,8 +95,7 @@ class ProcessGhosting(interfaces.plugins.PluginInterface):
             self._generator(
                 pslist.PsList.list_processes(
                     context=self.context,
-                    layer_name=kernel.layer_name,
-                    symbol_table=kernel.symbol_table_name,
+                    kernel_module_name=self.config["kernel"],
                     filter_func=filter_func,
                 )
             ),

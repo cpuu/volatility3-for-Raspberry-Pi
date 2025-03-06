@@ -13,7 +13,7 @@ from volatility3.framework.renderers import conversion, format_hints
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.windows.extensions import pe
 from volatility3.plugins import timeliner
-from volatility3.plugins.windows import info, pslist, psscan, pedump
+from volatility3.plugins.windows import info, pedump, pslist, psscan
 
 vollog = logging.getLogger(__name__)
 
@@ -34,13 +34,13 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="pslist", component=pslist.PsList, version=(2, 0, 0)
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="psscan", component=psscan.PsScan, version=(1, 1, 0)
             ),
             requirements.VersionRequirement(
-                name="pedump", component=pedump.PEDump, version=(1, 0, 0)
+                name="pedump", component=pedump.PEDump, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="info", component=info.Info, version=(1, 0, 0)
@@ -191,12 +191,9 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 )
 
     def generate_timeline(self):
-        kernel = self.context.modules[self.config["kernel"]]
         for row in self._generator(
             pslist.PsList.list_processes(
-                context=self.context,
-                layer_name=kernel.layer_name,
-                symbol_table=kernel.symbol_table_name,
+                context=self.context, kernel_module_name=self.config["kernel"]
             )
         ):
             _depth, row_data = row
@@ -223,8 +220,7 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         else:
             procs = pslist.PsList.list_processes(
                 context=self.context,
-                layer_name=kernel.layer_name,
-                symbol_table=kernel.symbol_table_name,
+                kernel_module_name=self.config["kernel"],
                 filter_func=filter_func,
             )
 

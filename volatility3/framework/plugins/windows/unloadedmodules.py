@@ -52,7 +52,9 @@ class UnloadedModules(interfaces.plugins.PluginInterface, timeliner.TimeLinerInt
             The name of the constructed unloaded modules table
         """
         native_types = context.symbol_space[symbol_table].natives
-        is_64bit = symbols.symbol_table_is_64bit(context, symbol_table)
+        is_64bit = symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=symbol_table
+        )
         table_mapping = {"nt_symbols": symbol_table}
 
         if is_64bit:
@@ -100,7 +102,9 @@ class UnloadedModules(interfaces.plugins.PluginInterface, timeliner.TimeLinerInt
             offset=unloadedmodules_offset,
             subtype="array",
         )
-        is_64bit = symbols.symbol_table_is_64bit(context, symbol_table)
+        is_64bit = symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=symbol_table
+        )
 
         if is_64bit:
             unloaded_count_type = "unsigned long long"

@@ -26,13 +26,13 @@ class DriverModule(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="ssdt", plugin=ssdt.SSDT, version=(1, 0, 0)
+                name="ssdt", plugin=ssdt.SSDT, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="driverscan", plugin=driverscan.DriverScan, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="modules", plugin=modules.Modules, version=(2, 1, 0)
+                name="modules", plugin=modules.Modules, version=(3, 0, 0)
             ),
         ]
 
@@ -42,10 +42,9 @@ class DriverModule(interfaces.plugins.PluginInterface):
         A common rootkit technique is to register drivers from modules that are hidden,
         which allows us to detect the disconnect between a malicious driver and its hidden module.
         """
-        kernel = self.context.modules[self.config["kernel"]]
-
         collection = ssdt.SSDT.build_module_collection(
-            self.context, kernel.layer_name, kernel.symbol_table_name
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
         )
 
         kernel_space_start = modules.Modules.get_kernel_space_start(

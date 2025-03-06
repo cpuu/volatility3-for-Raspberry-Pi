@@ -237,7 +237,9 @@ class module(generic.GenericIntelProcess):
         elf_table_name = self.get_elf_table_name()
         symbol_table_name = self.get_symbol_table_name()
 
-        is_64bit = symbols.symbol_table_is_64bit(self._context, symbol_table_name)
+        is_64bit = symbols.symbol_table_is_64bit(
+            context=self._context, symbol_table_name=symbol_table_name
+        )
         sym_name = "Elf64_Sym" if is_64bit else "Elf32_Sym"
         sym_type = self._context.symbol_space.get_type(
             elf_table_name + constants.BANG + sym_name
@@ -280,7 +282,9 @@ class module(generic.GenericIntelProcess):
         elf_table_name = self.get_elf_table_name()
         symbol_table_name = self.get_symbol_table_name()
 
-        is_64bit = symbols.symbol_table_is_64bit(self._context, symbol_table_name)
+        is_64bit = symbols.symbol_table_is_64bit(
+            context=self._context, symbol_table_name=symbol_table_name
+        )
         sym_name = "Elf64_Sym" if is_64bit else "Elf32_Sym"
         sym_type = self._context.symbol_space.get_type(
             elf_table_name + constants.BANG + sym_name

@@ -9,7 +9,7 @@ from typing import List, Optional
 from volatility3.framework import interfaces, exceptions
 from volatility3.framework.configuration import requirements
 from volatility3.plugins import yarascan
-from volatility3.plugins.windows import pslist, direct_system_calls
+from volatility3.plugins.windows import direct_system_calls
 
 vollog = logging.getLogger(__name__)
 
@@ -42,9 +42,6 @@ class IndirectSystemCalls(direct_system_calls.DirectSystemCalls):
                 name="kernel",
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
-            ),
-            requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="yarascanner", component=yarascan.YaraScanner, version=(2, 1, 0)

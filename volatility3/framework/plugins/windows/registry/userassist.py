@@ -54,7 +54,7 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
                 name="offset", description="Hive Offset", default=None, optional=True
             ),
             requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(1, 0, 0)
+                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
             ),
         ]
 
@@ -295,7 +295,6 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
         hive_offsets = None
         if self.config.get("offset", None) is not None:
             hive_offsets = [self.config.get("offset", None)]
-        kernel = self.context.modules[self.config["kernel"]]
 
         self._reg_table_name = intermed.IntermediateSymbolTable.create(
             self.context, self._config_path, "windows", "registry"
@@ -305,8 +304,7 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
         for hive in hivelist.HiveList.list_hives(
             context=self.context,
             base_config_path=self.config_path,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            kernel_module_name=self.config["kernel"],
             filter_string="ntuser.dat",
             hive_offsets=hive_offsets,
         ):

@@ -137,7 +137,9 @@ class NetScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         # therefore we determine the version based on the kernel version as testing
         # with several windows versions has showed this to work out correctly.
 
-        is_64bit = symbols.symbol_table_is_64bit(context, nt_symbol_table)
+        is_64bit = symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=nt_symbol_table
+        )
 
         is_18363_or_later = versions.is_win10_18363_or_later(
             context=context, symbol_table=nt_symbol_table

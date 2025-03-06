@@ -84,10 +84,10 @@ class GetSIDs(interfaces.plugins.PluginInterface):
                 optional=True,
             ),
             requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
+                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(1, 0, 0)
+                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
             ),
         ]
 
@@ -101,14 +101,12 @@ class GetSIDs(interfaces.plugins.PluginInterface):
 
         key = "Microsoft\\Windows NT\\CurrentVersion\\ProfileList"
         val = "ProfileImagePath"
-        kernel = self.context.modules[self.config["kernel"]]
 
         sids = {}
         for hive in hivelist.HiveList.list_hives(
             context=self.context,
             base_config_path=self.config_path,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            kernel_module_name=self.config["kernel"],
             filter_string="config\\software",
             hive_offsets=None,
         ):
@@ -217,15 +215,13 @@ class GetSIDs(interfaces.plugins.PluginInterface):
 
     def run(self):
         filter_func = pslist.PsList.create_pid_filter(self.config.get("pid", None))
-        kernel = self.context.modules[self.config["kernel"]]
 
         return renderers.TreeGrid(
             [("PID", int), ("Process", str), ("SID", str), ("Name", str)],
             self._generator(
                 pslist.PsList.list_processes(
                     context=self.context,
-                    layer_name=kernel.layer_name,
-                    symbol_table=kernel.symbol_table_name,
+                    kernel_module_name=self.config["kernel"],
                     filter_func=filter_func,
                 )
             ),
