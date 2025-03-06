@@ -114,20 +114,23 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
             An iterable of ftrace_func_entry structs
         """
 
+        if hasattr(ftrace_ops, "func_hash"):
+            ftrace_hash = ftrace_ops.func_hash.filter_hash
+        else:
+            ftrace_hash = ftrace_ops.filter_hash
+
         try:
-            current_bucket_ptr = ftrace_ops.func_hash.filter_hash.buckets.first
+            current_bucket_ptr = ftrace_hash.buckets.first
         except exceptions.InvalidAddressException:
             vollog.log(
                 constants.LOGLEVEL_VV,
                 f"ftrace_func_entry list of ftrace_ops@{ftrace_ops.vol.offset:#x} is empty/invalid. Skipping it...",
             )
-            return []
+            return
 
         while current_bucket_ptr.is_readable():
             yield current_bucket_ptr.dereference().cast("ftrace_func_entry")
             current_bucket_ptr = current_bucket_ptr.next
-
-        return None
 
     @classmethod
     def parse_ftrace_ops(
