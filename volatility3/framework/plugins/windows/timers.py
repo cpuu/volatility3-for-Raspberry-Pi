@@ -38,7 +38,7 @@ class Timers(interfaces.plugins.PluginInterface):
                 name="ssdt", plugin=ssdt.SSDT, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="kpcrs", plugin=kpcrs.KPCRs, version=(1, 0, 0)
+                name="kpcrs", plugin=kpcrs.KPCRs, version=(2, 0, 0)
             ),
         ]
 
@@ -47,16 +47,12 @@ class Timers(interfaces.plugins.PluginInterface):
         cls,
         context: interfaces.context.ContextInterface,
         kernel_module_name: str,
-        layer_name: str,
-        symbol_table: str,
     ) -> Iterable[extensions.KTIMER]:
         """Lists all kernel timers.
 
         Args:
             context: The context to retrieve required elements (layers, symbol tables) from
             kernel_module_name: The name of the kernel module on which to operate
-            layer_name: The name of the layer on which to operate
-            symbol_table: The name of the table containing the kernel symbols
 
         Yields:
             A _KTIMER entry
@@ -64,19 +60,19 @@ class Timers(interfaces.plugins.PluginInterface):
 
         kernel = context.modules[kernel_module_name]
         if versions.is_windows_7(
-            context=context, symbol_table=symbol_table
-        ) or versions.is_windows_8_or_later(context=context, symbol_table=symbol_table):
+            context=context, symbol_table=kernel.symbol_table_name
+        ) or versions.is_windows_8_or_later(
+            context=context, symbol_table=kernel.symbol_table_name
+        ):
             # Starting with Windows 7, there is no more KiTimerTableListHead. The list is
             # at _KPCR.PrcbData.TimerTable.TimerEntries
             # See http://pastebin.com/FiRsGW3f
-            for kpcr in kpcrs.KPCRs.list_kpcrs(
-                context, kernel_module_name, layer_name, symbol_table
-            ):
+            for kpcr, _ in kpcrs.KPCRs.list_kpcrs(context, kernel_module_name):
                 if hasattr(kpcr.Prcb.TimerTable, "TableState"):
                     for timer_entries in kpcr.Prcb.TimerTable.TimerEntries:
                         for timer_entry in timer_entries:
                             for timer in timer_entry.Entry.to_list(
-                                symbol_table + constants.BANG + "_KTIMER",
+                                kernel.symbol_table_name + constants.BANG + "_KTIMER",
                                 "TimerListEntry",
                             ):
                                 yield timer
@@ -84,17 +80,19 @@ class Timers(interfaces.plugins.PluginInterface):
                 else:
                     for timer_entries in kpcr.Prcb.TimerTable.TimerEntries:
                         for timer in timer_entries.Entry.to_list(
-                            symbol_table + constants.BANG + "_KTIMER",
+                            kernel.symbol_table_name + constants.BANG + "_KTIMER",
                             "TimerListEntry",
                         ):
                             yield timer
 
         elif versions.is_xp_or_2003(
-            context=context, symbol_table=symbol_table
-        ) or versions.is_vista_or_later(context=context, symbol_table=symbol_table):
-            is_64bit = symbols.symbol_table_is_64bit(context, symbol_table)
+            context=context, symbol_table=kernel.symbol_table_name
+        ) or versions.is_vista_or_later(
+            context=context, symbol_table=kernel.symbol_table_name
+        ):
+            is_64bit = symbols.symbol_table_is_64bit(context, kernel.symbol_table_name)
             if is_64bit or versions.is_vista_or_later(
-                context=context, symbol_table=symbol_table
+                context=context, symbol_table=kernel.symbol_table_name
             ):
                 # On XP x64, Windows 2003 SP1-SP2, and Vista SP0-SP2, KiTimerTableListHead
                 # is an array of 512 _KTIMER_TABLE_ENTRY structs.
@@ -112,7 +110,7 @@ class Timers(interfaces.plugins.PluginInterface):
             )
             for table in timer_table_list_head:
                 for timer in table.to_list(
-                    symbol_table + constants.BANG + "_KTIMER",
+                    kernel.symbol_table_name + constants.BANG + "_KTIMER",
                     "TimerListEntry",
                 ):
                     yield timer
@@ -121,8 +119,6 @@ class Timers(interfaces.plugins.PluginInterface):
             raise NotImplementedError("This version of Windows is not supported!")
 
     def _generator(self) -> Iterator[Tuple]:
-        kernel = self.context.modules[self.config["kernel"]]
-
         collection = ssdt.SSDT.build_module_collection(
             context=self.context,
             kernel_module_name=self.config["kernel"],
@@ -132,8 +128,6 @@ class Timers(interfaces.plugins.PluginInterface):
         for timer in self.list_timers(
             self.context,
             self.config["kernel"],
-            kernel.layer_name,
-            kernel.symbol_table_name,
         ):
             if not timer.valid_type():
                 continue
