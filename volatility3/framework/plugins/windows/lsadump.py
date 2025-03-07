@@ -204,7 +204,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
             else:
                 secret = self.decrypt_aes(enc_secret, lsakey)
 
-            yield (0, (key.get_name(), secret.decode("latin1"), secret))
+            yield (0, (key.get_name(), str(secret), secret))
 
     def run(self):
         offset = self.config.get("offset", None)
