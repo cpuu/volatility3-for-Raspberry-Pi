@@ -22,7 +22,7 @@ class Cachedump(interfaces.plugins.PluginInterface):
     """Dumps lsa secrets from memory"""
 
     _required_framework_version = (2, 0, 0)
-    _version = (2, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls):
@@ -36,7 +36,7 @@ class Cachedump(interfaces.plugins.PluginInterface):
                 name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="lsadump", plugin=lsadump.Lsadump, version=(2, 0, 0)
+                name="lsadump", plugin=lsadump.Lsadump, version=(1, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="hashdump", plugin=hashdump.Hashdump, version=(2, 0, 0)
