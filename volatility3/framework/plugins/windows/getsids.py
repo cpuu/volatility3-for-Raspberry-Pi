@@ -176,12 +176,14 @@ class GetSIDs(interfaces.plugins.PluginInterface):
             except exceptions.InvalidAddressException:
                 token = False
 
+            task_name = objects.utility.array_to_string(task.ImageFileName)
+
             if not token or not isinstance(token, interfaces.objects.ObjectInterface):
                 yield (
                     0,
                     [
                         int(task.UniqueProcessId),
-                        str(task.ImageFileName),
+                        task_name,
                         "Token unreadable",
                         "",
                     ],
@@ -207,7 +209,7 @@ class GetSIDs(interfaces.plugins.PluginInterface):
                     0,
                     (
                         task.UniqueProcessId,
-                        objects.utility.array_to_string(task.ImageFileName),
+                        task_name,
                         sid_string,
                         sid_name,
                     ),
