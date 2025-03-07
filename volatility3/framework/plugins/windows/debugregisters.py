@@ -38,7 +38,7 @@ class DebugRegisters(interfaces.plugins.PluginInterface):
                 name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="threads", component=threads.Threads, version=(2, 0, 0)
+                name="threads", component=threads.Threads, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="pe_symbols", component=pe_symbols.PESymbols, version=(2, 0, 0)
@@ -111,8 +111,6 @@ class DebugRegisters(interfaces.plugins.PluginInterface):
         None,
         None,
     ]:
-        kernel = self.context.modules[self.config["kernel"]]
-
         vads_cache: Dict[int, pe_symbols.ranges_type] = {}
 
         proc_modules = None
@@ -122,7 +120,9 @@ class DebugRegisters(interfaces.plugins.PluginInterface):
         )
 
         for proc in procs:
-            for thread in threads.Threads.list_threads(kernel, proc):
+            for thread in threads.Threads.list_threads(
+                self.context, self.config["kernel"], proc
+            ):
                 debug_info = self._get_debug_info(thread)
                 if not debug_info:
                     continue

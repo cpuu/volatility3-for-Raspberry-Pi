@@ -36,7 +36,7 @@ class SuspendedThreads(interfaces.plugins.PluginInterface):
                 name="pe_symbols", component=pe_symbols.PESymbols, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="threads", component=threads.Threads, version=(2, 0, 0)
+                name="threads", component=threads.Threads, version=(3, 0, 0)
             ),
         ]
 
@@ -54,8 +54,6 @@ class SuspendedThreads(interfaces.plugins.PluginInterface):
 
         https://www.volexity.com/wp-content/uploads/2024/08/Defcon24_EDR_Evasion_Detection_White-Paper_Andrew-Case.pdf
         """
-        kernel = self.context.modules[self.config["kernel"]]
-
         vads_cache: Dict[int, pe_symbols.PESymbols.ranges_type] = {}
 
         proc_modules = None
@@ -64,7 +62,9 @@ class SuspendedThreads(interfaces.plugins.PluginInterface):
         for proc in pslist.PsList.list_processes(
             context=self.context, kernel_module_name=self.config["kernel"]
         ):
-            for thread in threads.Threads.list_threads(kernel, proc):
+            for thread in threads.Threads.list_threads(
+                self.context, self.config["kernel"], proc
+            ):
                 try:
                     # we only care if the thread is suspended
                     if thread.Tcb.SuspendCount == 0:
