@@ -639,7 +639,7 @@ class RecoverFs(plugins.PluginInterface):
     Troubleshooting: to fix extraction errors related to long paths, please consider using https://github.com/mxmlnkn/ratarmount.
     """
 
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
     _required_framework_version = (2, 21, 0)
 
     @classmethod
@@ -655,6 +655,12 @@ class RecoverFs(plugins.PluginInterface):
             ),
             requirements.PluginRequirement(
                 name="inodepages", plugin=InodePages, version=(3, 0, 0)
+            ),
+            requirements.BooleanRequirement(
+                name="tmpfs_only",
+                description="Extracts only files from tmpfs file systems",
+                default=False,
+                optional=True,
             ),
             requirements.ChoiceRequirement(
                 name="compression_format",
@@ -803,6 +809,17 @@ class RecoverFs(plugins.PluginInterface):
                 vollog.debug(
                     f'Skipping processing of potentially smeared "{inode_in.path}" inode name as it does not starts with a "/".'
                 )
+                continue
+
+            sb_type = inode_in.superblock.get_type()
+            if not sb_type:
+                vollog.debug(
+                    f"Unable to read superblock type for inode at {inode_in.inode.vol.offset}"
+                )
+                continue
+
+            if self.config["tmpfs_only"] and sb_type != "tmpfs":
+                vollog.debug(f"Skipping non-tmpfs filesystem {sb_type}")
                 continue
 
             # Construct the output path
