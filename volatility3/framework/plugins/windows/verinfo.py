@@ -176,7 +176,12 @@ class VerInfo(interfaces.plugins.PluginInterface):
                 (major, minor, product, build) = self.get_version_information(
                     self._context, pe_table_name, session_layer_name, mod.DllBase
                 )
-            except (exceptions.InvalidAddressException, TypeError, AttributeError):
+            except (
+                exceptions.InvalidAddressException,
+                ValueError,
+                TypeError,
+                AttributeError,
+            ):
                 (major, minor, product, build) = [renderers.UnreadableValue()] * 4
                 if (
                     not isinstance(BaseDllName, renderers.UnreadableValue)

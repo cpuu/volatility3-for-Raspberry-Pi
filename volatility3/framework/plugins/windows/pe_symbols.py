@@ -327,7 +327,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
             pe_ret = pefile.PE(data=pe_data.getvalue(), fast_load=True)
 
-        except exceptions.InvalidAddressException:
+        except (exceptions.InvalidAddressException, ValueError):
             pe_ret = None
 
         return pe_ret
