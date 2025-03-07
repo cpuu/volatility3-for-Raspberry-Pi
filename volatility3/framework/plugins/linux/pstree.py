@@ -2,10 +2,14 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 
+import logging
+
 from volatility3.framework import interfaces, renderers
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
 from volatility3.plugins.linux import pslist
+
+vollog = logging.getLogger(__name__)
 
 
 class PsTree(interfaces.plugins.PluginInterface):
@@ -74,6 +78,9 @@ class PsTree(interfaces.plugins.PluginInterface):
             # only pid 1 (init/systemd) or 2 (kthreadd) should have swapper as a parent
             # any other process with a ppid of 0 is smeared or terminated
             if parent_pid == 0 and proc.pid > 2:
+                vollog.debug(
+                    "Smeared process with parent PID of 0 and PID greater than 2 ({proc.pid}) is being skipped."
+                )
                 break
 
             seen_ppids.add(parent_pid)
