@@ -262,7 +262,7 @@ You can try using ffmpeg to decode the raw buffer. Example usage:
 
         if not kernel.has_symbol("num_registered_fb"):
             vollog.error(
-                '"num_registered_fb" symbol does not exist in the symbol table. This means you are either analyzing an unsupported kernel version,  your symbol table is corrupt, or the fbdev driver is compiled as a kernel module..'
+                '"num_registered_fb" symbol does not exist in the symbol table. This means you are either analyzing an unsupported kernel version,  your symbol table is corrupt, or the fbdev driver is compiled as a kernel module.'
             )
             return
 
