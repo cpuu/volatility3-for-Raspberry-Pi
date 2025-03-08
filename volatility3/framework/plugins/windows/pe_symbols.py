@@ -671,8 +671,9 @@ class PESymbols(interfaces.plugins.PluginInterface):
                         else:
                             yield symbol_key, value_index, symbol_value, wanted_value  # type: ignore
 
-    @staticmethod
+    @classmethod
     def _validate_wanted_modules(
+        cls,
         wanted: PESymbolFinder.cached_module_lists,
     ) -> Optional[PESymbolFinder.cached_module_lists]:
         """
