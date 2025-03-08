@@ -140,7 +140,7 @@ class PoolScanner(plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="handles", plugin=handles.Handles, version=(2, 0, 0)
+                name="handles", plugin=handles.Handles, version=(3, 0, 0)
             ),
         ]
 
@@ -394,15 +394,11 @@ class PoolScanner(plugins.PluginInterface):
 
         # get the object type map
         type_map = handles.Handles.get_type_map(
-            context=context,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            context=context, kernel_module_name=kernel_module_name
         )
 
         cookie = handles.Handles.find_cookie(
-            context=context,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            context=context, kernel_module_name=kernel_module_name
         )
 
         is_windows_10 = versions.is_windows_10(context, kernel.symbol_table_name)

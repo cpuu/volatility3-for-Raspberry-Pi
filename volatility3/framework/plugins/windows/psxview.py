@@ -58,7 +58,7 @@ We recommend using -r pretty if you are looking at this plugin's output in a ter
                 name="thrdscan", component=thrdscan.ThrdScan, version=(1, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="handles", component=handles.Handles, version=(2, 0, 0)
+                name="handles", component=handles.Handles, version=(3, 0, 0)
             ),
             requirements.BooleanRequirement(
                 name="physical-offsets",
@@ -144,20 +144,16 @@ We recommend using -r pretty if you are looking at this plugin's output in a ter
     ) -> Dict[int, extensions.EPROCESS]:
         ret: List[extensions.EPROCESS] = []
 
-        kernel = self.context.modules[self.config["kernel"]]
-
         handles_plugin = handles.Handles(
             context=self.context, config_path=self.config_path
         )
 
         type_map = handles_plugin.get_type_map(
-            self.context, kernel.layer_name, kernel.symbol_table_name
+            context=self.context, kernel_module_name=self.config["kernel"]
         )
 
         cookie = handles_plugin.find_cookie(
-            context=self.context,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            context=self.context, kernel_module_name=self.config["kernel"]
         )
 
         for p in tasks:

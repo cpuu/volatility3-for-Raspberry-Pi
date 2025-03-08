@@ -48,7 +48,7 @@ class Callbacks(interfaces.plugins.PluginInterface):
                 name="driverirp", plugin=driverirp.DriverIrp, version=(1, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="handles", plugin=handles.Handles, version=(2, 0, 0)
+                name="handles", plugin=handles.Handles, version=(3, 0, 0)
             ),
         ]
 
@@ -237,7 +237,7 @@ class Callbacks(interfaces.plugins.PluginInterface):
         )
 
         type_map = handles.Handles.get_type_map(
-            context, kernel.layer_name, kernel.symbol_table_name
+            context=context, kernel_module_name=kernel_module_name
         )
 
         constraints = cls.create_callback_scan_constraints(

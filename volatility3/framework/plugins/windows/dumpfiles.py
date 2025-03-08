@@ -71,7 +71,7 @@ class DumpFiles(interfaces.plugins.PluginInterface):
                 name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="handles", component=handles.Handles, version=(2, 0, 0)
+                name="handles", component=handles.Handles, version=(3, 0, 0)
             ),
         ]
 
@@ -231,13 +231,11 @@ class DumpFiles(interfaces.plugins.PluginInterface):
             )
             type_map = handles_plugin.get_type_map(
                 context=self.context,
-                layer_name=kernel.layer_name,
-                symbol_table=kernel.symbol_table_name,
+                kernel_module_name=self.config["kernel"],
             )
             cookie = handles_plugin.find_cookie(
                 context=self.context,
-                layer_name=kernel.layer_name,
-                symbol_table=kernel.symbol_table_name,
+                kernel_module_name=self.config["kernel"],
             )
 
             dumped_files = set()
