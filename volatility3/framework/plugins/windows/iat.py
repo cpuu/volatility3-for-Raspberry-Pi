@@ -74,7 +74,7 @@ class IAT(interfaces.plugins.PluginInterface):
                         pe_data.seek(offset)
                         pe_data.write(data)
                 except (exceptions.InvalidAddressException, ValueError) as excp:
-                    vollog.debug(
+                    vollog.warning(
                         f"Exception triggered when reconstructing PE file for process {proc.UniqueProcessId} at address {peb.ImageBaseAddress:#x} due to {excp}. Output file may be corrupt and/or truncated."
                     )
 
