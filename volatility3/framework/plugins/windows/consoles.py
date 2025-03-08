@@ -482,7 +482,7 @@ class Consoles(interfaces.plugins.PluginInterface):
                         console_properties.append(
                             {
                                 "level": 1,
-                                "kernel_module_nameme": "_CONSOLE_INFORMATION.ScreenX",
+                                "name": "_CONSOLE_INFORMATION.ScreenX",
                                 "address": console_info.ScreenX.vol.offset,
                                 "data": console_info.ScreenX,
                             }
