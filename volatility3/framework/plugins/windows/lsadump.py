@@ -22,7 +22,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
     """Dumps lsa secrets from memory"""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls):
@@ -76,8 +76,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
         enc_reg_key = hashdump.Hashdump.get_hive_key(sechive, "Policy\\" + policy_key)
         if not enc_reg_key:
             return None
-        enc_reg_value = next(enc_reg_key.get_values())
-
+        enc_reg_value = next(enc_reg_key.get_values(), None)
         if not enc_reg_value:
             return None
 
@@ -112,18 +111,22 @@ class Lsadump(interfaces.plugins.PluginInterface):
         name: str,
         lsakey: bytes,
         is_vista_or_later: bool,
-    ):
+    ) -> Optional[bytes]:
         enc_secret_key = hashdump.Hashdump.get_hive_key(
             sechive, "Policy\\Secrets\\" + name + "\\CurrVal"
         )
 
         secret = None
         if enc_secret_key:
-            enc_secret_value = next(enc_secret_key.get_values())
+            enc_secret_value = next(enc_secret_key.get_values(), None)
             if enc_secret_value:
-                enc_secret = sechive.read(
-                    enc_secret_value.Data + 4, enc_secret_value.DataLength
-                )
+                try:
+                    enc_secret = sechive.read(
+                        enc_secret_value.Data + 4, enc_secret_value.DataLength
+                    )
+                except exceptions.InvalidAddressExceptions:
+                    return None
+
                 if enc_secret:
                     if not is_vista_or_later:
                         secret = cls.decrypt_secret(enc_secret[0xC:], lsakey)
@@ -133,7 +136,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
         return secret
 
     @classmethod
-    def decrypt_secret(cls, secret: bytes, key: bytes):
+    def decrypt_secret(cls, secret: bytes, key: bytes) -> bytes:
         """Python implementation of SystemFunction005.
 
         Decrypts a block of data with DES using given key.
@@ -168,11 +171,11 @@ class Lsadump(interfaces.plugins.PluginInterface):
         )
 
         bootkey = hashdump.Hashdump.get_bootkey(syshive)
-        lsakey = self.get_lsa_key(sechive, bootkey, vista_or_later)
         if not bootkey:
             vollog.warning("Unable to find bootkey")
             return None
 
+        lsakey = self.get_lsa_key(sechive, bootkey, vista_or_later)
         if not lsakey:
             vollog.warning("Unable to find lsa key")
             return None
@@ -190,15 +193,17 @@ class Lsadump(interfaces.plugins.PluginInterface):
             if not sec_val_key:
                 continue
 
-            enc_secret_value = next(sec_val_key.get_values())
+            enc_secret_value = next(sec_val_key.get_values(), None)
             if not enc_secret_value:
                 continue
 
-            enc_secret = sechive.read(
-                enc_secret_value.Data + 4, enc_secret_value.DataLength
-            )
-            if not enc_secret:
+            try:
+                enc_secret = sechive.read(
+                    enc_secret_value.Data + 4, enc_secret_value.DataLength
+                )
+            except exceptions.InvalidAddressExceptions:
                 continue
+
             if not vista_or_later:
                 secret = self.decrypt_secret(enc_secret[0xC:], lsakey)
             else:

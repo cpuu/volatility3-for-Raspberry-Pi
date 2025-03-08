@@ -22,7 +22,7 @@ class Cachedump(interfaces.plugins.PluginInterface):
     """Dumps lsa secrets from memory"""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 1)
+    _version = (1, 0, 2)
 
     @classmethod
     def get_requirements(cls):
