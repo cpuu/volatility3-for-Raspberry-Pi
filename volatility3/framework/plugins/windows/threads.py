@@ -36,8 +36,9 @@ class Threads(thrdscan.ThrdScan):
             ),
         ]
 
-    @staticmethod
+    @classmethod
     def list_threads(
+        cls,
         context: interfaces.context.ContextInterface,
         kernel_module_name: str,
         proc: interfaces.objects.ObjectInterface,
