@@ -814,7 +814,12 @@ class Version8Format(Version7Format):
         type_definition = self._json_object["user_types"].get(type_name)
         if type_definition is None:
             # Fall back to the natives table
-            return self.natives.get_type(self.name + constants.BANG + type_name)
+            if type_name in self.natives.types:
+                return self.natives.get_type(self.name + constants.BANG + type_name)
+            else:
+                raise exceptions.SymbolError(
+                    type_name, self.name, f"Unknown symbol: {type_name}"
+                )
 
         members = self._process_fields(type_definition["fields"])
 
