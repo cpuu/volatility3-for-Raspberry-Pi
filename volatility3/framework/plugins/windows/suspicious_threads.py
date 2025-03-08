@@ -41,7 +41,7 @@ class SuspiciousThreads(interfaces.plugins.PluginInterface):
                 name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="threads", component=threads.Threads, version=(2, 0, 0)
+                name="threads", component=threads.Threads, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="vadinfo", component=vadinfo.VadInfo, version=(2, 0, 0)
@@ -169,7 +169,9 @@ class SuspiciousThreads(interfaces.plugins.PluginInterface):
             # there is no benefit to checking the same address more than once per process
             checked = set()
 
-            for thread in threads.Threads.list_threads(kernel, proc):
+            for thread in threads.Threads.list_threads(
+                self.context, self.config["kernel"], proc
+            ):
                 # do not process if a thread is exited or terminated (4 = Terminated)
                 if thread.ExitTime.QuadPart > 0 or thread.Tcb.State == 4:
                     continue
