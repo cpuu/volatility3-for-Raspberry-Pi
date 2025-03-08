@@ -7,7 +7,7 @@ import logging
 from typing import List, Iterable
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
-from volatility3.framework import exceptions, renderers, interfaces, Deprecation
+from volatility3.framework import exceptions, renderers, interfaces, deprecation
 from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import plugins
 from volatility3.framework.objects import utility
@@ -38,7 +38,7 @@ class Lsmod(plugins.PluginInterface):
         ]
 
     @classmethod
-    @Deprecation.deprecated_method(
+    @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.list_modules,
         replacement_version=(2, 0, 0),
     )

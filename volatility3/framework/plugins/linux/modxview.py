@@ -6,7 +6,7 @@ from typing import List, Dict, Iterator
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 
-from volatility3.framework import interfaces, Deprecation
+from volatility3.framework import interfaces, deprecation
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints, TreeGrid, NotAvailableValue
 from volatility3.framework.symbols.linux import extensions
@@ -48,7 +48,7 @@ spot modules presence and taints."""
         ]
 
     @classmethod
-    @Deprecation.deprecated_method(
+    @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.flatten_run_modules_results,
         replacement_version=(2, 0, 0),
     )
@@ -70,7 +70,7 @@ spot modules presence and taints."""
         )
 
     @classmethod
-    @Deprecation.deprecated_method(
+    @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.run_modules_scanners,
         replacement_version=(2, 0, 0),
     )

@@ -6,7 +6,7 @@ import logging
 from typing import List, Dict
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
-from volatility3.framework import interfaces, renderers, Deprecation
+from volatility3.framework import interfaces, renderers, deprecation
 from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import plugins
 from volatility3.framework.objects import utility
@@ -38,7 +38,7 @@ class Check_modules(plugins.PluginInterface):
         ]
 
     @classmethod
-    @Deprecation.deprecated_method(
+    @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.get_kset_modules,
         replacement_version=(2, 0, 0),
     )

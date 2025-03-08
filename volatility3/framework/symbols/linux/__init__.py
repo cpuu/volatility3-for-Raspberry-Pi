@@ -15,9 +15,9 @@ from volatility3 import framework
 from volatility3.framework import (
     constants,
     exceptions,
+    deprecation,
     interfaces,
     objects,
-    Deprecation,
 )
 from volatility3.framework.objects import utility
 from volatility3.framework.symbols import intermed
@@ -368,8 +368,8 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
                 yield fd_num, filp, full_path
 
     @classmethod
-    @Deprecation.method_being_removed(
-        "This method is not needed. The correct API for mapping kernel pointers to modules is `linux_utilities_modules.Modules.run_module_scanners`"
+    @deprecation.method_being_removed(
+        "Callers to this method should adapt `linux_utilities_modules.Modules.run_module_scanners`"
     )
     def mask_mods_list(
         cls,
@@ -385,8 +385,8 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         return linux_utilities_modules.Modules.mask_mods_list(context, layer_name, mods)
 
     @classmethod
-    @Deprecation.method_being_removed(
-        "The correct API for mapping kernel pointers to modules is `linux_utilities_modules.Modules.run_module_scanners`"
+    @deprecation.method_being_removed(
+        "Callers to this method should adapt `linux_utilities_modules.Modules.run_module_scanners`"
     )
     def generate_kernel_handler_info(
         cls,
@@ -417,7 +417,7 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         )
 
     @classmethod
-    @Deprecation.deprecated_method(
+    @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.lookup_module_address,
         replacement_version=(2, 0, 0),
     )

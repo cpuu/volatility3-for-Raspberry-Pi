@@ -6,7 +6,7 @@ from volatility3 import framework
 from volatility3.framework import (
     constants,
     interfaces,
-    Deprecation,
+    deprecation,
     exceptions,
     objects,
 )
@@ -103,15 +103,15 @@ class Modules(interfaces.configuration.VersionableInterface):
         return None, None
 
     @classmethod
-    @Deprecation.method_being_removed(
-        "This method is not needed. The correct API for mapping kernel pointers to modules is `linux_utilities_modules.Modules.run_module_scanners`"
+    @deprecation.method_being_removed(
+        "Code using this function should adapt `linux_utilities_modules.Modules.run_module_scanners`"
     )
     def mask_mods_list(
         cls,
         context: interfaces.context.ContextInterface,
         kernel_layer_name: str,
         mods: Iterator[extensions.module],
-    ) -> List[extensions.module]:
+    ) -> List[Tuple[str, int, int]]:
         """
         A helper function to mask the starting and end address of kernel modules
         """
@@ -127,7 +127,7 @@ class Modules(interfaces.configuration.VersionableInterface):
         ]
 
     @classmethod
-    @Deprecation.method_being_removed(
+    @deprecation.method_being_removed(
         "Use `module_lookup_by_address` to map address to their hosting kernel module and symbol."
     )
     def lookup_module_address(

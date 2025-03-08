@@ -40,7 +40,7 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
         ]
 
     @staticmethod
-    @Deprecation.deprecated_method(
+    @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.get_modules_memory_boundaries,
         replacement_version=(2, 0, 0),
     )
@@ -52,7 +52,7 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
             context, vmlinux_module_name
         )
 
-    @Deprecation.deprecated_method(
+    @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.get_module_address_alignment,
         replacement_version=(2, 0, 0),
     )
@@ -79,7 +79,7 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
             context, vmlinux_module_name
         )
 
-    @Deprecation.deprecated_method(
+    @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.get_hidden_modules,
         replacement_version=(2, 0, 0),
     )
@@ -118,7 +118,7 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
         )
 
     @staticmethod
-    @Deprecation.deprecated_method(
+    @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.validate_alignment_patterns,
         replacement_version=(2, 0, 0),
     )
