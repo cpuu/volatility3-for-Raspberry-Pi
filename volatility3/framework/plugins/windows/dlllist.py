@@ -37,13 +37,13 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="psscan", component=psscan.PsScan, version=(1, 1, 0)
+                name="psscan", component=psscan.PsScan, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="pedump", component=pedump.PEDump, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="info", component=info.Info, version=(1, 0, 0)
+                name="info", component=info.Info, version=(2, 0, 0)
             ),
             requirements.ListRequirement(
                 name="pid",
@@ -85,11 +85,7 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             self.context, self.config_path, "windows", "pe", class_types=pe.class_types
         )
 
-        kernel = self.context.modules[self.config["kernel"]]
-
-        kuser = info.Info.get_kuser_structure(
-            self.context, kernel.layer_name, kernel.symbol_table_name
-        )
+        kuser = info.Info.get_kuser_structure(self.context, self.config["kernel"])
 
         nt_major_version = int(kuser.NtMajorVersion)
         nt_minor_version = int(kuser.NtMinorVersion)
@@ -209,8 +205,7 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         if self.config["offset"]:
             procs = psscan.PsScan.scan_processes(
                 self.context,
-                kernel.layer_name,
-                kernel.symbol_table_name,
+                self.config["kernel"],
                 filter_func=psscan.PsScan.create_offset_filter(
                     self.context,
                     kernel.layer_name,

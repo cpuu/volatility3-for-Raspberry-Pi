@@ -26,10 +26,10 @@ class HiveScan(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="poolscanner", plugin=poolscanner.PoolScanner, version=(1, 0, 0)
+                name="poolscanner", plugin=poolscanner.PoolScanner, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="bigpools", plugin=bigpools.BigPools, version=(1, 0, 0)
+                name="bigpools", plugin=bigpools.BigPools, version=(2, 0, 0)
             ),
         ]
 
@@ -62,8 +62,7 @@ class HiveScan(interfaces.plugins.PluginInterface):
 
             for pool in bigpools.BigPools.list_big_pools(
                 context,
-                layer_name=kernel.layer_name,
-                symbol_table=kernel.symbol_table_name,
+                kernel_module_name=kernel_name,
                 tags=["CM10"],
             ):
                 cmhive = ntkrnlmp.object(
@@ -77,7 +76,7 @@ class HiveScan(interfaces.plugins.PluginInterface):
             )
 
             for result in poolscanner.PoolScanner.generate_pool_scan(
-                context, kernel.layer_name, kernel.symbol_table_name, constraints
+                context, kernel_name, constraints
             ):
                 _constraint, mem_object, _header = result
                 yield mem_object

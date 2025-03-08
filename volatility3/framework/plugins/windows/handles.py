@@ -39,7 +39,7 @@ class Handles(interfaces.plugins.PluginInterface):
                 name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="psscan", component=psscan.PsScan, version=(1, 1, 0)
+                name="psscan", component=psscan.PsScan, version=(2, 0, 0)
             ),
             requirements.ListRequirement(
                 name="pid",
@@ -376,8 +376,7 @@ class Handles(interfaces.plugins.PluginInterface):
         if self.config["offset"]:
             procs = psscan.PsScan.scan_processes(
                 self.context,
-                kernel.layer_name,
-                kernel.symbol_table_name,
+                self.config["kernel"],
                 filter_func=psscan.PsScan.create_offset_filter(
                     self.context,
                     kernel.layer_name,

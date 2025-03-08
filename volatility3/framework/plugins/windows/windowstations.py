@@ -46,6 +46,12 @@ class WindowStations(interfaces.plugins.PluginInterface):
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
+            requirements.VersionRequirement(
+                name="poolscanner", component=poolscanner.PoolScanner, version=(2, 0, 0)
+            ),
+            requirements.VersionRequirement(
+                name="modules", component=modules.Modules, version=(3, 0, 0)
+            ),
         ]
 
     @staticmethod
@@ -152,8 +158,7 @@ class WindowStations(interfaces.plugins.PluginInterface):
 
         for result in poolscanner.PoolScanner.generate_pool_scan_extended(
             context=context,
-            kernel_layer_name=kernel.layer_name,
-            kernel_symbol_table_name=kernel.symbol_table_name,
+            kernel_module_name=kernel_module_name,
             object_symbol_table_name=gui_table_name,
             constraints=constraints,
         ):

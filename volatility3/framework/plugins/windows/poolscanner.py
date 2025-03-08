@@ -129,7 +129,7 @@ class PoolScanner(plugins.PluginInterface):
     """A generic pool scanner plugin."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 1, 1)
+    _version = (2, 0, 0)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -151,7 +151,7 @@ class PoolScanner(plugins.PluginInterface):
         constraints = self.builtin_constraints(symbol_table)
 
         for constraint, mem_object, header in self.generate_pool_scan(
-            self.context, kernel.layer_name, symbol_table, constraints
+            self.context, self.config["kernel"], constraints
         ):
             # generate some type-specific info for sanity checking
             if constraint.object_type == "Process":
@@ -365,8 +365,7 @@ class PoolScanner(plugins.PluginInterface):
     def generate_pool_scan_extended(
         cls,
         context: interfaces.context.ContextInterface,
-        kernel_layer_name: str,
-        kernel_symbol_table_name: str,
+        kernel_module_name: str,
         object_symbol_table_name: str,
         constraints: List[PoolConstraint],
     ) -> Generator[
@@ -384,41 +383,42 @@ class PoolScanner(plugins.PluginInterface):
 
         Args:
             context: The context to retrieve required elements (layers, symbol tables) from
-            kernel_layer_name: The name of the base kernel layer
-            kernel_symbol_table_name: The name of the table containing the kernel symbols
+            kernel_module_name: The name of the module for the kernel
             object_symbol_table_name: The name of the symbol table for the object being scanned for
             constraints: List of pool constraints used to limit the scan results
         Returns:
             Iterable of tuples, containing the constraint that matched, the object from memory, the object header used to determine the object
         """
 
+        kernel = context.modules[kernel_module_name]
+
         # get the object type map
         type_map = handles.Handles.get_type_map(
             context=context,
-            layer_name=kernel_layer_name,
-            symbol_table=kernel_symbol_table_name,
+            layer_name=kernel.layer_name,
+            symbol_table=kernel.symbol_table_name,
         )
 
         cookie = handles.Handles.find_cookie(
             context=context,
-            layer_name=kernel_layer_name,
-            symbol_table=kernel_symbol_table_name,
+            layer_name=kernel.layer_name,
+            symbol_table=kernel.symbol_table_name,
         )
 
-        is_windows_10 = versions.is_windows_10(context, kernel_symbol_table_name)
+        is_windows_10 = versions.is_windows_10(context, kernel.symbol_table_name)
         is_windows_8_or_later = versions.is_windows_8_or_later(
-            context, kernel_symbol_table_name
+            context, kernel.symbol_table_name
         )
 
         # start off with the primary virtual layer
-        scan_layer = kernel_layer_name
+        scan_layer = kernel.layer_name
 
         # switch to a non-virtual layer if necessary
         if not is_windows_10:
             scan_layer = context.layers[scan_layer].config["memory_layer"]
 
         if symbols.symbol_table_is_64bit(
-            context=context, symbol_table_name=kernel_symbol_table_name
+            context=context, symbol_table_name=kernel.symbol_table_name
         ):
             alignment = 0x10
         else:
@@ -433,12 +433,11 @@ class PoolScanner(plugins.PluginInterface):
             alignment=alignment,
         ):
 
-            # construct the object in its own layer, using its own types
             mem_objects = header.get_object(
                 constraint=constraint,
                 use_top_down=is_windows_8_or_later,
-                native_layer_name=kernel_layer_name,
-                kernel_symbol_table=kernel_symbol_table_name,
+                native_layer_name=kernel.layer_name,
+                kernel_symbol_table=kernel.symbol_table_name,
             )
 
             for mem_object in mem_objects:
@@ -472,8 +471,7 @@ class PoolScanner(plugins.PluginInterface):
     def generate_pool_scan(
         cls,
         context: interfaces.context.ContextInterface,
-        layer_name: str,
-        symbol_table: str,
+        kernel_module_name: str,
         constraints: List[PoolConstraint],
     ) -> Generator[
         Tuple[
@@ -489,17 +487,18 @@ class PoolScanner(plugins.PluginInterface):
 
         Args:
             context: The context to retrieve required elements (layers, symbol tables) from
-            layer_name: The name of the layer on which to operate
-            symbol_table: The name of the table containing the kernel symbols
+            kernel_module_name: The name of the module for the kernel
             constraints: List of pool constraints used to limit the scan results
 
         Returns:
             Iterable of tuples, containing the constraint that matched, the object from memory, the object header used to determine the object
         """
 
+        kernel = context.modules[kernel_module_name]
+
         # repeat the symbol table to match the original `generate_pool_scan` behaviour
         yield from cls.generate_pool_scan_extended(
-            context, layer_name, symbol_table, symbol_table, constraints
+            context, kernel_module_name, kernel.symbol_table_name, constraints
         )
 
     @classmethod

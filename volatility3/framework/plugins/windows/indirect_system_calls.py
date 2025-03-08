@@ -52,7 +52,7 @@ class IndirectSystemCalls(direct_system_calls.DirectSystemCalls):
             requirements.PluginRequirement(
                 name="direct_system_calls",
                 plugin=direct_system_calls.DirectSystemCalls,
-                version=(1, 0, 0),
+                version=(2, 0, 0),
             ),
         ]
 

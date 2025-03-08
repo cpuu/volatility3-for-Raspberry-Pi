@@ -11,7 +11,6 @@ from volatility3.framework.renderers import TreeGrid, format_hints
 from volatility3.framework.symbols.windows import extensions
 from volatility3.plugins.windows import (
     handles,
-    info,
     pslist,
     psscan,
     thrdscan,
@@ -50,13 +49,10 @@ We recommend using -r pretty if you are looking at this plugin's output in a ter
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="info", component=info.Info, version=(1, 0, 0)
-            ),
-            requirements.VersionRequirement(
                 name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="psscan", component=psscan.PsScan, version=(1, 0, 0)
+                name="psscan", component=psscan.PsScan, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="thrdscan", component=thrdscan.ThrdScan, version=(1, 0, 0)
@@ -114,10 +110,10 @@ We recommend using -r pretty if you are looking at this plugin's output in a ter
         return self._proc_list_to_dict(tasks)
 
     def _check_psscan(
-        self, layer_name: str, symbol_table: str
+        self,
     ) -> Dict[int, extensions.EPROCESS]:
         res = psscan.PsScan.scan_processes(
-            context=self.context, layer_name=layer_name, symbol_table=symbol_table
+            context=self.context, kernel_module_name=self.config["kernel"]
         )
 
         return self._proc_list_to_dict(res)
@@ -144,20 +140,24 @@ We recommend using -r pretty if you are looking at this plugin's output in a ter
         return self._proc_list_to_dict(ret)
 
     def _check_csrss_handles(
-        self, tasks: Iterable[extensions.EPROCESS], layer_name: str, symbol_table: str
+        self, tasks: Iterable[extensions.EPROCESS]
     ) -> Dict[int, extensions.EPROCESS]:
         ret: List[extensions.EPROCESS] = []
+
+        kernel = self.context.modules[self.config["kernel"]]
 
         handles_plugin = handles.Handles(
             context=self.context, config_path=self.config_path
         )
 
-        type_map = handles_plugin.get_type_map(self.context, layer_name, symbol_table)
+        type_map = handles_plugin.get_type_map(
+            self.context, kernel.layer_name, kernel.symbol_table_name
+        )
 
         cookie = handles_plugin.find_cookie(
             context=self.context,
-            layer_name=layer_name,
-            symbol_table=symbol_table,
+            layer_name=kernel.layer_name,
+            symbol_table=kernel.symbol_table_name,
         )
 
         for p in tasks:
@@ -179,8 +179,6 @@ We recommend using -r pretty if you are looking at this plugin's output in a ter
         return self._proc_list_to_dict(ret)
 
     def _generator(self):
-        kernel = self.context.modules[self.config["kernel"]]
-
         kdbg_list_processes = list(
             pslist.PsList.list_processes(
                 context=self.context, kernel_module_name=self.config["kernel"]
@@ -191,13 +189,9 @@ We recommend using -r pretty if you are looking at this plugin's output in a ter
         processes: Dict[str, Dict[int, extensions.EPROCESS]] = {}
 
         processes["pslist"] = self._check_pslist(kdbg_list_processes)
-        processes["psscan"] = self._check_psscan(
-            kernel.layer_name, kernel.symbol_table_name
-        )
+        processes["psscan"] = self._check_psscan()
         processes["thrdscan"] = self._check_thrdscan()
-        processes["csrss"] = self._check_csrss_handles(
-            kdbg_list_processes, kernel.layer_name, kernel.symbol_table_name
-        )
+        processes["csrss"] = self._check_csrss_handles(kdbg_list_processes)
 
         # Unique set of all offsets from all sources
         offsets = set(chain(*(mapping.keys() for mapping in processes.values())))

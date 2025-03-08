@@ -32,7 +32,7 @@ class ModScan(modules.Modules):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="poolscanner", component=poolscanner.PoolScanner, version=(1, 0, 0)
+                name="poolscanner", component=poolscanner.PoolScanner, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="modules", component=modules.Modules, version=(3, 0, 0)
@@ -81,7 +81,7 @@ class ModScan(modules.Modules):
         )
 
         for result in poolscanner.PoolScanner.generate_pool_scan(
-            context, kernel.layer_name, kernel.symbol_table_name, constraints
+            context, kernel_module_name, constraints
         ):
             _constraint, mem_object, _header = result
             yield mem_object
