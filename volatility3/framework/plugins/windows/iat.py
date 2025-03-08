@@ -69,11 +69,23 @@ class IAT(interfaces.plugins.PluginInterface):
                     layer_name=proc_layer_name,
                 )
 
-                for offset, data in dos_header.reconstruct():
-                    pe_data.seek(offset)
-                    pe_data.write(data)
+                try:
+                    for offset, data in dos_header.reconstruct():
+                        pe_data.seek(offset)
+                        pe_data.write(data)
+                except (exceptions.InvalidAddressException, ValueError) as excp:
+                    vollog.warning(
+                        f"Exception triggered when reconstructing PE file for process {proc.UniqueProcessId} at address {peb.ImageBaseAddress:#x} due to {excp}. Output file may be corrupt and/or truncated."
+                    )
 
-                pe_obj = pefile.PE(data=pe_data.getvalue(), fast_load=True)
+                try:
+                    pe_obj = pefile.PE(data=pe_data.getvalue(), fast_load=True)
+                except pefile.PEFormatError as excp:
+                    vollog.debug(
+                        f"Exception triggered when creating PE file object for process {proc.UniqueProcessId} at address {peb.ImageBaseAddress:#x} due to {excp}. Unable to extract file."
+                    )
+                    continue
+
                 pe_obj.parse_data_directories(
                     [pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_IMPORT"]]
                 )
