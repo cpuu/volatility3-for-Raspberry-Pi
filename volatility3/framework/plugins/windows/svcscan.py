@@ -20,7 +20,7 @@ from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.windows import versions
 from volatility3.framework.symbols.windows.extensions import services as services_types
-from volatility3.plugins.windows import poolscanner, pslist
+from volatility3.plugins.windows import pslist
 from volatility3.plugins.windows.registry import hivelist
 
 vollog = logging.getLogger(__name__)
@@ -52,9 +52,6 @@ class SvcScan(interfaces.plugins.PluginInterface):
             ),
             requirements.PluginRequirement(
                 name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
-            ),
-            requirements.PluginRequirement(
-                name="poolscanner", plugin=poolscanner.PoolScanner, version=(1, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)

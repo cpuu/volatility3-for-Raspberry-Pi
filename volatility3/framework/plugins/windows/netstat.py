@@ -34,7 +34,7 @@ class NetStat(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="netscan", component=netscan.NetScan, version=(1, 0, 0)
+                name="netscan", component=netscan.NetScan, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="modules", component=modules.Modules, version=(3, 0, 0)
@@ -43,7 +43,7 @@ class NetStat(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 name="pdbutil", component=pdbutil.PDBUtility, version=(1, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="info", component=info.Info, version=(1, 0, 0)
+                name="info", component=info.Info, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="verinfo", component=verinfo.VerInfo, version=(1, 0, 0)
@@ -629,7 +629,7 @@ class NetStat(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         kernel = self.context.modules[self.config["kernel"]]
 
         netscan_symbol_table = netscan.NetScan.create_netscan_symbol_table(
-            self.context, kernel.layer_name, kernel.symbol_table_name, self.config_path
+            self.context, self.config["kernel"], self.config_path
         )
 
         tcpip_module = self.get_tcpip_module(self.context, self.config["kernel"])
