@@ -76,7 +76,8 @@ Writing Scanners
 Scanners are objects that adhere to the :py:class:`~volatility3.framework.interfaces.layers.ScannerInterface`.  They are
 passed to the :py:meth:`~volatility3.framework.interfaces.layers.TranslationLayerInterface.scan` method on layers which will
 divide the provided range of sections (or the entire layer
-if none are provided) and call the :py:meth:`~volatility3.framework.interfaces.layers.ScannerInterface`'s call method with each chunk as a parameter, ensuring a suitable amount of overlap (as defined by the scanner).
+if none are provided) and call the :py:meth:`~volatility3.framework.interfaces.layers.ScannerInterface`'s call method
+with each chunk as a parameter, ensuring a suitable amount of overlap (as defined by the scanner).
 The offset of the chunk, within the layer, is also provided as a parameter.
 
 Scanners can technically maintain state, but it is not recommended since the ordering that the chunks are scanned is
