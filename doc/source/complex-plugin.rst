@@ -36,7 +36,7 @@ each plugin in order to populate the context's configuration correctly based on 
 between plugins).  Once the automagics have been constructed, the plugin can be instantiated using the helper function
 :py:func:`~volatility3.framework.plugins.construct_plugin` providing:
 
- * the base context (containing the configuration and any already loaded layers or symbol tables)0l
+ * the base context (containing the configuration and any already loaded layers or symbol tables)
  * the plugin class to run
  * the configuration path within the context for the plugin
  * any callback to determine progress in lengthy operations
