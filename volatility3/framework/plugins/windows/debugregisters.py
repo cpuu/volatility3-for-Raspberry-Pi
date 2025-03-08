@@ -41,7 +41,7 @@ class DebugRegisters(interfaces.plugins.PluginInterface):
                 name="threads", component=threads.Threads, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="pe_symbols", component=pe_symbols.PESymbols, version=(2, 0, 0)
+                name="pe_symbols", component=pe_symbols.PESymbols, version=(3, 0, 0)
             ),
         ]
 

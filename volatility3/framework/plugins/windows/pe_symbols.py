@@ -1,7 +1,6 @@
 # This file is Copyright 2024 Volatility Foundation and licensed under the Volatility Software License 1.0
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 
-import copy
 import io
 import logging
 import ntpath
@@ -11,7 +10,7 @@ from typing import Dict, Tuple, Optional, List, Generator, Union, Callable
 import pefile
 
 from volatility3.framework import interfaces, exceptions
-from volatility3.framework import renderers, constants
+from volatility3.framework import renderers, constants, objects
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols import intermed
@@ -245,7 +244,8 @@ class PESymbols(interfaces.plugins.PluginInterface):
     _required_framework_version = (2, 7, 0)
 
     # 2.0.0 - changed signature of get_kernel_modules, get_all_vads_with_file_paths, addresses_for_process_symbols, get_process_modules
-    _version = (2, 0, 0)
+    # 3.0.0 - find_symbols wil now throw a ValueError if the provided wanted symbol information does not follow the spec
+    _version = (3, 0, 0)
 
     # used for special handling of the kernel PDB file. See later notes
     os_module_name = "ntoskrnl.exe"
@@ -671,6 +671,53 @@ class PESymbols(interfaces.plugins.PluginInterface):
                         else:
                             yield symbol_key, value_index, symbol_value, wanted_value  # type: ignore
 
+    @classmethod
+    def _validate_wanted_modules(
+        cls,
+        wanted: PESymbolFinder.cached_module_lists,
+    ) -> Optional[PESymbolFinder.cached_module_lists]:
+        """
+        Validates and makes a copy of the address(es) and/or name(s) wanted from a particular module
+        Throws ValueError if invalid values found
+        """
+        remaining: PESymbolFinder.cached_module_lists = {}
+
+        valid_name_types = [str]
+        valid_address_types = [int, objects.Pointer]
+
+        for wanted_type, wanted_symbols in wanted.items():
+            if wanted_type not in [
+                wanted_names_identifier,
+                wanted_addresses_identifier,
+            ]:
+                raise ValueError(
+                    f"The symbol type specified ({wanted_type}) is not valid. Values choices: {wanted_names_identifier}, {wanted_addresses_identifier}"
+                )
+
+            remaining[wanted_type] = []
+
+            # symbol_info will be a symbol name or address requested
+            for symbol_info in wanted_symbols:
+                if (
+                    wanted_type == wanted_names_identifier
+                    and type(symbol_info) not in valid_name_types
+                ):
+                    raise ValueError(
+                        f"The requested symbol name has a type of {type(symbol_info)} which is not in the allowed set of {valid_name_types}"
+                    )
+
+                elif (
+                    wanted_type == wanted_addresses_identifier
+                    and type(symbol_info) not in valid_address_types
+                ):
+                    raise ValueError(
+                        f"The requested address has a type of {type(symbol_info)} which is not in the allowed set of {valid_address_types}"
+                    )
+
+                remaining[wanted_type].append(symbol_info)
+
+        return remaining
+
     @staticmethod
     def _resolve_symbols_through_methods(
         context: interfaces.context.ContextInterface,
@@ -700,8 +747,8 @@ class PESymbols(interfaces.plugins.PluginInterface):
         # the symbols wanted from this module by the caller
         wanted = wanted_modules[mod_name]
 
-        # make a copy to remove from inside this function for returning to the caller
-        remaining = copy.deepcopy(wanted)
+        # The ValueError will pass through to the caller
+        remaining = PESymbols._validate_wanted_modules(wanted)
 
         done_processing = False
 
@@ -748,6 +795,8 @@ class PESymbols(interfaces.plugins.PluginInterface):
         Loops through each method of symbol analysis until each wanted symbol is found
         Returns the resolved symbols as a dictionary that includes the name and runtime address
 
+        `wanted_modules` must be correctly formatted or a ValueError will be thrown
+
         Args:
             wanted_modules: the dictionary of modules and symbols to resolve. Modified to remove symbols as they are resolved.
             collected_modules: return value from `get_kernel_modules` or `get_process_modules`
@@ -763,6 +812,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
 
             module_instances = collected_modules[mod_name]
 
+            # The ValueError from an invalid wanted_modules will pass through to the caller
             # try to resolve the symbols for `mod_name` through each method (PDB and export table currently)
             (
                 found_in_module,
