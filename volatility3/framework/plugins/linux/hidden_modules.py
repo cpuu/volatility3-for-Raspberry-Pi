@@ -3,7 +3,7 @@
 #
 import logging
 from typing import List, Set, Tuple, Iterable
-import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
+from volatility3.framework.symbols.linux.utilities import modules as linux_utilities_modules
 from volatility3.framework import renderers, interfaces, exceptions, Deprecation
 from volatility3.framework.constants import architectures
 from volatility3.framework.renderers import format_hints
