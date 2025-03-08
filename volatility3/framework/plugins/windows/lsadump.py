@@ -14,6 +14,7 @@ from volatility3.framework.layers import registry
 from volatility3.framework.symbols.windows import versions
 from volatility3.plugins.windows import hashdump
 from volatility3.plugins.windows.registry import hivelist
+from volatility3.framework.renderers import format_hints
 
 vollog = logging.getLogger(__name__)
 
@@ -204,7 +205,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
             else:
                 secret = self.decrypt_aes(enc_secret, lsakey)
 
-            yield (0, (key.get_name(), str(secret), secret))
+            yield (0, (key.get_name(), format_hints.HexBytes(secret), secret))
 
     def run(self):
         offset = self.config.get("offset", None)
@@ -224,6 +225,6 @@ class Lsadump(interfaces.plugins.PluginInterface):
                 sechive = hive
 
         return renderers.TreeGrid(
-            [("Key", str), ("Secret", str), ("Hex", bytes)],
+            [("Key", str), ("Secret", format_hints.HexBytes), ("Hex", bytes)],
             self._generator(syshive, sechive),
         )
