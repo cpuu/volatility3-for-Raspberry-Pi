@@ -33,7 +33,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="hashdump", component=hashdump.Hashdump, version=(2, 0, 0)
+                name="hashdump", component=hashdump.Hashdump, version=(1, 1, 0)
             ),
             requirements.VersionRequirement(
                 name="hivelist", component=hivelist.HiveList, version=(2, 0, 0)
