@@ -33,7 +33,7 @@ def deprecated_method(
     replacement: Callable,
     removal_date: str,
     replacement_version: Tuple[int, int, int] = None,
-    additional_information: str = ""
+    additional_information: str = "",
 ):
     """A decorator for marking functions as deprecated.
 

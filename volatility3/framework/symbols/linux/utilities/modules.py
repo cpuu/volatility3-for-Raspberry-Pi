@@ -105,7 +105,7 @@ class Modules(interfaces.configuration.VersionableInterface):
     @classmethod
     @deprecation.method_being_removed(
         removal_date="2025-09-25",
-        message="Code using this function should adapt `linux_utilities_modules.Modules.run_module_scanners`"
+        message="Code using this function should adapt `linux_utilities_modules.Modules.run_module_scanners`",
     )
     def mask_mods_list(
         cls,
@@ -130,7 +130,7 @@ class Modules(interfaces.configuration.VersionableInterface):
     @classmethod
     @deprecation.method_being_removed(
         removal_date="2025-09-25",
-        message="Use `module_lookup_by_address` to map address to their hosting kernel module and symbol."
+        message="Use `module_lookup_by_address` to map address to their hosting kernel module and symbol.",
     )
     def lookup_module_address(
         cls,
