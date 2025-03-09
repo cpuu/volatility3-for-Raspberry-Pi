@@ -85,6 +85,7 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         Returns:
             Function which, when provided a process object, returns True if the process is to be filtered out of the list
         """
+        pid_list = pid_list or []
         filter_list = [x for x in pid_list if x is not None]
         if filter_list:
 
