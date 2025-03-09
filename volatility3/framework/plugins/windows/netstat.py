@@ -649,10 +649,6 @@ class NetStat(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             vollog.error("Unable to locate symbols for the memory image's tcpip module")
             return
 
-        if not tcpip_symbol_table:
-            vollog.error("Unable to reconstruct symbol table for tcpip.sys")
-            return
-
         for netw_obj in self.list_sockets(
             self.context,
             kernel.layer_name,

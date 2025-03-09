@@ -409,6 +409,10 @@ class PDBUtility(interfaces.configuration.VersionableInterface):
         _, symbol_table_name = cls._modtable_from_pdb(
             context, config_path, layer_name, pdb_name, module_offset, module_size
         )
+
+        if symbol_table_name is None:
+            raise exceptions.VolatilityException(f"Symbol table could not be reconstructed for module {pdb_name}")
+
         return symbol_table_name
 
     @classmethod
