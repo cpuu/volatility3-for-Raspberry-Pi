@@ -411,7 +411,9 @@ class PDBUtility(interfaces.configuration.VersionableInterface):
         )
 
         if symbol_table_name is None:
-            raise exceptions.VolatilityException(f"Symbol table could not be reconstructed for module {pdb_name}")
+            raise exceptions.VolatilityException(
+                f"Symbol table could not be reconstructed for module {pdb_name}"
+            )
 
         return symbol_table_name
 
