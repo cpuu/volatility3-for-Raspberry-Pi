@@ -51,6 +51,7 @@ spot modules presence and taints."""
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.flatten_run_modules_results,
         replacement_version=(2, 0, 0),
+        removal_date="2025-09-25"
     )
     def flatten_run_modules_results(
         cls, run_results: Dict[str, List[extensions.module]], deduplicate: bool = True
@@ -73,6 +74,7 @@ spot modules presence and taints."""
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.run_modules_scanners,
         replacement_version=(2, 0, 0),
+        removal_date="2025-09-25"
     )
     def run_modules_scanners(
         cls,

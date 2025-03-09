@@ -369,7 +369,8 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
 
     @classmethod
     @deprecation.method_being_removed(
-        "Callers to this method should adapt `linux_utilities_modules.Modules.run_module_scanners`"
+        removal_date="2025-09-25",
+        message="Callers to this method should adapt `linux_utilities_modules.Modules.run_module_scanners`"
     )
     def mask_mods_list(
         cls,
@@ -386,7 +387,8 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
 
     @classmethod
     @deprecation.method_being_removed(
-        "Callers to this method should adapt `linux_utilities_modules.Modules.run_module_scanners`"
+        removal_date="2025-09-25",
+        message="Callers to this method should adapt `linux_utilities_modules.Modules.run_module_scanners`"
     )
     def generate_kernel_handler_info(
         cls,
@@ -419,6 +421,7 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
     @classmethod
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.lookup_module_address,
+        removal_date="2025-09-25",
         replacement_version=(2, 0, 0),
     )
     def lookup_module_address(

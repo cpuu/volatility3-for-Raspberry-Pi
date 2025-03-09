@@ -40,6 +40,7 @@ class Check_modules(plugins.PluginInterface):
     @classmethod
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.get_kset_modules,
+        removal_date="2025-09-25",
         replacement_version=(2, 0, 0),
     )
     def get_kset_modules(

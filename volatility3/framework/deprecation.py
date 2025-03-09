@@ -14,13 +14,12 @@ from volatility3.framework import interfaces, exceptions
 from volatility3.framework.configuration import requirements
 
 
-def method_being_removed(message: str):
-
+def method_being_removed(message: str, removal_date: str):
     def decorator(deprecated_func):
         @functools.wraps(deprecated_func)
         def wrapper(*args, **kwargs):
             warnings.warn(
-                f"This API ({deprecated_func.__module__}.{deprecated_func.__qualname__}) will be removed in a release very soon. {message}",
+                f"This API ({deprecated_func.__module__}.{deprecated_func.__qualname__}) will be removed in the first release after {removal_date}. {message}",
                 FutureWarning,
             )
             return deprecated_func(*args, **kwargs)
@@ -32,8 +31,9 @@ def method_being_removed(message: str):
 
 def deprecated_method(
     replacement: Callable,
+    removal_date: str,
     replacement_version: Tuple[int, int, int] = None,
-    additional_information: str = "",
+    additional_information: str = ""
 ):
     """A decorator for marking functions as deprecated.
 
@@ -71,7 +71,7 @@ def deprecated_method(
                             "This is a bug, the deprecated call needs to be removed and the caller needs to update their code to use the new method.",
                         )
 
-            deprecation_msg = f"Method \"{deprecated_func.__module__ + '.' + deprecated_func.__qualname__}\" is deprecated, use \"{replacement.__module__ + '.' + replacement.__qualname__}\" instead. {additional_information}"
+            deprecation_msg = f"Method \"{deprecated_func.__module__ + '.' + deprecated_func.__qualname__}\" is deprecated and will be removed in the first release after {removal_date}, use \"{replacement.__module__ + '.' + replacement.__qualname__}\" instead. {additional_information}"
             warnings.warn(deprecation_msg, FutureWarning)
             # Return the wrapped function with its original arguments
             return deprecated_func(*args, **kwargs)
