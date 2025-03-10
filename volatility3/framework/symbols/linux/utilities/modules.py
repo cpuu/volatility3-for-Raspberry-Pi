@@ -46,7 +46,7 @@ class Modules(interfaces.configuration.VersionableInterface):
         Determine if a target address lies in a module memory space.
         Returns the module where the provided address lies.
 
-        `modules` must contain masked addresses via `get_module_info_for_module` or
+        `modules` must be non-empty and contain masked addresses via `get_module_info_for_module` or
         a ValueError will be thrown
 
         Args:
@@ -65,20 +65,23 @@ class Modules(interfaces.configuration.VersionableInterface):
 
         kernel_layer = context.layers[kernel.layer_name]
 
-        if modules[0].start != modules[0].start & kernel_layer.address_mask:
-            raise ValueError(
-                "Modules list must be gathered from `run_modules_scanners` to be used in this function"
-            )
+        if not modules:
+            raise ValueError("Empty list sent to `module_lookup_by_address`")
 
         matches = []
         for module in modules:
+            if module.start != module.start & kernel_layer.address_mask:
+                raise ValueError(
+                    "Modules list must be gathered from `run_modules_scanners` to be used in this function"
+                )
+
             if module.start <= target_address < module.end:
                 matches.append(module)
 
         if len(matches) >= 1:
             if len(matches) > 1:
                 warnings.warn(
-                    f"Address {hex(target_address)} fits in modules at {[hex(module.start) for module in matches]}, indicating potential modules memory space overlap.",
+                    f"Address {hex(target_address)} fits in modules at {[hex(module.start) for module in matches]}, indicating potential modules memory space overlap. The first matching entry {matches[0].name} will be used",
                     UserWarning,
                 )
 
@@ -199,13 +202,13 @@ class Modules(interfaces.configuration.VersionableInterface):
         """
         kernel = context.modules[kernel_module_name]
 
-        mask = context.layers[kernel.layer_name].address_mask
+        address_mask = context.layers[kernel.layer_name].address_mask
 
         start_addr = kernel.object_from_symbol("_text")
-        start_addr = start_addr.vol.offset & mask
+        start_addr = start_addr.vol.offset & address_mask
 
         end_addr = kernel.object_from_symbol("_etext")
-        end_addr = end_addr.vol.offset & mask
+        end_addr = end_addr.vol.offset & address_mask
 
         return Modules.ModuleInfo(
             start_addr, constants.linux.KERNEL_NAME, start_addr, end_addr
@@ -471,7 +474,7 @@ class Modules(interfaces.configuration.VersionableInterface):
 
         modules = vmlinux.object_from_symbol(symbol_name="modules").cast("list_head")
 
-        table_name = modules.vol.type_name.split(constants.BANG)[0]
+        table_name = vmlinux.symbol_table_name
 
         yield from modules.to_list(table_name + constants.BANG + "module", "list")
 

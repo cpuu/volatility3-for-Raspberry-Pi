@@ -15,6 +15,14 @@ from volatility3.framework.configuration import requirements
 
 
 def method_being_removed(message: str, removal_date: str):
+    """A decorator for marking functions as being removed in the future and without a replacement.
+       Callers to this function should explicitly list the API paths that should be used instead.
+
+    Args:
+        message: A message added to the standard deprecation warning. Should include the replacement API paths
+        removal_date: A YYYY-MM-DD formatted date of when the function will be removed from the framework
+    """
+
     def decorator(deprecated_func):
         @functools.wraps(deprecated_func)
         def wrapper(*args, **kwargs):
@@ -39,6 +47,7 @@ def deprecated_method(
 
     Args:
         replacement: The replacement function overriding the deprecated API, in the form of a Callable (typically a method)
+        removal_date: A YYYY-MM-DD formatted date of when the function will be removed from the framework
         replacement_version: The "replacement" base class version that the deprecated method expects before proxying to it. This implies that "replacement" is a method from a class that inherits from VersionableInterface.
         additional_information: Information appended at the end of the deprecation message
     """
