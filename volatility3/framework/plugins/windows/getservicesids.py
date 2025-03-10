@@ -91,6 +91,7 @@ class GetServiceSIDs(interfaces.plugins.PluginInterface):
                 KeyError,
                 exceptions.InvalidAddressException,
                 registry.RegistryFormatException,
+                registry.RegistryInvalidIndex,
             ):
                 try:
                     services = hive.get_key(r"ControlSet001\Services")
@@ -98,14 +99,24 @@ class GetServiceSIDs(interfaces.plugins.PluginInterface):
                     KeyError,
                     exceptions.InvalidAddressException,
                     registry.RegistryFormatException,
+                    registry.RegistryInvalidIndex,
                 ):
                     continue
 
             if services:
                 for s in services.get_subkeys():
-                    if s.get_name() not in self.servicesids.values():
-                        sid = createservicesid(s.get_name())
-                        yield (0, (sid, s.get_name()))
+                    try:
+                        sid_name = s.get_name()
+                    except (
+                            exceptions.InvalidAddressException,
+                            registry.RegistryFormatException,
+                            registry.RegistryInvalidIndex,
+                    ):
+                        continue
+
+                    if sid_name not in self.servicesids.values():
+                        sid = createservicesid(sid_name)
+                        yield (0, (sid, sid_name))
 
     def run(self):
         return renderers.TreeGrid([("SID", str), ("Service", str)], self._generator())

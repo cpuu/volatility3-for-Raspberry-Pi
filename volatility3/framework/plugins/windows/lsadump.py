@@ -10,6 +10,8 @@ from Crypto.Cipher import ARC4, DES, AES
 
 from volatility3.framework import interfaces, renderers, exceptions
 from volatility3.framework.configuration import requirements
+from volatility3.framework.exceptions import InvalidAddressException
+from volatility3.framework.interfaces.layers import IteratorValue
 from volatility3.framework.layers import registry
 from volatility3.framework.symbols.windows import versions
 from volatility3.plugins.windows import hashdump
@@ -119,7 +121,11 @@ class Lsadump(interfaces.plugins.PluginInterface):
 
         secret = None
         if enc_secret_key:
-            enc_secret_value = next(enc_secret_key.get_values())
+            try:
+                enc_secret_value = next(enc_secret_key.get_values())
+            except (InvalidAddressException, registry.RegistryFormatException, registry.RegistryInvalidIndex):
+                enc_secret_value = None
+
             if enc_secret_value:
                 enc_secret = sechive.read(
                     enc_secret_value.Data + 4, enc_secret_value.DataLength
@@ -168,11 +174,11 @@ class Lsadump(interfaces.plugins.PluginInterface):
         )
 
         bootkey = hashdump.Hashdump.get_bootkey(syshive)
-        lsakey = self.get_lsa_key(sechive, bootkey, vista_or_later)
         if not bootkey:
             vollog.warning("Unable to find bootkey")
             return None
 
+        lsakey = self.get_lsa_key(sechive, bootkey, vista_or_later)
         if not lsakey:
             vollog.warning("Unable to find lsa key")
             return None
@@ -190,7 +196,11 @@ class Lsadump(interfaces.plugins.PluginInterface):
             if not sec_val_key:
                 continue
 
-            enc_secret_value = next(sec_val_key.get_values())
+            try:
+                enc_secret_value = next(sec_val_key.get_values())
+            except (StopIteration, InvalidAddressException, registry.RegistryFormatException, registry.RegistryInvalidIndex):
+                enc_secret_value = None
+
             if not enc_secret_value:
                 continue
 
@@ -204,7 +214,12 @@ class Lsadump(interfaces.plugins.PluginInterface):
             else:
                 secret = self.decrypt_aes(enc_secret, lsakey)
 
-            yield (0, (key.get_name(), secret.decode("latin1"), secret))
+            try:
+                key_name = key.get_name()
+            except (InvalidAddressException, registry.RegistryFormatException, registry.RegistryInvalidIndex):
+                key_name = renderers.UnreadableValue()
+
+            yield (0, (key_name, secret.decode("latin1"), secret))
 
     def run(self):
         offset = self.config.get("offset", None)

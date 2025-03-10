@@ -114,7 +114,15 @@ class GetSIDs(interfaces.plugins.PluginInterface):
         ):
             try:
                 for subkey in hive.get_key(key).get_subkeys():
-                    sid = str(subkey.get_name())
+                    try:
+                        sid = str(subkey.get_name())
+                    except (
+                            exceptions.InvalidAddressException,
+                            layers.registry.RegistryFormatException,
+                            layers.registry.RegistryInvalidIndex,
+                    ):
+                        continue
+
                     path = ""
                     for node in subkey.get_values():
                         try:
@@ -122,6 +130,7 @@ class GetSIDs(interfaces.plugins.PluginInterface):
                         except (
                             exceptions.InvalidAddressException,
                             layers.registry.RegistryFormatException,
+                            layers.registry.RegistryInvalidIndex,
                         ):
                             continue
                         try:

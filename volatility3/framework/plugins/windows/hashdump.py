@@ -9,8 +9,9 @@ from typing import List, Optional, Tuple
 
 from Crypto.Cipher import AES, ARC4, DES
 
-from volatility3.framework import interfaces, renderers
+from volatility3.framework import interfaces, renderers, constants
 from volatility3.framework.configuration import requirements
+from volatility3.framework.exceptions import InvalidAddressException
 from volatility3.framework.symbols.windows.extensions import registry
 from volatility3.plugins.windows.registry import hivelist
 
@@ -356,21 +357,27 @@ class Hashdump(interfaces.plugins.PluginInterface):
         lsa_keys = ["JD", "Skew1", "GBG", "Data"]
 
         lsa = cls.get_hive_key(syshive, lsa_base)
-
         if not lsa:
             return None
 
         bootkey = ""
 
         for lk in lsa_keys:
-            key = cls.get_hive_key(syshive, lsa_base + "\\" + lk)
-            class_data = None
-            if key:
-                class_data = syshive.read(key.Class + 4, key.ClassLength)
+            try:
+                key = cls.get_hive_key(syshive, lsa_base + "\\" + lk)
+                class_data = None
+                if key:
+                    class_data = syshive.read(key.Class + 4, key.ClassLength)
 
-            if class_data is None:
+                if class_data is None:
+                    return None
+                bootkey += class_data.decode("utf-16-le")
+            except (InvalidAddressException, registry.RegistryFormatException, registry.RegistryInvalidIndex) as excp:
+                vollog.log(
+                    constants.LOGLEVEL_VVV,
+                    f"Unable to read Lsa key {lk}: {excp}"
+                )
                 return None
-            bootkey += class_data.decode("utf-16-le")
 
         bootkey_str = binascii.unhexlify(bootkey)
         bootkey_scrambled = bytes(
@@ -443,8 +450,11 @@ class Hashdump(interfaces.plugins.PluginInterface):
             return None
         sam_data = None
         for v in user.get_values():
-            if v.get_name() == "V":
-                sam_data = samhive.read(v.Data + 4, v.DataLength)
+            try:
+                if v.get_name() == "V":
+                    sam_data = samhive.read(v.Data + 4, v.DataLength)
+            except (InvalidAddressException, registry.RegistryInvalidIndex):
+                continue
         if not sam_data:
             return None
 
