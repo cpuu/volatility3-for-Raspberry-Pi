@@ -3,7 +3,7 @@ on: [push, pull_request]
 jobs:
 
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         python-version: ["3.8"]
@@ -43,12 +43,12 @@ jobs:
     - name: Testing...
       run: |
         # VolShell
-        pytest ./test/test_volatility.py --volatility=volshell.py --image-dir=./test_images -k test_windows_volshell -v
-        pytest ./test/test_volatility.py --volatility=volshell.py --image-dir=./test_images -k test_linux_volshell -v
+        pytest ./test/plugins/windows/windows.py --volatility=volshell.py --image-dir=./test_images -k test_windows_volshell -v
+        pytest ./test/plugins/linux/linux.py --volatility=volshell.py --image-dir=./test_images -k test_linux_volshell -v
 
         # Volatility
-        pytest ./test/test_volatility.py --volatility=vol.py --image-dir=./test_images -k "test_windows and not test_windows_volshell" -v
-        pytest ./test/test_volatility.py --volatility=vol.py --image-dir=./test_images -k "test_linux and not test_linux_volshell" -v
+        pytest ./test/plugins/windows/windows.py --volatility=vol.py --image-dir=./test_images -k "test_windows and not test_windows_volshell" -v
+        pytest ./test/plugins/linux/linux.py --volatility=vol.py --image-dir=./test_images -k "test_linux and not test_linux_volshell" -v
 
     - name: Clean up post-test
       run: |

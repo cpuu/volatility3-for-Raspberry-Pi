@@ -18,7 +18,7 @@ class Handles(interfaces.plugins.PluginInterface):
     """Lists process open handles."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (2, 0, 1)
+    _version = (3, 0, 0)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -36,10 +36,10 @@ class Handles(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
+                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="psscan", component=psscan.PsScan, version=(1, 1, 0)
+                name="psscan", component=psscan.PsScan, version=(2, 0, 0)
             ),
             requirements.ListRequirement(
                 name="pid",
@@ -78,7 +78,7 @@ class Handles(interfaces.plugins.PluginInterface):
         except AttributeError:
             # starting with windows 8
             is_64bit = symbols.symbol_table_is_64bit(
-                self.context, kernel.symbol_table_name
+                context=self.context, symbol_table_name=kernel.symbol_table_name
             )
 
             if is_64bit:
@@ -121,8 +121,7 @@ class Handles(interfaces.plugins.PluginInterface):
     def get_type_map(
         cls,
         context: interfaces.context.ContextInterface,
-        layer_name: str,
-        symbol_table: str,
+        kernel_module_name: str,
     ) -> Dict[int, str]:
         """List the executive object types (_OBJECT_TYPE) using the
         ObTypeIndexTable or ObpObjectTypes symbol (differs per OS). This method
@@ -144,21 +143,16 @@ class Handles(interfaces.plugins.PluginInterface):
 
         type_map: Dict[int, str] = {}
 
-        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
-        if not kvo:
-            raise ValueError(
-                "Intel layer does not have an associated kernel virtual offset, failing"
-            )
-        ntkrnlmp = context.module(symbol_table, layer_name=layer_name, offset=kvo)
+        ntkrnlmp = context.modules[kernel_module_name]
 
         try:
             table_addr = ntkrnlmp.get_symbol("ObTypeIndexTable").address
         except exceptions.SymbolError:
             table_addr = ntkrnlmp.get_symbol("ObpObjectTypes").address
 
-        trans_layer = context.layers[layer_name]
+        trans_layer = context.layers[ntkrnlmp.layer_name]
 
-        if not trans_layer.is_valid(kvo + table_addr):
+        if not trans_layer.is_valid(ntkrnlmp.offset + table_addr):
             return type_map
 
         ptrs = ntkrnlmp.object(
@@ -176,7 +170,7 @@ class Handles(interfaces.plugins.PluginInterface):
 
             try:
                 objt = ptr.dereference().cast(
-                    symbol_table + constants.BANG + "_OBJECT_TYPE"
+                    ntkrnlmp.symbol_table_name + constants.BANG + "_OBJECT_TYPE"
                 )
                 type_name = objt.Name.String
             except exceptions.InvalidAddressException:
@@ -194,27 +188,21 @@ class Handles(interfaces.plugins.PluginInterface):
     def find_cookie(
         cls,
         context: interfaces.context.ContextInterface,
-        layer_name: str,
-        symbol_table: str,
+        kernel_module_name: str,
     ) -> Optional[interfaces.objects.ObjectInterface]:
         """Find the ObHeaderCookie value (if it exists)"""
 
+        kernel = context.modules[kernel_module_name]
+
         try:
-            offset = context.symbol_space.get_symbol(
-                symbol_table + constants.BANG + "ObHeaderCookie"
-            ).address
+            symbol_offset = kernel.get_symbol("ObHeaderCookie").address
         except exceptions.SymbolError:
+            vollog.debug('Unable to get symbol information for "ObHeaderCookie"')
             return None
 
-        kvo = context.layers[layer_name].config.get("kernel_virtual_offset", None)
-        if not kvo:
-            raise ValueError(
-                "Intel layer does not have an associated kernel virtual offset, failing"
-            )
-        return context.object(
-            symbol_table + constants.BANG + "unsigned int",
-            layer_name,
-            offset=kvo + offset,
+        return kernel.object(
+            "unsigned int",
+            offset=symbol_offset,
         )
 
     def _make_handle_array(self, offset, level, depth=0):
@@ -223,24 +211,17 @@ class Handles(interfaces.plugins.PluginInterface):
 
         kernel = self.context.modules[self.config["kernel"]]
 
-        virtual = kernel.layer_name
-        kvo = kernel.offset
-
-        ntkrnlmp = self.context.module(
-            kernel.symbol_table_name, layer_name=virtual, offset=kvo
-        )
-
         if level > 0:
-            subtype = ntkrnlmp.get_type("pointer")
+            subtype = kernel.get_type("pointer")
             count = 0x1000 / subtype.size
         else:
-            subtype = ntkrnlmp.get_type("_HANDLE_TABLE_ENTRY")
+            subtype = kernel.get_type("_HANDLE_TABLE_ENTRY")
             count = 0x1000 / subtype.size
 
-        if not self.context.layers[virtual].is_valid(offset):
+        if not self.context.layers[kernel.layer_name].is_valid(offset):
             return None
 
-        table = ntkrnlmp.object(
+        table = kernel.object(
             object_type="array",
             offset=offset,
             subtype=subtype,
@@ -248,7 +229,7 @@ class Handles(interfaces.plugins.PluginInterface):
             absolute=True,
         )
 
-        layer_object = self.context.layers[virtual]
+        layer_object = self.context.layers[kernel.layer_name]
         masked_offset = offset & layer_object.maximum_address
 
         for i in range(len(table)):
@@ -262,7 +243,7 @@ class Handles(interfaces.plugins.PluginInterface):
             # The code above this calls `is_valid` on the `offset`
             # It is sent but then does not validate `entry` before
             # sending it to `_get_item`
-            if not self.context.layers[virtual].is_valid(entry.vol.offset):
+            if not self.context.layers[kernel.layer_name].is_valid(entry.vol.offset):
                 continue
 
             if level > 0:
@@ -305,18 +286,12 @@ class Handles(interfaces.plugins.PluginInterface):
         yield from self._make_handle_array(TableCode, table_levels)
 
     def _generator(self, procs):
-        kernel = self.context.modules[self.config["kernel"]]
-
         type_map = self.get_type_map(
-            context=self.context,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            context=self.context, kernel_module_name=self.config["kernel"]
         )
 
         cookie = self.find_cookie(
-            context=self.context,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            context=self.context, kernel_module_name=self.config["kernel"]
         )
 
         for proc in procs:
@@ -383,8 +358,7 @@ class Handles(interfaces.plugins.PluginInterface):
         if self.config["offset"]:
             procs = psscan.PsScan.scan_processes(
                 self.context,
-                kernel.layer_name,
-                kernel.symbol_table_name,
+                self.config["kernel"],
                 filter_func=psscan.PsScan.create_offset_filter(
                     self.context,
                     kernel.layer_name,
@@ -394,8 +368,7 @@ class Handles(interfaces.plugins.PluginInterface):
         else:
             procs = pslist.PsList.list_processes(
                 context=self.context,
-                layer_name=kernel.layer_name,
-                symbol_table=kernel.symbol_table_name,
+                kernel_module_name=self.config["kernel"],
                 filter_func=filter_func,
             )
 

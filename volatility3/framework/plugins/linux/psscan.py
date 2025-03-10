@@ -84,7 +84,9 @@ class PsScan(interfaces.plugins.PluginInterface):
         vmlinux = context.modules[vmlinux_module_name]
 
         # check if this image is 32bit or 64bit
-        is_32bit = not symbols.symbol_table_is_64bit(context, vmlinux.symbol_table_name)
+        is_32bit = not symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=vmlinux.symbol_table_name
+        )
         if is_32bit:
             pack_format = "I"
         else:

@@ -340,7 +340,7 @@ class elf_sym(objects.StructType):
         if idx != -1:
             name_bytes = name_bytes[:idx]
 
-        return name_bytes.decode("utf-8", errors="ignore")
+        return name_bytes.decode("utf-8", errors="replace")
 
 
 class elf_phdr(objects.StructType):
@@ -446,7 +446,7 @@ class elf_linkmap(objects.StructType):
         idx = buf.find(b"\x00")
         if idx != -1:
             buf = buf[:idx]
-        return buf.decode()
+        return buf.decode("utf-8", errors="replace")
 
 
 class_types = {

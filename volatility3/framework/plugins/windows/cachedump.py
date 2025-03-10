@@ -22,7 +22,7 @@ class Cachedump(interfaces.plugins.PluginInterface):
     """Dumps lsa secrets from memory"""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 1)
+    _version = (1, 0, 2)
 
     @classmethod
     def get_requirements(cls):
@@ -33,7 +33,7 @@ class Cachedump(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(1, 0, 0)
+                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="lsadump", plugin=lsadump.Lsadump, version=(1, 0, 0)
@@ -169,13 +169,11 @@ class Cachedump(interfaces.plugins.PluginInterface):
         offset = self.config.get("offset", None)
 
         syshive = sechive = None
-        kernel = self.context.modules[self.config["kernel"]]
 
         for hive in hivelist.HiveList.list_hives(
-            self.context,
-            self.config_path,
-            kernel.layer_name,
-            kernel.symbol_table_name,
+            context=self.context,
+            base_config_path=self.config_path,
+            kernel_module_name=self.config["kernel"],
             hive_offsets=None if offset is None else [offset],
         ):
             if hive.get_name().split("\\")[-1].upper() == "SYSTEM":

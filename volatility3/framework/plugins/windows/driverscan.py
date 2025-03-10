@@ -25,7 +25,7 @@ class DriverScan(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="poolscanner", plugin=poolscanner.PoolScanner, version=(1, 0, 0)
+                name="poolscanner", plugin=poolscanner.PoolScanner, version=(3, 0, 0)
             ),
         ]
 
@@ -48,15 +48,11 @@ class DriverScan(interfaces.plugins.PluginInterface):
 
         kernel = context.modules[kernel_module_name]
 
-        symbol_table_name = kernel.symbol_table_name
-        layer_name = kernel.layer_name
-
         constraints = poolscanner.PoolScanner.builtin_constraints(
-            symbol_table_name, [b"Dri\xf6", b"Driv"]
+            kernel.symbol_table_name, [b"Dri\xf6", b"Driv"]
         )
 
-        module = context.module(symbol_table_name, layer_name, 0)
-        driver_start_offset = module.get_type("_DRIVER_OBJECT").relative_child_offset(
+        driver_start_offset = kernel.get_type("_DRIVER_OBJECT").relative_child_offset(
             "DriverStart"
         )
 
@@ -65,7 +61,7 @@ class DriverScan(interfaces.plugins.PluginInterface):
         )
 
         for result in poolscanner.PoolScanner.generate_pool_scan(
-            context, layer_name, symbol_table_name, constraints
+            context, kernel_module_name, constraints
         ):
             _constraint, mem_object, _header = result
 

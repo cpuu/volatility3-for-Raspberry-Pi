@@ -5,7 +5,7 @@
 # Public researches: https://i.blackhat.com/USA21/Wednesday-Handouts/us-21-Fixing-A-Memory-Forensics-Blind-Spot-Linux-Kernel-Tracing-wp.pdf
 
 import logging
-from typing import Dict, List, Iterable, Optional
+from typing import Dict, List, Generator
 from enum import Enum
 from dataclasses import dataclass
 
@@ -67,7 +67,7 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
     Investigate the ftrace infrastructure to uncover kernel attached callbacks, which can be leveraged
     to hook kernel functions and modify their behaviour."""
 
-    _version = (1, 0, 0)
+    _version = (2, 0, 0)
     _required_framework_version = (2, 19, 0)
 
     @classmethod
@@ -103,31 +103,34 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
     def extract_hash_table_filters(
         cls,
         ftrace_ops: interfaces.objects.ObjectInterface,
-    ) -> Optional[Iterable[interfaces.objects.ObjectInterface]]:
+    ) -> Generator[interfaces.objects.ObjectInterface, None, None]:
         """Wrap the process of walking to every ftrace_func_entry of an ftrace_ops.
         Those are stored in a hash table of filters that indicates the addresses hooked.
 
         Args:
             ftrace_ops: The ftrace_ops struct to walk through
 
-        Returns:
+        Return, None, None:
             An iterable of ftrace_func_entry structs
         """
 
+        if hasattr(ftrace_ops, "func_hash"):
+            ftrace_hash = ftrace_ops.func_hash.filter_hash
+        else:
+            ftrace_hash = ftrace_ops.filter_hash
+
         try:
-            current_bucket_ptr = ftrace_ops.func_hash.filter_hash.buckets.first
+            current_bucket_ptr = ftrace_hash.buckets.first
         except exceptions.InvalidAddressException:
             vollog.log(
                 constants.LOGLEVEL_VV,
                 f"ftrace_func_entry list of ftrace_ops@{ftrace_ops.vol.offset:#x} is empty/invalid. Skipping it...",
             )
-            return []
+            return
 
         while current_bucket_ptr.is_readable():
             yield current_bucket_ptr.dereference().cast("ftrace_func_entry")
             current_bucket_ptr = current_bucket_ptr.next
-
-        return None
 
     @classmethod
     def parse_ftrace_ops(
@@ -137,7 +140,7 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
         known_modules: Dict[str, List[extensions.module]],
         ftrace_ops: interfaces.objects.ObjectInterface,
         run_hidden_modules: bool = True,
-    ) -> Optional[Iterable[ParsedFtraceOps]]:
+    ) -> Generator[ParsedFtraceOps, None, None]:
         """Parse an ftrace_ops struct to highlight ftrace kernel hooking.
         Iterates over embedded ftrace_func_entry entries, which point to hooked memory areas.
 
@@ -234,12 +237,10 @@ if the "hidden_modules" key is present in known_modules.
                 formatted_ftrace_flags,
             )
 
-        return None
-
     @classmethod
     def iterate_ftrace_ops_list(
         cls, context: interfaces.context.ContextInterface, kernel_name: str
-    ) -> Optional[Iterable[interfaces.objects.ObjectInterface]]:
+    ) -> Generator[interfaces.objects.ObjectInterface, None, None]:
         """Iterate over (ftrace_ops *)ftrace_ops_list.
 
         Returns:

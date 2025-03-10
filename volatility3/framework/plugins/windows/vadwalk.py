@@ -29,7 +29,7 @@ class VadWalk(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
+                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="vadinfo", plugin=vadinfo.VadInfo, version=(2, 0, 0)
@@ -67,7 +67,6 @@ class VadWalk(interfaces.plugins.PluginInterface):
                     )
 
     def run(self) -> renderers.TreeGrid:
-        kernel = self.context.modules[self.config["kernel"]]
         filter_func = pslist.PsList.create_pid_filter(self.config.get("pid", None))
 
         return renderers.TreeGrid(
@@ -85,8 +84,7 @@ class VadWalk(interfaces.plugins.PluginInterface):
             self._generator(
                 pslist.PsList.list_processes(
                     context=self.context,
-                    layer_name=kernel.layer_name,
-                    symbol_table=kernel.symbol_table_name,
+                    kernel_module_name=self.config["kernel"],
                     filter_func=filter_func,
                 )
             ),

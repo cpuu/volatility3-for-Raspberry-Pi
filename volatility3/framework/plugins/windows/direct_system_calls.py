@@ -53,7 +53,9 @@ class DirectSystemCalls(interfaces.plugins.PluginInterface):
     """Detects the Direct System Call technique used to bypass EDRs"""
 
     _required_framework_version = (2, 4, 0)
-    _version = (1, 0, 1)
+
+    # 2.0.0 - changes signature of `get_tasks_to_scan`
+    _version = (2, 0, 0)
 
     # DLLs that are expected to host system call invocations
     valid_syscall_handlers = ("ntdll.dll", "win32u.dll")
@@ -90,7 +92,7 @@ class DirectSystemCalls(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
+                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="yarascanner", component=yarascan.YaraScanner, version=(2, 1, 0)
@@ -334,8 +336,7 @@ class DirectSystemCalls(interfaces.plugins.PluginInterface):
     def get_tasks_to_scan(
         cls,
         context: interfaces.context.ContextInterface,
-        layer_name: str,
-        symbol_table_name: str,
+        kernel_module_name: str,
     ) -> Generator[
         Tuple[interfaces.objects.ObjectInterface, str, str, str], None, None
     ]:
@@ -350,12 +351,15 @@ class DirectSystemCalls(interfaces.plugins.PluginInterface):
         # gather active processes
         filter_func = pslist.PsList.create_active_process_filter()
 
-        is_32bit_arch = not symbols.symbol_table_is_64bit(context, symbol_table_name)
+        kernel = context.modules[kernel_module_name]
+
+        is_32bit_arch = not symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=kernel.symbol_table_name
+        )
 
         for proc in pslist.PsList.list_processes(
             context=context,
-            layer_name=layer_name,
-            symbol_table=symbol_table_name,
+            kernel_module_name=kernel_module_name,
             filter_func=filter_func,
         ):
             proc_name = utility.array_to_string(proc.ImageFileName)
@@ -426,10 +430,8 @@ class DirectSystemCalls(interfaces.plugins.PluginInterface):
             )
             return
 
-        kernel = self.context.modules[self.config["kernel"]]
-
         for proc, proc_name, proc_layer_name, architecture in self.get_tasks_to_scan(
-            self.context, kernel.layer_name, kernel.symbol_table_name
+            self.context, self.config["kernel"]
         ):
             proc_layer = self.context.layers[proc_layer_name]
 

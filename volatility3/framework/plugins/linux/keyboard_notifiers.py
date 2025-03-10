@@ -61,6 +61,10 @@ class Keyboard_notifiers(interfaces.plugins.PluginInterface):
                 "This means you are either analyzing an unsupported kernel version or that your symbol table is corrupt."
             )
 
+        if not self.context.layers[vmlinux.layer_name].is_valid(knl_addr.vol.offset):
+            vollog.error("The head of the keyboard notifier list is paged out.")
+            return
+
         knl = vmlinux.object(
             object_type="atomic_notifier_head",
             offset=knl_addr.vol.offset,

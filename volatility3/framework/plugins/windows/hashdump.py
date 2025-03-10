@@ -9,7 +9,7 @@ from typing import List, Optional, Tuple
 
 from Crypto.Cipher import AES, ARC4, DES
 
-from volatility3.framework import interfaces, renderers, constants
+from volatility3.framework import interfaces, renderers, exceptions, constants
 from volatility3.framework.configuration import requirements
 from volatility3.framework.exceptions import InvalidAddressException
 from volatility3.framework.symbols.windows.extensions import registry
@@ -22,7 +22,7 @@ class Hashdump(interfaces.plugins.PluginInterface):
     """Dumps user hashes from memory"""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 1, 0)
+    _version = (1, 1, 1)
 
     @classmethod
     def get_requirements(cls):
@@ -33,7 +33,7 @@ class Hashdump(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(1, 0, 0)
+                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
             ),
         ]
 
@@ -327,7 +327,9 @@ class Hashdump(interfaces.plugins.PluginInterface):
     empty_nt = b"\x31\xd6\xcf\xe0\xd1\x6a\xe9\x31\xb7\x3c\x59\xd7\xe0\xc0\x89\xc0"
 
     @classmethod
-    def get_hive_key(cls, hive: registry.RegistryHive, key: str):
+    def get_hive_key(
+        cls, hive: registry.RegistryHive, key: str
+    ) -> Optional["registry.CM_KEY_NODE"]:
         result = None
         try:
             if hive:
@@ -352,6 +354,9 @@ class Hashdump(interfaces.plugins.PluginInterface):
 
     @classmethod
     def get_bootkey(cls, syshive: registry.RegistryHive) -> Optional[bytes]:
+        """
+        Returns the scrambled bootkey necesary to decrypt hashes
+        """
         cs = 1
         lsa_base = f"ControlSet{cs:03}" + "\\Control\\Lsa"
         lsa_keys = ["JD", "Skew1", "GBG", "Data"]
@@ -367,7 +372,10 @@ class Hashdump(interfaces.plugins.PluginInterface):
                 key = cls.get_hive_key(syshive, lsa_base + "\\" + lk)
                 class_data = None
                 if key:
-                    class_data = syshive.read(key.Class + 4, key.ClassLength)
+                    try:
+                        class_data = syshive.read(key.Class + 4, key.ClassLength)
+                    except exceptions.InvalidAddressException:
+                        return None
 
                 if class_data is None:
                     return None
@@ -401,7 +409,11 @@ class Hashdump(interfaces.plugins.PluginInterface):
         sam_data = None
         for v in sam_account_key.get_values():
             if v.get_name() == "F":
-                sam_data = samhive.read(v.Data + 4, v.DataLength)
+                try:
+                    sam_data = samhive.read(v.Data + 4, v.DataLength)
+                except exceptions.InvalidAddressException:
+                    return None
+
         if not sam_data:
             return None
 
@@ -450,11 +462,12 @@ class Hashdump(interfaces.plugins.PluginInterface):
             return None
         sam_data = None
         for v in user.get_values():
-            try:
-                if v.get_name() == "V":
+            if v.get_name() == "V":
+                try:
                     sam_data = samhive.read(v.Data + 4, v.DataLength)
-            except (InvalidAddressException, registry.RegistryInvalidIndex):
-                continue
+                except (exceptions.InvalidAddressException, registry.RegistryHive):
+                    return None
+
         if not sam_data:
             return None
 
@@ -556,7 +569,11 @@ class Hashdump(interfaces.plugins.PluginInterface):
         value = None
         for v in user.get_values():
             if v.get_name() == "V":
-                value = samhive.read(v.Data + 4, v.DataLength)
+                try:
+                    value = samhive.read(v.Data + 4, v.DataLength)
+                except exceptions.InvalidAddressException:
+                    return None
+
         if not value:
             return None
 
@@ -603,12 +620,10 @@ class Hashdump(interfaces.plugins.PluginInterface):
         offset = self.config.get("offset", None)
         syshive = None
         samhive = None
-        kernel = self.context.modules[self.config["kernel"]]
         for hive in hivelist.HiveList.list_hives(
-            self.context,
-            self.config_path,
-            kernel.layer_name,
-            kernel.symbol_table_name,
+            context=self.context,
+            base_config_path=self.config_path,
+            kernel_module_name=self.config["kernel"],
             hive_offsets=None if offset is None else [offset],
         ):
             if hive.get_name().split("\\")[-1].upper() == "SYSTEM":

@@ -65,7 +65,11 @@ class Check_modules(plugins.PluginInterface):
 
             mod = mod_kobj.mod
 
-            name = utility.pointer_to_string(kobj.name, 32)
+            try:
+                name = utility.pointer_to_string(kobj.name, 32)
+            except exceptions.InvalidAddressException:
+                continue
+
             if kobj.name and kobj.reference_count() > 2:
                 ret[name] = mod
 

@@ -29,7 +29,9 @@ class Consoles(interfaces.plugins.PluginInterface):
     """Looks for Windows console buffers"""
 
     _required_framework_version = (2, 4, 0)
-    _version = (1, 0, 0)
+
+    # 2.0.0 - change the signature of `get_console_settings_from_registry`
+    _version = (3, 0, 0)
 
     @classmethod
     def get_requirements(cls):
@@ -41,13 +43,13 @@ class Consoles(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="pslist", component=pslist.PsList, version=(2, 0, 0)
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="verinfo", component=verinfo.VerInfo, version=(1, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(1, 0, 0)
+                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
             ),
             requirements.BooleanRequirement(
                 name="no_registry",
@@ -126,9 +128,8 @@ class Consoles(interfaces.plugins.PluginInterface):
     def determine_conhost_version(
         cls,
         context: interfaces.context.ContextInterface,
-        layer_name: str,
-        nt_symbol_table: str,
         config_path: str,
+        kernel_module_name: str,
         conhost_layer_name: str,
         conhost_base: int,
     ) -> Tuple[Optional[str], Dict[str, Type]]:
@@ -137,9 +138,8 @@ class Consoles(interfaces.plugins.PluginInterface):
 
         Args:
             context: The context to retrieve required elements (layers, symbol tables) from
-            layer_name: The name of the layer on which to operate
-            nt_symbol_table: The name of the table containing the kernel symbols
             config_path: The config path where to find symbol files
+            kernel_module_name: The name of the module for the kernel
             conhost_layer_name: The name of the conhot process memory layer
             conhost_base: the base address of conhost.exe
 
@@ -147,16 +147,20 @@ class Consoles(interfaces.plugins.PluginInterface):
             The filename of the symbol table to use and the associated class types.
         """
 
-        is_64bit = symbols.symbol_table_is_64bit(context, nt_symbol_table)
+        kernel = context.modules[kernel_module_name]
+
+        is_64bit = symbols.symbol_table_is_64bit(
+            context=context, symbol_table_name=kernel.symbol_table_name
+        )
 
         if is_64bit:
             arch = "x64"
         else:
             arch = "x86"
 
-        vers = info.Info.get_version_structure(context, layer_name, nt_symbol_table)
+        vers = info.Info.get_version_structure(context, kernel_module_name)
 
-        kuser = info.Info.get_kuser_structure(context, layer_name, nt_symbol_table)
+        kuser = info.Info.get_kuser_structure(context, kernel_module_name)
 
         try:
             vers_minor_version = int(vers.MinorVersion)
@@ -243,7 +247,7 @@ class Consoles(interfaces.plugins.PluginInterface):
                 )
             except (exceptions.InvalidAddressException, TypeError, AttributeError):
                 # the following is IntelLayer specific and might need to be adapted to other architectures.
-                physical_layer_name = context.layers[layer_name].config.get(
+                physical_layer_name = context.layers[kernel.layer_name].config.get(
                     "memory_layer", None
                 )
                 if physical_layer_name:
@@ -314,9 +318,8 @@ class Consoles(interfaces.plugins.PluginInterface):
     def create_conhost_symbol_table(
         cls,
         context: interfaces.context.ContextInterface,
-        layer_name: str,
-        nt_symbol_table: str,
         config_path: str,
+        kernel_module_name: str,
         conhost_layer_name: str,
         conhost_base: int,
     ) -> str:
@@ -324,20 +327,20 @@ class Consoles(interfaces.plugins.PluginInterface):
 
         Args:
             context: The context to retrieve required elements (layers, symbol tables) from
-            layer_name: The name of the layer on which to operate
-            nt_symbol_table: The name of the table containing the kernel symbols
             config_path: The config path where to find symbol files
+            kernel_module_name: The name of the module of the kernel
 
         Returns:
             The name of the constructed symbol table
         """
-        table_mapping = {"nt_symbols": nt_symbol_table}
+        kernel = context.modules[kernel_module_name]
+
+        table_mapping = {"nt_symbols": kernel.symbol_table_name}
 
         symbol_filename, class_types = cls.determine_conhost_version(
             context,
-            layer_name,
-            nt_symbol_table,
             config_path,
+            kernel_module_name,
             conhost_layer_name,
             conhost_base,
         )
@@ -362,9 +365,8 @@ class Consoles(interfaces.plugins.PluginInterface):
     def get_console_info(
         cls,
         context: interfaces.context.ContextInterface,
-        kernel_layer_name: str,
-        kernel_table_name: str,
         config_path: str,
+        kernel_module_name: str,
         procs: Generator[interfaces.objects.ObjectInterface, None, None],
         max_history: Set[int],
         max_buffers: Set[int],
@@ -381,9 +383,8 @@ class Consoles(interfaces.plugins.PluginInterface):
 
         Args:
             context: The context to retrieve required elements (layers, symbol tables) from
-            kernel_layer_name: The name of the layer on which to operate
-            kernel_table_name: The name of the table containing the kernel symbols
             config_path: The config path where to find symbol files
+            kernel_module_name: The name of the module for the kernel
             procs: list of process objects
             max_history: an initial set of CommandHistorySize values
             max_buffers: an initial list of HistoryBufferMax values
@@ -423,9 +424,8 @@ class Consoles(interfaces.plugins.PluginInterface):
             if conhost_symbol_table is None:
                 conhost_symbol_table = cls.create_conhost_symbol_table(
                     context,
-                    kernel_layer_name,
-                    kernel_table_name,
                     config_path,
+                    kernel_module_name,
                     proc_layer_name,
                     conhostexe_base,
                 )
@@ -795,8 +795,7 @@ class Consoles(interfaces.plugins.PluginInterface):
         cls,
         context: interfaces.context.ContextInterface,
         config_path: str,
-        kernel_layer_name: str,
-        kernel_symbol_table_name: str,
+        kernel_module_name: str,
         max_history: Set[int],
         max_buffers: Set[int],
     ) -> Tuple[Set[int], Set[int]]:
@@ -807,8 +806,7 @@ class Consoles(interfaces.plugins.PluginInterface):
         Args:
             context: The context to retrieve required elements (layers, symbol tables) from
             config_path: The config path where to find symbol files
-            kernel_layer_name: The name of the layer on which to operate
-            kernel_symbol_table_name: The name of the table containing the kernel symbols
+            kernel_module_name: The name of the module for the kernel
             max_history: an initial set of CommandHistorySize values
             max_buffers: an initial list of HistoryBufferMax values
 
@@ -825,8 +823,7 @@ class Consoles(interfaces.plugins.PluginInterface):
         for hive in hivelist.HiveList.list_hives(
             context=context,
             base_config_path=config_path,
-            layer_name=kernel_layer_name,
-            symbol_table=kernel_symbol_table_name,
+            kernel_module_name=kernel_module_name,
             hive_offsets=None,
         ):
             try:
@@ -851,8 +848,6 @@ class Consoles(interfaces.plugins.PluginInterface):
             procs: the process list filtered to conhost.exe instances
         """
 
-        kernel = self.context.modules[self.config["kernel"]]
-
         max_history = set(self.config.get("max_history", [50]))
         max_buffers = set(self.config.get("max_buffers", [4]))
         no_registry = self.config.get("no_registry")
@@ -861,8 +856,7 @@ class Consoles(interfaces.plugins.PluginInterface):
             max_history, max_buffers = self.get_console_settings_from_registry(
                 self.context,
                 self.config_path,
-                kernel.layer_name,
-                kernel.symbol_table_name,
+                self.config["kernel"],
                 max_history,
                 max_buffers,
             )
@@ -873,9 +867,8 @@ class Consoles(interfaces.plugins.PluginInterface):
         proc = None
         for proc, console_info, console_properties in self.get_console_info(
             self.context,
-            kernel.layer_name,
-            kernel.symbol_table_name,
             self.config_path,
+            self.config["kernel"],
             procs,
             max_history,
             max_buffers,
@@ -933,8 +926,6 @@ class Consoles(interfaces.plugins.PluginInterface):
         return process_name.lower() != "conhost.exe"
 
     def run(self):
-        kernel = self.context.modules[self.config["kernel"]]
-
         return renderers.TreeGrid(
             [
                 ("PID", int),
@@ -947,8 +938,7 @@ class Consoles(interfaces.plugins.PluginInterface):
             self._generator(
                 pslist.PsList.list_processes(
                     context=self.context,
-                    layer_name=kernel.layer_name,
-                    symbol_table=kernel.symbol_table_name,
+                    kernel_module_name=self.config["kernel"],
                     filter_func=self._conhost_proc_filter,
                 )
             ),

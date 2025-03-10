@@ -34,7 +34,7 @@ class ThrdScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface)
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="poolscanner", plugin=poolscanner.PoolScanner, version=(1, 0, 0)
+                name="poolscanner", plugin=poolscanner.PoolScanner, version=(3, 0, 0)
             ),
         ]
 
@@ -54,16 +54,14 @@ class ThrdScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface)
               A list of _ETHREAD objects found by scanning memory for the "Thre" / "Thr\\xE5" pool signatures
         """
 
-        module = context.modules[module_name]
-        layer_name = module.layer_name
-        symbol_table = module.symbol_table_name
+        kernel = context.modules[module_name]
 
         constraints = poolscanner.PoolScanner.builtin_constraints(
-            symbol_table, [b"Thr\xe5", b"Thre"]
+            kernel.symbol_table_name, [b"Thr\xe5", b"Thre"]
         )
 
         for result in poolscanner.PoolScanner.generate_pool_scan(
-            context, layer_name, symbol_table, constraints
+            context, module_name, constraints
         ):
             _constraint, mem_object, _header = result
             yield mem_object

@@ -16,6 +16,7 @@ from volatility3.framework.layers import registry
 from volatility3.framework.symbols.windows import versions
 from volatility3.plugins.windows import hashdump
 from volatility3.plugins.windows.registry import hivelist
+from volatility3.framework.renderers import format_hints
 
 vollog = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
     """Dumps lsa secrets from memory"""
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls):
@@ -38,7 +39,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
                 name="hashdump", component=hashdump.Hashdump, version=(1, 1, 0)
             ),
             requirements.VersionRequirement(
-                name="hivelist", component=hivelist.HiveList, version=(1, 0, 0)
+                name="hivelist", component=hivelist.HiveList, version=(2, 0, 0)
             ),
         ]
 
@@ -78,8 +79,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
         enc_reg_key = hashdump.Hashdump.get_hive_key(sechive, "Policy\\" + policy_key)
         if not enc_reg_key:
             return None
-        enc_reg_value = next(enc_reg_key.get_values())
-
+        enc_reg_value = next(enc_reg_key.get_values(), None)
         if not enc_reg_value:
             return None
 
@@ -114,7 +114,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
         name: str,
         lsakey: bytes,
         is_vista_or_later: bool,
-    ):
+    ) -> Optional[bytes]:
         enc_secret_key = hashdump.Hashdump.get_hive_key(
             sechive, "Policy\\Secrets\\" + name + "\\CurrVal"
         )
@@ -122,14 +122,18 @@ class Lsadump(interfaces.plugins.PluginInterface):
         secret = None
         if enc_secret_key:
             try:
-                enc_secret_value = next(enc_secret_key.get_values())
+                enc_secret_value = next(enc_secret_key.get_values(), None)
             except (InvalidAddressException, registry.RegistryFormatException, registry.RegistryInvalidIndex):
                 enc_secret_value = None
 
             if enc_secret_value:
-                enc_secret = sechive.read(
-                    enc_secret_value.Data + 4, enc_secret_value.DataLength
-                )
+                try:
+                    enc_secret = sechive.read(
+                        enc_secret_value.Data + 4, enc_secret_value.DataLength
+                    )
+                except exceptions.InvalidAddressExceptions:
+                    return None
+
                 if enc_secret:
                     if not is_vista_or_later:
                         secret = cls.decrypt_secret(enc_secret[0xC:], lsakey)
@@ -139,7 +143,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
         return secret
 
     @classmethod
-    def decrypt_secret(cls, secret: bytes, key: bytes):
+    def decrypt_secret(cls, secret: bytes, key: bytes) -> bytes:
         """Python implementation of SystemFunction005.
 
         Decrypts a block of data with DES using given key.
@@ -197,18 +201,20 @@ class Lsadump(interfaces.plugins.PluginInterface):
                 continue
 
             try:
-                enc_secret_value = next(sec_val_key.get_values())
+                enc_secret_value = next(sec_val_key.get_values(), None)
             except (StopIteration, InvalidAddressException, registry.RegistryFormatException, registry.RegistryInvalidIndex):
                 enc_secret_value = None
 
             if not enc_secret_value:
                 continue
 
-            enc_secret = sechive.read(
-                enc_secret_value.Data + 4, enc_secret_value.DataLength
-            )
-            if not enc_secret:
+            try:
+                enc_secret = sechive.read(
+                    enc_secret_value.Data + 4, enc_secret_value.DataLength
+                )
+            except exceptions.InvalidAddressExceptions:
                 continue
+
             if not vista_or_later:
                 secret = self.decrypt_secret(enc_secret[0xC:], lsakey)
             else:
@@ -219,18 +225,17 @@ class Lsadump(interfaces.plugins.PluginInterface):
             except (InvalidAddressException, registry.RegistryFormatException, registry.RegistryInvalidIndex):
                 key_name = renderers.UnreadableValue()
 
-            yield (0, (key_name, secret.decode("latin1"), secret))
+            yield (0, (key_name, format_hints.HexBytes(secret), secret))
+
 
     def run(self):
         offset = self.config.get("offset", None)
         syshive = sechive = None
-        kernel = self.context.modules[self.config["kernel"]]
 
         for hive in hivelist.HiveList.list_hives(
-            self.context,
-            self.config_path,
-            kernel.layer_name,
-            kernel.symbol_table_name,
+            context=self.context,
+            base_config_path=self.config_path,
+            kernel_module_name=self.config["kernel"],
             hive_offsets=None if offset is None else [offset],
         ):
             if hive.get_name().split("\\")[-1].upper() == "SYSTEM":
@@ -239,6 +244,6 @@ class Lsadump(interfaces.plugins.PluginInterface):
                 sechive = hive
 
         return renderers.TreeGrid(
-            [("Key", str), ("Secret", str), ("Hex", bytes)],
+            [("Key", str), ("Secret", format_hints.HexBytes), ("Hex", bytes)],
             self._generator(syshive, sechive),
         )

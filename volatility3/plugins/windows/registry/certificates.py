@@ -25,7 +25,7 @@ class Certificates(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(1, 0, 0)
+                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="printkey", plugin=printkey.PrintKey, version=(1, 0, 0)
@@ -69,13 +69,10 @@ class Certificates(interfaces.plugins.PluginInterface):
         return None
 
     def _generator(self) -> Iterator[Tuple[int, Tuple[str, str, str, str]]]:
-        kernel = self.context.modules[self.config["kernel"]]
-
         for hive in hivelist.HiveList.list_hives(
-            self.context,
+            context=self.context,
             base_config_path=self.config_path,
-            layer_name=kernel.layer_name,
-            symbol_table=kernel.symbol_table_name,
+            kernel_module_name=self.config["kernel"],
         ):
             for top_key in [
                 "Microsoft\\SystemCertificates",

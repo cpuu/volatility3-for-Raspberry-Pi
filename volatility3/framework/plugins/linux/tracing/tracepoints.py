@@ -116,18 +116,25 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
             known_modules: A dict of known modules, used to locate callbacks origin. Typically obtained through modxview.run_modules_scanners().
             tracepoint: The tracepoint struct to parse
             run_hidden_modules: Whether to run the hidden_modules plugin or not. Note: it won't be run, even if specified, \
-if the "hidden_modules" key is present in known_modules.
+            if the "hidden_modules" key is present in known_modules.
 
         Yields:
             An iterable of ParsedTracepointFunc dataclasses, containing a selection of useful fields related to a tracepoint struct
         """
-
         kernel = context.modules[kernel_name]
         kernel_layer = context.layers[kernel.layer_name]
 
         for tracepoint_func in cls.iterate_tracepoint_funcs(
             context, kernel_layer.name, tracepoint
         ):
+            try:
+                tracepoint_name = utility.pointer_to_string(tracepoint.name, count=512)
+            except exceptions.InvalidAddressException:
+                vollog.debug(
+                    f"Tracepoint function at {tracepoint.vol.offset:#x} is smeared."
+                )
+                continue
+
             probe_handler_address = tracepoint_func.func
             probe_handler_symbol = module_address = module_name = None
 
@@ -183,16 +190,21 @@ if the "hidden_modules" key is present in known_modules.
                     probe_handler_address
                 )
             else:
-                vollog.warning(
+                vollog.debug(
                     f"Could not determine tracepoint@{tracepoint.vol.offset:#x} probe handler {probe_handler_address:#x} module origin.",
                 )
 
+            if hasattr(tracepoint_func, "prio"):
+                prio = tracepoint_func.prio
+            else:
+                prio = None
+
             yield ParsedTracepointFunc(
-                utility.pointer_to_string(tracepoint.name, count=512),
+                tracepoint_name,
                 tracepoint.vol.offset,
                 probe_handler_symbol,
                 probe_handler_address,
-                tracepoint_func.prio,
+                prio,
                 module_name,
                 module_address,
             )
@@ -258,11 +270,11 @@ if the "hidden_modules" key is present in known_modules.
         kernel_layer = self.context.layers[kernel.layer_name]
 
         if not kernel.has_symbol("__start___tracepoints_ptrs"):
-            raise exceptions.SymbolError(
-                "__start___tracepoints_ptrs",
-                self.vmlinux.symbol_table_name,
-                'The provided symbol table does not include the "__start___tracepoints_ptrs" symbol. This means you are either analyzing an unsupported kernel version or that your symbol table is corrupted.',
+            vollog.error(
+                'The provided symbol table does not include the "__start___tracepoints_ptrs" symbol.'
+                "This means you are either analyzing an unsupported kernel version or that your symbol table is corrupted."
             )
+            return
 
         known_modules = modxview.Modxview.run_modules_scanners(
             self.context, kernel_name, run_hidden_modules=False
@@ -281,7 +293,7 @@ if the "hidden_modules" key is present in known_modules.
                     format_hints.Hex(tracepoint_parsed.tracepoint_address),
                     tracepoint_parsed.probe_name or NotAvailableValue(),
                     format_hints.Hex(tracepoint_parsed.probe_address),
-                    tracepoint_parsed.probe_priority,
+                    tracepoint_parsed.probe_priority or NotAvailableValue(),
                     tracepoint_parsed.module_name or NotAvailableValue(),
                     (
                         format_hints.Hex(tracepoint_parsed.module_address)
