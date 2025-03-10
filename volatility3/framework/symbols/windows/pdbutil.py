@@ -411,7 +411,7 @@ class PDBUtility(interfaces.configuration.VersionableInterface):
         )
 
         if symbol_table_name is None:
-            raise exceptions.VolatilityException(
+            raise exceptions.SymbolSpaceError(
                 f"Symbol table could not be reconstructed for module {pdb_name}"
             )
 
@@ -445,7 +445,7 @@ class PDBUtility(interfaces.configuration.VersionableInterface):
         )
 
         if not guids:
-            raise exceptions.VolatilityException(
+            raise exceptions.SymbolSpaceError(
                 f"Did not find GUID of {pdb_name} in module @ 0x{module_offset:x}!"
             )
 
