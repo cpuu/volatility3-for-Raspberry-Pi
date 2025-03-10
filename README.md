@@ -35,7 +35,7 @@ The latest stable version of Volatility will always be the `stable` branch of th
 git clone https://github.com/volatilityfoundation/volatility3.git
 cd volatility3/
 python3 -m venv venv && . venv/bin/activate
-pip install -e .[dev]
+pip install -e ".[dev]"
 ```
 
 ## Quick Start
