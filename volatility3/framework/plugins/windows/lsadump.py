@@ -123,7 +123,11 @@ class Lsadump(interfaces.plugins.PluginInterface):
         if enc_secret_key:
             try:
                 enc_secret_value = next(enc_secret_key.get_values(), None)
-            except (InvalidAddressException, registry.RegistryFormatException, registry.RegistryInvalidIndex):
+            except (
+                InvalidAddressException,
+                registry.RegistryFormatException,
+                registry.RegistryInvalidIndex,
+            ):
                 enc_secret_value = None
 
             if enc_secret_value:
@@ -202,7 +206,12 @@ class Lsadump(interfaces.plugins.PluginInterface):
 
             try:
                 enc_secret_value = next(sec_val_key.get_values(), None)
-            except (StopIteration, InvalidAddressException, registry.RegistryFormatException, registry.RegistryInvalidIndex):
+            except (
+                StopIteration,
+                InvalidAddressException,
+                registry.RegistryFormatException,
+                registry.RegistryInvalidIndex,
+            ):
                 enc_secret_value = None
 
             if not enc_secret_value:
@@ -222,11 +231,14 @@ class Lsadump(interfaces.plugins.PluginInterface):
 
             try:
                 key_name = key.get_name()
-            except (InvalidAddressException, registry.RegistryFormatException, registry.RegistryInvalidIndex):
+            except (
+                InvalidAddressException,
+                registry.RegistryFormatException,
+                registry.RegistryInvalidIndex,
+            ):
                 key_name = renderers.UnreadableValue()
 
             yield (0, (key_name, format_hints.HexBytes(secret), secret))
-
 
     def run(self):
         offset = self.config.get("offset", None)

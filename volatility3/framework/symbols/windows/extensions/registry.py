@@ -199,7 +199,11 @@ class CM_KEY_NODE(objects.StructType):
         # We could change the array type to a struct with both parts
         try:
             signature = node.cast("string", max_length=2, encoding="latin-1")
-        except (exceptions.InvalidAddressException, RegistryFormatException, RegistryInvalidIndex):
+        except (
+            exceptions.InvalidAddressException,
+            RegistryFormatException,
+            RegistryInvalidIndex,
+        ):
             return None
 
         listjump = None
@@ -254,13 +258,21 @@ class CM_KEY_NODE(objects.StructType):
                 if v != 0:
                     try:
                         node = hive.get_node(v)
-                    except (RegistryInvalidIndex, RegistryFormatException, RegistryInvalidIndex) as excp:
+                    except (
+                        RegistryInvalidIndex,
+                        RegistryFormatException,
+                        RegistryInvalidIndex,
+                    ) as excp:
                         vollog.debug(f"Invalid address {excp}")
                         continue
                     if isinstance(node, CM_KEY_VALUE):
                         yield node
 
-        except (exceptions.InvalidAddressException, RegistryFormatException, RegistryInvalidIndex) as excp:
+        except (
+            exceptions.InvalidAddressException,
+            RegistryFormatException,
+            RegistryInvalidIndex,
+        ) as excp:
             vollog.debug(f"Invalid address in get_values iteration: {excp}")
             return None
 

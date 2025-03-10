@@ -115,9 +115,9 @@ class GetSIDs(interfaces.plugins.PluginInterface):
                     try:
                         sid = str(subkey.get_name())
                     except (
-                            exceptions.InvalidAddressException,
-                            layers.registry.RegistryFormatException,
-                            layers.registry.RegistryInvalidIndex,
+                        exceptions.InvalidAddressException,
+                        layers.registry.RegistryFormatException,
+                        layers.registry.RegistryInvalidIndex,
                     ):
                         continue
 

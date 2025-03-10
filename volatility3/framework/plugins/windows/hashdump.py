@@ -380,10 +380,13 @@ class Hashdump(interfaces.plugins.PluginInterface):
                 if class_data is None:
                     return None
                 bootkey += class_data.decode("utf-16-le")
-            except (InvalidAddressException, registry.RegistryFormatException, registry.RegistryInvalidIndex) as excp:
+            except (
+                InvalidAddressException,
+                registry.RegistryFormatException,
+                registry.RegistryInvalidIndex,
+            ) as excp:
                 vollog.log(
-                    constants.LOGLEVEL_VVV,
-                    f"Unable to read Lsa key {lk}: {excp}"
+                    constants.LOGLEVEL_VVV, f"Unable to read Lsa key {lk}: {excp}"
                 )
                 return None
 

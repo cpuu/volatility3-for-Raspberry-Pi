@@ -311,7 +311,11 @@ def _build_guid_name_map(key: reg_extensions.CM_KEY_NODE) -> Dict[str, str]:
             if value.get_name() == "Id":
                 task_id_value = value
                 break
-        except (exceptions.InvalidAddressException, registry.RegistryFormatException, registry.RegistryInvalidIndex):
+        except (
+            exceptions.InvalidAddressException,
+            registry.RegistryFormatException,
+            registry.RegistryInvalidIndex,
+        ):
             continue
 
     if (
@@ -328,7 +332,11 @@ def _build_guid_name_map(key: reg_extensions.CM_KEY_NODE) -> Dict[str, str]:
                 mapping[id_str.decode("utf-16le", errors="replace").rstrip(NULL)] = str(
                     key.get_name()
                 )
-        except (exceptions.InvalidAddressException, registry.RegistryFormatException, registry.RegistryInvalidIndex):
+        except (
+            exceptions.InvalidAddressException,
+            registry.RegistryFormatException,
+            registry.RegistryInvalidIndex,
+        ):
             pass
 
     for subkey in key.get_subkeys():
@@ -1233,21 +1241,32 @@ information about triggers, actions, run times, and creation times."""
         for value in key.get_values():
             try:
                 name = str(value.get_name())
-            except (exceptions.InvalidAddressException, registry.RegistryFormatException, registry.RegistryFormatException):
+            except (
+                exceptions.InvalidAddressException,
+                registry.RegistryFormatException,
+                registry.RegistryFormatException,
+            ):
                 continue
 
             if name in ["Actions", "Triggers", "DynamicInfo"]:
                 values[name] = value
 
-
         try:
             key_name = str(key.get_name())
-        except (exceptions.InvalidAddressException, registry.RegistryFormatException, registry.RegistryFormatException):
+        except (
+            exceptions.InvalidAddressException,
+            registry.RegistryFormatException,
+            registry.RegistryFormatException,
+        ):
             key_name = None
 
         try:
             task_name = guid_mapping.get(key_name, renderers.NotAvailableValue())
-        except (exceptions.InvalidAddressException, registry.RegistryFormatException, registry.RegistryFormatException):
+        except (
+            exceptions.InvalidAddressException,
+            registry.RegistryFormatException,
+            registry.RegistryFormatException,
+        ):
             task_name = renderers.NotAvailableValue()
 
         try:

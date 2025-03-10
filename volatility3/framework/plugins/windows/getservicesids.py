@@ -106,9 +106,9 @@ class GetServiceSIDs(interfaces.plugins.PluginInterface):
                     try:
                         sid_name = s.get_name()
                     except (
-                            exceptions.InvalidAddressException,
-                            registry.RegistryFormatException,
-                            registry.RegistryInvalidIndex,
+                        exceptions.InvalidAddressException,
+                        registry.RegistryFormatException,
+                        registry.RegistryInvalidIndex,
                     ):
                         continue
 
