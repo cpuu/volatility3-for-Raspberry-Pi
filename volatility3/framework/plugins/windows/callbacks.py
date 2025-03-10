@@ -42,7 +42,7 @@ class Callbacks(interfaces.plugins.PluginInterface):
                 name="ssdt", plugin=ssdt.SSDT, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
-                name="poolscanner", plugin=poolscanner.PoolScanner, version=(2, 0, 0)
+                name="poolscanner", plugin=poolscanner.PoolScanner, version=(3, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="driverirp", plugin=driverirp.DriverIrp, version=(1, 0, 0)

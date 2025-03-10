@@ -34,7 +34,7 @@ class NetScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="poolscanner", component=poolscanner.PoolScanner, version=(2, 0, 0)
+                name="poolscanner", component=poolscanner.PoolScanner, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="info", component=info.Info, version=(2, 0, 0)
