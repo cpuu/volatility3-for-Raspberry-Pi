@@ -115,7 +115,9 @@ class WindowStations(interfaces.plugins.PluginInterface):
 
         for session_id, session_layer in session_map.items():
             session_module = context.module(
-                gui_table_name, layer_name=session_layer, offset=0
+                gui_table_name,
+                layer_name=session_layer,
+                offset=context.modules[module_name].offset,
             )
             session_map[session_id] = session_module
 
@@ -177,7 +179,9 @@ class WindowStations(interfaces.plugins.PluginInterface):
                 if session_module:
                     # create the object its own address space (per-session)
                     yield session_module.object(
-                        object_type=object_type, offset=mem_object.vol.offset
+                        object_type=object_type,
+                        offset=mem_object.vol.offset,
+                        absolute=True,
                     )
 
     @classmethod
