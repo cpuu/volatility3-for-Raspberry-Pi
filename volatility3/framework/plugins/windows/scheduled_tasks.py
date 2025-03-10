@@ -336,8 +336,8 @@ def _build_guid_name_map(key: reg_extensions.CM_KEY_NODE) -> Dict[str, str]:
             exceptions.InvalidAddressException,
             registry.RegistryFormatException,
             registry.RegistryInvalidIndex,
-        ):
-            pass
+        ) as excp:
+            vollog.debug(f"Exception occurred while decoding id_str: {excp}")
 
     for subkey in key.get_subkeys():
         mapping.update(_build_guid_name_map(subkey))

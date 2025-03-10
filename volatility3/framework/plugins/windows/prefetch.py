@@ -18,8 +18,8 @@ class BitStream:
         self.source = source
         self.index = in_pos + 4
         # read UInt16 little endian
-        mask = struct.unpack_from('<H', source, in_pos)[0] << 16
-        mask += struct.unpack_from('<H', source, in_pos + 2)[0]
+        mask = struct.unpack_from("<H", source, in_pos)[0] << 16
+        mask += struct.unpack_from("<H", source, in_pos + 2)[0]
         self.mask = mask
         self.bits = 32
 
@@ -29,13 +29,16 @@ class BitStream:
         return self.mask >> (32 - n)
 
     def skip(self, n: int) -> Union[None, Exception]:
-        self.mask = ((self.mask << n) & 0xFFFFFFFF)
+        self.mask = (self.mask << n) & 0xFFFFFFFF
         self.bits -= n
         if self.bits < 16:
             if self.index + 2 > len(self.source):
                 return Exception("EOF Error")
             # read UInt16 little endian
-            self.mask += ((struct.unpack_from('<H', self.source, self.index)[0]) << (16 - self.bits)) & 0xFFFFFFFF
+            self.mask += (
+                (struct.unpack_from("<H", self.source, self.index)[0])
+                << (16 - self.bits)
+            ) & 0xFFFFFFFF
             self.index += 2
             self.bits += 16
 
@@ -66,7 +69,9 @@ class PREFIX_CODE_SYMBOL:
         return f"Symbol {self.id}: symbol {self.symbol} length {self.length}"
 
 
-def prefix_code_tree_add_leaf(treeNodes: List[PREFIX_CODE_NODE], leafIndex: int, mask: int, bits: int) -> int:
+def prefix_code_tree_add_leaf(
+    treeNodes: List[PREFIX_CODE_NODE], leafIndex: int, mask: int, bits: int
+) -> int:
     node = treeNodes[0]
     i = leafIndex + 1
     childIndex = None
@@ -94,13 +99,13 @@ def prefix_code_tree_rebuild(input: bytes) -> PREFIX_CODE_NODE:
 
         symbolInfo[2 * i].id = 2 * i
         symbolInfo[2 * i].symbol = 2 * i
-        symbolInfo[2 * i].length = value & 0xf
+        symbolInfo[2 * i].length = value & 0xF
 
         value >>= 4
 
         symbolInfo[2 * i + 1].id = 2 * i + 1
         symbolInfo[2 * i + 1].symbol = 2 * i + 1
-        symbolInfo[2 * i + 1].length = value & 0xf
+        symbolInfo[2 * i + 1].length = value & 0xF
 
     symbolInfo = sorted(symbolInfo, key=lambda x: (x.length, x.symbol))
 
@@ -128,9 +133,10 @@ def prefix_code_tree_rebuild(input: bytes) -> PREFIX_CODE_NODE:
     return root
 
 
-def prefix_code_tree_decode_symbol(bstr: BitStream, root: PREFIX_CODE_NODE) -> Tuple[int, Union[None, Exception]]:
+def prefix_code_tree_decode_symbol(
+    bstr: BitStream, root: PREFIX_CODE_NODE
+) -> Tuple[int, Union[None, Exception]]:
     node = root
-    i = 0
     while True:
         bit = bstr.lookup(1)
         err = bstr.skip(1)
@@ -138,7 +144,7 @@ def prefix_code_tree_decode_symbol(bstr: BitStream, root: PREFIX_CODE_NODE) -> T
             return 0, err
 
         node = node.child[bit]
-        if node == None:
+        if node is None:
             return 0, Exception("Corruption detected")
 
         if node.leaf:
@@ -146,11 +152,9 @@ def prefix_code_tree_decode_symbol(bstr: BitStream, root: PREFIX_CODE_NODE) -> T
     return node.symbol, None
 
 
-def lz77_huffman_decompress_chunck(in_idx: int,
-                                   input: bytes,
-                                   out_idx: int,
-                                   output: bytearray,
-                                   chunk_size: int) -> Tuple[int, int, Union[None, Exception]]:
+def lz77_huffman_decompress_chunck(
+    in_idx: int, input: bytes, out_idx: int, output: bytearray, chunk_size: int
+) -> Tuple[int, int, Union[None, Exception]]:
     # Ensure there are at least 256 bytes available to read
     if in_idx + 256 > len(input):
         return 0, 0, Exception("EOF Error")
@@ -187,7 +191,7 @@ def lz77_huffman_decompress_chunck(in_idx: int,
                 bstr.index += 1
 
                 if length == 270:
-                    length = struct.unpack_from('<H', bstr.source, bstr.index)[0]
+                    length = struct.unpack_from("<H", bstr.source, bstr.index)[0]
                     bstr.index += 2
 
             err = bstr.skip(symbol)
@@ -208,7 +212,9 @@ def lz77_huffman_decompress_chunck(in_idx: int,
     return int(bstr.index), i, None
 
 
-def lz77_huffman_decompress(input: bytes, output_size: int) -> Tuple[bytes, Union[None, Exception]]:
+def lz77_huffman_decompress(
+    input: bytes, output_size: int
+) -> Tuple[bytes, Union[None, Exception]]:
     output = bytearray(output_size)
     err = None
 
@@ -226,7 +232,8 @@ def lz77_huffman_decompress(input: bytes, output_size: int) -> Tuple[bytes, Unio
             chunk_size = 65536
 
         in_idx, out_idx, err = lz77_huffman_decompress_chunck(
-            in_idx, input, out_idx, output, chunk_size)
+            in_idx, input, out_idx, output, chunk_size
+        )
         if err is not None:
             return output, err
         if out_idx >= len(output) or in_idx >= len(input):
@@ -236,14 +243,22 @@ def lz77_huffman_decompress(input: bytes, output_size: int) -> Tuple[bytes, Unio
 
 class Prefetch(interfaces.plugins.PluginInterface):
     """Get and parse the prefetch files"""
+
     _required_framework_version = (2, 0, 0)
     _version = (1, 0, 0)
 
     @classmethod
     def get_requirements(cls):
-        return [requirements.ModuleRequirement(name='kernel', description='Windows kernel',
-                                               architectures=["Intel32", "Intel64"]),
-                requirements.PluginRequirement(name='filescan', plugin=filescan.FileScan, version=(0, 0, 0)), ]
+        return [
+            requirements.ModuleRequirement(
+                name="kernel",
+                description="Windows kernel",
+                architectures=["Intel32", "Intel64"],
+            ),
+            requirements.PluginRequirement(
+                name="filescan", plugin=filescan.FileScan, version=(0, 0, 0)
+            ),
+        ]
 
     @classmethod
     def version_17(cls, prefetch_file):
@@ -254,15 +269,17 @@ class Prefetch(interfaces.plugins.PluginInterface):
         file_size = int.from_bytes(stream.read(4), "little")
 
         stream.seek(0x0010)
-        executable_raw = stream.read(60).decode('utf-16')
-        executable_name = executable_raw.split('\u0000')[0]
+        executable_raw = stream.read(60).decode("utf-16")
+        executable_name = executable_raw.split("\u0000")[0]
 
         stream.seek(0x004C)
         prefetch_hash = int.from_bytes(stream.read(4), "little")
 
         stream.seek(0x0078)
         last_execution_filetime = int.from_bytes(stream.read(8), "little")
-        last_execution_filetime_human = conversion.wintime_to_datetime(last_execution_filetime)
+        last_execution_filetime_human = conversion.wintime_to_datetime(
+            last_execution_filetime
+        )
 
         stream.seek(0x0090)
         execution_counter = int.from_bytes(stream.read(4), "little")
@@ -272,7 +289,7 @@ class Prefetch(interfaces.plugins.PluginInterface):
             file_size,
             format_hints.Hex(prefetch_hash),
             last_execution_filetime_human,
-            execution_counter
+            execution_counter,
         )
 
     @classmethod
@@ -284,15 +301,17 @@ class Prefetch(interfaces.plugins.PluginInterface):
         file_size = int.from_bytes(stream.read(4), "little")
 
         stream.seek(0x0010)
-        executable_raw = stream.read(60).decode('utf-16')
-        executable_name = executable_raw.split('\u0000')[0]
+        executable_raw = stream.read(60).decode("utf-16")
+        executable_name = executable_raw.split("\u0000")[0]
 
         stream.seek(0x004C)
         prefetch_hash = int.from_bytes(stream.read(4), "little")
 
         stream.seek(0x0080)
         last_execution_filetime = int.from_bytes(stream.read(8), "little")
-        last_execution_filetime_human = conversion.wintime_to_datetime(last_execution_filetime)
+        last_execution_filetime_human = conversion.wintime_to_datetime(
+            last_execution_filetime
+        )
 
         stream.seek(0x0098)
         execution_counter = int.from_bytes(stream.read(4), "little")
@@ -302,7 +321,7 @@ class Prefetch(interfaces.plugins.PluginInterface):
             file_size,
             format_hints.Hex(prefetch_hash),
             last_execution_filetime_human,
-            execution_counter
+            execution_counter,
         )
 
     @classmethod
@@ -314,15 +333,17 @@ class Prefetch(interfaces.plugins.PluginInterface):
         file_size = int.from_bytes(stream.read(4), "little")
 
         stream.seek(0x0010)
-        executable_raw = stream.read(60).decode('utf-16')
-        executable_name = executable_raw.split('\u0000')[0]
+        executable_raw = stream.read(60).decode("utf-16")
+        executable_name = executable_raw.split("\u0000")[0]
 
         stream.seek(0x004C)
         prefetch_hash = int.from_bytes(stream.read(4), "little")
 
         stream.seek(0x0080)
         last_execution_filetime = int.from_bytes(stream.read(8), "little")
-        last_execution_filetime_human = conversion.wintime_to_datetime(last_execution_filetime)
+        last_execution_filetime_human = conversion.wintime_to_datetime(
+            last_execution_filetime
+        )
 
         stream.seek(0x00D0)
         execution_counter = int.from_bytes(stream.read(4), "little")
@@ -332,7 +353,7 @@ class Prefetch(interfaces.plugins.PluginInterface):
             file_size,
             format_hints.Hex(prefetch_hash),
             last_execution_filetime_human,
-            execution_counter
+            execution_counter,
         )
 
     @classmethod
@@ -344,8 +365,8 @@ class Prefetch(interfaces.plugins.PluginInterface):
         file_size = int.from_bytes(stream.read(4), "little")
 
         stream.seek(0x0010)
-        executable_raw = stream.read(60).decode('utf-16')
-        executable_name = executable_raw.split('\u0000')[0]
+        executable_raw = stream.read(60).decode("utf-16")
+        executable_name = executable_raw.split("\u0000")[0]
 
         stream.seek(0x004C)
         prefetch_hash = int.from_bytes(stream.read(4), "little")
@@ -353,7 +374,9 @@ class Prefetch(interfaces.plugins.PluginInterface):
         stream.seek(0x0080)
         # The first FILETIME is the most recent run time
         last_execution_filetime = int.from_bytes(stream.read(8), "little")
-        last_execution_filetime_human = conversion.wintime_to_datetime(last_execution_filetime)
+        last_execution_filetime_human = conversion.wintime_to_datetime(
+            last_execution_filetime
+        )
 
         stream.seek(0x00C8)  # Variant 1
         execution_counter = int.from_bytes(stream.read(4), "little")
@@ -366,7 +389,7 @@ class Prefetch(interfaces.plugins.PluginInterface):
             file_size,
             format_hints.Hex(prefetch_hash),
             last_execution_filetime_human,
-            execution_counter
+            execution_counter,
         )
 
     @classmethod
@@ -386,13 +409,15 @@ class Prefetch(interfaces.plugins.PluginInterface):
             vollog.info(f"decompressed size : {decompressed_size}")
             stream.seek(0x0008)
             compressed_bytes = stream.read()
-            prefetch_file = lz77_huffman_decompress(bytearray(compressed_bytes), decompressed_size)[0]
+            prefetch_file = lz77_huffman_decompress(
+                bytearray(compressed_bytes), decompressed_size
+            )[0]
         try:
             file_version = int.from_bytes(prefetch_file[:4], "little")
             signature = prefetch_file[4:8].decode()
-            vollog.info(f'File version : {file_version}')
+            vollog.info(f"File version : {file_version}")
             vollog.info(f"Signature : {signature}")
-        except:
+        except Exception:
             # We can not even read the header
             pass
 
@@ -413,46 +438,63 @@ class Prefetch(interfaces.plugins.PluginInterface):
                 yield result
 
     def _generator(self, files):
-        kernel = self.context.modules[self.config['kernel']]
-        offsets = []
+        kernel = self.context.modules[self.config["kernel"]]
         for file_obj in files:
-            """Get the prefetch recovered files from the “filescan” plugin; """
+            """Get the prefetch recovered files from the “filescan” plugin;"""
             try:
                 file_name = file_obj.FileName.String
                 file_extension = pathlib.Path(file_name).suffix
                 if file_extension == ".pf":
                     """If found, try to dump the prefetch file (inspired from the "DumpFiles" plugin)"""
                     memory_objects = []
-                    memory_layer_name = self.context.layers[kernel.layer_name].config['memory_layer']
+                    memory_layer_name = self.context.layers[kernel.layer_name].config[
+                        "memory_layer"
+                    ]
                     memory_layer = self.context.layers[memory_layer_name]
                     primary_layer = self.context.layers[kernel.layer_name]
                     for member_name in ["DataSectionObject", "ImageSectionObject"]:
                         try:
-                            section_obj = getattr(file_obj.SectionObjectPointer, member_name)
-                            control_area = section_obj.dereference().cast("_CONTROL_AREA")
+                            section_obj = getattr(
+                                file_obj.SectionObjectPointer, member_name
+                            )
+                            control_area = section_obj.dereference().cast(
+                                "_CONTROL_AREA"
+                            )
                             if control_area.is_valid():
                                 vollog.info(f"Found : {file_obj.FileName.String}")
                                 memory_objects.append((control_area, memory_layer))
                         except exceptions.InvalidAddressException:
-                            vollog.log(constants.LOGLEVEL_VVV,
-                                       f"{member_name} is unavailable for file {file_obj.vol.offset:#x}")
+                            vollog.log(
+                                constants.LOGLEVEL_VVV,
+                                f"{member_name} is unavailable for file {file_obj.vol.offset:#x}",
+                            )
                     try:
                         scm_pointer = file_obj.SectionObjectPointer.SharedCacheMap
-                        shared_cache_map = scm_pointer.dereference().cast("_SHARED_CACHE_MAP")
+                        shared_cache_map = scm_pointer.dereference().cast(
+                            "_SHARED_CACHE_MAP"
+                        )
                         if shared_cache_map.is_valid():
                             memory_objects.append((shared_cache_map, primary_layer))
                     except exceptions.InvalidAddressException:
-                        vollog.log(constants.LOGLEVEL_VVV,
-                                   f"SharedCacheMap is unavailable for file {file_obj.vol.offset:#x}")
+                        vollog.log(
+                            constants.LOGLEVEL_VVV,
+                            f"SharedCacheMap is unavailable for file {file_obj.vol.offset:#x}",
+                        )
                     vollog.info(f"memory_objects : {memory_objects}")
 
                     """Now, read and parse our PF to retrieve our artifacts"""
                     for memory_object, layer in memory_objects:
                         bytes_read = 0
-                        prefetch_raw = b''
+                        prefetch_raw = b""
                         try:
-                            for mem_offset, _, datasize in memory_object.get_available_pages():
-                                prefetch_raw += layer.read(mem_offset, datasize, pad=True)
+                            for (
+                                mem_offset,
+                                _,
+                                datasize,
+                            ) in memory_object.get_available_pages():
+                                prefetch_raw += layer.read(
+                                    mem_offset, datasize, pad=True
+                                )
                                 bytes_read += len(prefetch_raw)
                                 vollog.info(f"Read {bytes_read}")
                             if not bytes_read:
@@ -463,16 +505,26 @@ class Prefetch(interfaces.plugins.PluginInterface):
                                     yield 0, result
 
                         except exceptions.InvalidAddressException:
-                            vollog.debug(f"Unable to dump file at {file_obj.vol.offset:#x}")
-                            pass
+                            vollog.debug(
+                                f"Unable to dump file at {file_obj.vol.offset:#x}"
+                            )
+
             except exceptions.InvalidAddressException:
                 continue
 
     def run(self):
-        kernel = self.context.modules[self.config['kernel']]
-        return renderers.TreeGrid([
-            ("ExecutableName", str),
-            ("FileSize", int),
-            ("PrefetchHash", format_hints.Hex),
-            ("LastExecution", datetime.datetime), ("ExecutionCounter", int)],
-            self._generator(filescan.FileScan.scan_files(self.context, kernel.layer_name, kernel.symbol_table_name)))
+        kernel = self.context.modules[self.config["kernel"]]
+        return renderers.TreeGrid(
+            [
+                ("ExecutableName", str),
+                ("FileSize", int),
+                ("PrefetchHash", format_hints.Hex),
+                ("LastExecution", datetime.datetime),
+                ("ExecutionCounter", int),
+            ],
+            self._generator(
+                filescan.FileScan.scan_files(
+                    self.context, kernel.layer_name, kernel.symbol_table_name
+                )
+            ),
+        )
