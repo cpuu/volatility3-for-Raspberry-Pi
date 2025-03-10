@@ -74,7 +74,7 @@ def prefix_code_tree_add_leaf(treeNodes: List[PREFIX_CODE_NODE], leafIndex: int,
     while bits > 1:
         bits -= 1
         childIndex = (mask >> bits) & 1
-        if node.child[childIndex] == None:
+        if node.child[childIndex] is None:
             node.child[childIndex] = treeNodes[i]
             treeNodes[i].leaf = False
             i += 1
