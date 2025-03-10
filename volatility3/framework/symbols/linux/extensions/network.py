@@ -199,7 +199,7 @@ class net_device(objects.StructType):
         """
         return self.flags & self._get_net_device_flag_value("IFF_PROMISC") != 0
 
-    def get_net_namespace_id(self) -> int:
+    def _do_get_net_namespace_id(self) -> int:
         """Return the network namespace id for this network interface.
 
         Returns:
@@ -216,6 +216,20 @@ class net_device(objects.StructType):
 
         return net_ns_id
 
+    def get_net_namespace_id(self) -> Optional[int]:
+        """Return the network namespace id for this network interface.
+
+        Returns:
+            int: the network namespace id for this network interface
+        """
+        try:
+            return self._do_get_net_namespace_id()
+        except exceptions.InvalidAddressException:
+            vollog.debug(
+                f"Encountered an invalid address exception when getting the namespace for {self.vol.offset:#x}"
+            )
+            return None
+
     def get_operational_state(self) -> Union[str, interfaces.renderers.BaseAbsentValue]:
         """Return the netwok device oprational state (RFC 2863) string
 
@@ -228,13 +242,17 @@ class net_device(objects.StructType):
             vollog.warning(f"Invalid net_device operational state '{self.operstate}'")
             return renderers.UnparsableValue()
 
-    def get_qdisc_name(self) -> str:
+    def get_qdisc_name(self) -> Optional[str]:
         """Return the network device queuing discipline (qdisc) name
 
         Returns:
             str: A string with the queuing discipline (qdisc) name
         """
-        return utility.array_to_string(self.qdisc.ops.id)
+        try:
+            return utility.array_to_string(self.qdisc.ops.id)
+        except exceptions.InvalidAddressException:
+            vollog.debug(f"Unable to get qdisc name for {self.vol.offset:#x}")
+            return None
 
     def get_queue_length(self) -> int:
         """Return the netwrok device transmision qeueue length (qlen)
@@ -247,17 +265,34 @@ class net_device(objects.StructType):
 
 class in_device(objects.StructType):
     def get_addresses(
-        self,
+        self, max_devices=128
     ) -> Generator[interfaces.objects.ObjectInterface, None, None]:
         """Yield the IPv4 ifaddr addresses
 
         Yields:
             in_ifaddr: An IPv4 ifaddr address
         """
-        cur = self.ifa_list
+        seen = set()
+
+        try:
+            cur = self.ifa_list
+        except exceptions.InvalidAddressException:
+            return
+
         while cur and cur.vol.offset:
+            if len(seen) > max_devices:
+                break
+
+            if cur.vol.offset in seen:
+                break
+            seen.add(cur.vol.offset)
+
             yield cur
-            cur = cur.ifa_next
+
+            try:
+                cur = cur.ifa_next
+            except exceptions.InvalidAddressException:
+                break
 
 
 class inet6_dev(objects.StructType):
