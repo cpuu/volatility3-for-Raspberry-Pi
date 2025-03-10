@@ -3,7 +3,10 @@
 #
 import logging
 from typing import List, Set, Tuple, Iterable
-from volatility3.framework import renderers, interfaces, exceptions, objects
+from volatility3.framework.symbols.linux.utilities import (
+    modules as linux_utilities_modules,
+)
+from volatility3.framework import renderers, interfaces, exceptions, deprecation
 from volatility3.framework.constants import architectures
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.configuration import requirements
@@ -16,7 +19,7 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
     """Carves memory to find hidden kernel modules"""
 
     _required_framework_version = (2, 10, 0)
-    _version = (1, 0, 1)
+    _version = (2, 0, 0)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -29,46 +32,32 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
             requirements.PluginRequirement(
                 name="lsmod", plugin=lsmod.Lsmod, version=(2, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="linux_utilities_modules",
+                component=linux_utilities_modules.Modules,
+                version=(2, 0, 0),
+            ),
         ]
 
-    @classmethod
+    @staticmethod
+    @deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.get_modules_memory_boundaries,
+        removal_date="2025-09-25",
+        replacement_version=(2, 0, 0),
+    )
     def get_modules_memory_boundaries(
-        cls,
         context: interfaces.context.ContextInterface,
         vmlinux_module_name: str,
-    ) -> Tuple[int]:
-        """Determine the boundaries of the module allocation area
+    ) -> Tuple[int, int]:
+        return linux_utilities_modules.Modules.get_modules_memory_boundaries(
+            context, vmlinux_module_name
+        )
 
-        Args:
-            context: The context to retrieve required elements (layers, symbol tables) from
-            vmlinux_module_name: The name of the kernel module on which to operate
-
-        Returns:
-            A tuple containing the minimum and maximum addresses for the module allocation area.
-        """
-        vmlinux = context.modules[vmlinux_module_name]
-        if vmlinux.has_symbol("mod_tree"):
-            # Kernel >= 5.19    58d208de3e8d87dbe196caf0b57cc58c7a3836ca
-            mod_tree = vmlinux.object_from_symbol("mod_tree")
-            modules_addr_min = mod_tree.addr_min
-            modules_addr_max = mod_tree.addr_max
-        elif vmlinux.has_symbol("module_addr_min"):
-            # 2.6.27 <= kernel < 5.19   3a642e99babe0617febb6f402e1e063479f489db
-            modules_addr_min = vmlinux.object_from_symbol("module_addr_min")
-            modules_addr_max = vmlinux.object_from_symbol("module_addr_max")
-
-            if isinstance(modules_addr_min, objects.Void):
-                raise exceptions.VolatilityException(
-                    "Your ISF symbols lack type information. You may need to update the"
-                    "ISF using the latest version of dwarf2json"
-                )
-        else:
-            raise exceptions.VolatilityException(
-                "Cannot find the module memory allocation area. Unsupported kernel"
-            )
-
-        return modules_addr_min, modules_addr_max
-
+    @deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.get_module_address_alignment,
+        removal_date="2025-09-25",
+        replacement_version=(2, 0, 0),
+    )
     @classmethod
     def _get_module_address_alignment(
         cls,
@@ -88,27 +77,15 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
         Returns:
             The struct module alignment
         """
-        # FIXME: When dwarf2json/ISF supports type alignments. Read it directly from the type metadata
-        # Additionally, while 'context' and 'vmlinux_module_name' are currently unused, they will be
-        # essential for retrieving type metadata in the future.
-        return 64
+        return linux_utilities_modules.get_module_address_alignment(
+            context, vmlinux_module_name
+        )
 
-    @staticmethod
-    def _validate_alignment_patterns(
-        addresses: Iterable[int],
-        address_alignment: int,
-    ) -> bool:
-        """Check if the memory addresses meet our alignments patterns
-
-        Args:
-            addresses: Iterable with the address values
-            address_alignment: Number of bytes for alignment validation
-
-        Returns:
-            True if all the addresses meet the alignment
-        """
-        return all(addr % address_alignment == 0 for addr in addresses)
-
+    @deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.get_hidden_modules,
+        removal_date="2025-09-25",
+        replacement_version=(2, 0, 0),
+    )
     @classmethod
     def get_hidden_modules(
         cls,
@@ -139,54 +116,32 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
         Yields:
             module objects
         """
-        vmlinux = context.modules[vmlinux_module_name]
-        vmlinux_layer = context.layers[vmlinux.layer_name]
-
-        module_addr_min, module_addr_max = modules_memory_boundaries
-        module_address_alignment = cls._get_module_address_alignment(
-            context, vmlinux_module_name
+        return linux_utilities_modules.get_hidden_modules(
+            vmlinux_module_name, known_module_addresses, modules_memory_boundaries
         )
-        if not cls._validate_alignment_patterns(
-            known_module_addresses, module_address_alignment
-        ):
-            vollog.warning(
-                f"Module addresses aren't aligned to {module_address_alignment} bytes. "
-                "Switching to 1 byte aligment scan method."
-            )
-            module_address_alignment = 1
 
-        mkobj_offset = vmlinux.get_type("module").relative_child_offset("mkobj")
-        mod_offset = vmlinux.get_type("module_kobject").relative_child_offset("mod")
-        offset_to_mkobj_mod = mkobj_offset + mod_offset
-        mod_member_template = vmlinux.get_type("module_kobject").child_template("mod")
-        mod_size = mod_member_template.size
-        mod_member_data_format = mod_member_template.data_format
+    @staticmethod
+    @deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.validate_alignment_patterns,
+        removal_date="2025-09-25",
+        replacement_version=(2, 0, 0),
+    )
+    def _validate_alignment_patterns(
+        addresses: Iterable[int],
+        address_alignment: int,
+    ) -> bool:
+        """Check if the memory addresses meet our alignments patterns
 
-        for module_addr in range(
-            module_addr_min, module_addr_max, module_address_alignment
-        ):
-            if module_addr in known_module_addresses:
-                continue
+        Args:
+            addresses: Iterable with the address values
+            address_alignment: Number of bytes for alignment validation
 
-            try:
-                # This is just a pre-filter. Module readability and consistency are verified in module.is_valid()
-                self_referential_bytes = vmlinux_layer.read(
-                    module_addr + offset_to_mkobj_mod, mod_size
-                )
-                self_referential = objects.convert_data_to_value(
-                    self_referential_bytes, int, mod_member_data_format
-                )
-                if self_referential != module_addr:
-                    continue
-            except (
-                exceptions.PagedInvalidAddressException,
-                exceptions.InvalidAddressException,
-            ):
-                continue
-
-            module = vmlinux.object("module", offset=module_addr, absolute=True)
-            if module and module.is_valid():
-                yield module
+        Returns:
+            True if all the addresses meet the alignment
+        """
+        return linux_utilities_modules.validate_alignment_patterns(
+            addresses, address_alignment
+        )
 
     @classmethod
     def get_lsmod_module_addresses(
@@ -217,10 +172,13 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
         known_module_addresses = self.get_lsmod_module_addresses(
             self.context, vmlinux_module_name
         )
-        modules_memory_boundaries = self.get_modules_memory_boundaries(
-            self.context, vmlinux_module_name
+        modules_memory_boundaries = (
+            linux_utilities_modules.Modules.get_modules_memory_boundaries(
+                self.context, vmlinux_module_name
+            )
         )
-        for module in self.get_hidden_modules(
+
+        for module in linux_utilities_modules.Modules.get_hidden_modules(
             self.context,
             vmlinux_module_name,
             known_module_addresses,

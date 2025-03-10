@@ -3,8 +3,10 @@
 #
 import logging
 from typing import List, Dict, Iterator
-from volatility3.plugins.linux import lsmod, check_modules, hidden_modules
-from volatility3.framework import interfaces
+
+import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
+
+from volatility3.framework import interfaces, deprecation
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints, TreeGrid, NotAvailableValue
 from volatility3.framework.symbols.linux import extensions
@@ -30,20 +32,12 @@ spot modules presence and taints."""
                 architectures=architectures.LINUX_ARCHS,
             ),
             requirements.VersionRequirement(
+                name="linux_utilities_modules",
+                component=linux_utilities_modules.Modules,
+                version=(2, 0, 0),
+            ),
+            requirements.VersionRequirement(
                 name="linux-tainting", component=tainting.Tainting, version=(1, 0, 0)
-            ),
-            requirements.PluginRequirement(
-                name="lsmod", plugin=lsmod.Lsmod, version=(2, 0, 0)
-            ),
-            requirements.PluginRequirement(
-                name="check_modules",
-                plugin=check_modules.Check_modules,
-                version=(1, 0, 0),
-            ),
-            requirements.PluginRequirement(
-                name="hidden_modules",
-                plugin=hidden_modules.Hidden_modules,
-                version=(1, 0, 0),
             ),
             requirements.BooleanRequirement(
                 name="plain_taints",
@@ -54,6 +48,11 @@ spot modules presence and taints."""
         ]
 
     @classmethod
+    @deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.flatten_run_modules_results,
+        replacement_version=(2, 0, 0),
+        removal_date="2025-09-25",
+    )
     def flatten_run_modules_results(
         cls, run_results: Dict[str, List[extensions.module]], deduplicate: bool = True
     ) -> Iterator[extensions.module]:
@@ -67,15 +66,16 @@ spot modules presence and taints."""
         Returns:
             Iterator of modules objects
         """
-        seen_addresses = set()
-        for modules in run_results.values():
-            for module in modules:
-                if deduplicate and module.vol.offset in seen_addresses:
-                    continue
-                seen_addresses.add(module.vol.offset)
-                yield module
+        return linux_utilities_modules.Modules.flatten_run_modules_results(
+            run_results, deduplicate
+        )
 
     @classmethod
+    @deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.run_modules_scanners,
+        replacement_version=(2, 0, 0),
+        removal_date="2025-09-25",
+    )
     def run_modules_scanners(
         cls,
         context: interfaces.context.ContextInterface,
@@ -83,67 +83,37 @@ spot modules presence and taints."""
         run_hidden_modules: bool = True,
     ) -> Dict[str, List[extensions.module]]:
         """Run module scanning plugins and aggregate the results. It is designed
-        to not operate any inter-plugin results triage.
-
-        Args:
-            run_hidden_modules: specify if the hidden_modules plugin should be run
-        Returns:
-            Dictionary mapping each plugin to its corresponding result
-        """
-
-        kernel = context.modules[kernel_name]
-        run_results = {}
-        # lsmod
-        run_results["lsmod"] = list(lsmod.Lsmod.list_modules(context, kernel_name))
-        # check_modules
-        sysfs_modules: dict = check_modules.Check_modules.get_kset_modules(
-            context, kernel_name
+        to not operate any inter-plugin results triage."""
+        return linux_utilities_modules.Modules.run_modules_scanners(
+            context, kernel_name, run_hidden_modules
         )
-        ## Convert get_kset_modules() offsets back to module objects
-        run_results["check_modules"] = [
-            kernel.object(object_type="module", offset=m_offset, absolute=True)
-            for m_offset in sysfs_modules.values()
-        ]
-        # hidden_modules
-        if run_hidden_modules:
-            known_modules_addresses = set(
-                context.layers[kernel.layer_name].canonicalize(module.vol.offset)
-                for module in run_results["lsmod"] + run_results["check_modules"]
-            )
-            modules_memory_boundaries = (
-                hidden_modules.Hidden_modules.get_modules_memory_boundaries(
-                    context, kernel_name
-                )
-            )
-            run_results["hidden_modules"] = list(
-                hidden_modules.Hidden_modules.get_hidden_modules(
-                    context,
-                    kernel_name,
-                    known_modules_addresses,
-                    modules_memory_boundaries,
-                )
-            )
-
-        return run_results
 
     def _generator(self):
         kernel_name = self.config["kernel"]
-        run_results = self.run_modules_scanners(self.context, kernel_name)
+
+        kernel = self.context.modules[kernel_name]
+
+        run_results = linux_utilities_modules.Modules.run_modules_scanners(
+            self.context, kernel_name, flatten=False
+        )
+
         aggregated_modules = {}
         # We want to be explicit on the plugins results we are interested in
         for plugin_name in ["lsmod", "check_modules", "hidden_modules"]:
             # Iterate over each recovered module
-            for module in run_results[plugin_name]:
+            for mod_info in run_results[plugin_name]:
                 # Use offsets as unique keys, whether a module
                 # appears in many plugin runs or not
-                if aggregated_modules.get(module.vol.offset, None) is not None:
+                if aggregated_modules.get(mod_info.offset, None) is not None:
                     # Append the plugin to the list of originating plugins
-                    aggregated_modules[module.vol.offset][1].append(plugin_name)
+                    aggregated_modules[mod_info.offset].append(plugin_name)
                 else:
-                    aggregated_modules[module.vol.offset] = (module, [plugin_name])
+                    aggregated_modules[mod_info.offset] = [plugin_name]
 
-        for module_offset, (module, originating_plugins) in aggregated_modules.items():
+        for module_offset, originating_plugins in aggregated_modules.items():
             # Tainting parsing capabilities applied to the module
+            module = kernel.object("module", offset=module_offset, absolute=True)
+
             if self.config.get("plain_taints"):
                 taints = tainting.Tainting.get_taints_as_plain_string(
                     self.context,

@@ -6,7 +6,8 @@
 import logging
 from typing import List, Iterable
 
-from volatility3.framework import exceptions, renderers, constants, interfaces
+import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
+from volatility3.framework import exceptions, renderers, interfaces, deprecation
 from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import plugins
 from volatility3.framework.objects import utility
@@ -29,35 +30,31 @@ class Lsmod(plugins.PluginInterface):
                 description="Linux kernel",
                 architectures=["Intel32", "Intel64"],
             ),
+            requirements.VersionRequirement(
+                name="linux_utilities_modules",
+                component=linux_utilities_modules.Modules,
+                version=(2, 0, 0),
+            ),
         ]
 
     @classmethod
+    @deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.list_modules,
+        replacement_version=(2, 0, 0),
+        removal_date="2025-09-25",
+    )
     def list_modules(
         cls, context: interfaces.context.ContextInterface, vmlinux_module_name: str
     ) -> Iterable[interfaces.objects.ObjectInterface]:
-        """Lists all the modules in the primary layer.
-
-        Args:
-            context: The context to retrieve required elements (layers, symbol tables) from
-            layer_name: The name of the layer on which to operate
-            vmlinux_symbols: The name of the table containing the kernel symbols
-
-        Yields:
-            The modules present in the `layer_name` layer's modules list
-
-        This function will throw a SymbolError exception if kernel module support is not enabled.
-        """
-        vmlinux = context.modules[vmlinux_module_name]
-
-        modules = vmlinux.object_from_symbol(symbol_name="modules").cast("list_head")
-
-        table_name = modules.vol.type_name.split(constants.BANG)[0]
-
-        yield from modules.to_list(table_name + constants.BANG + "module", "list")
+        return linux_utilities_modules.Modules.list_modules(
+            context, vmlinux_module_name
+        )
 
     def _generator(self):
         try:
-            for module in self.list_modules(self.context, self.config["kernel"]):
+            for module in linux_utilities_modules.Modules.list_modules(
+                self.context, self.config["kernel"]
+            ):
                 mod_size = module.get_init_size() + module.get_core_size()
 
                 mod_name = utility.array_to_string(module.name)
@@ -65,7 +62,7 @@ class Lsmod(plugins.PluginInterface):
                 yield 0, (format_hints.Hex(module.vol.offset), mod_name, mod_size)
 
         except exceptions.SymbolError:
-            vollog.debug(
+            vollog.warning(
                 "The required symbol 'module' is not present in symbol table. Please check that kernel modules are enabled for the system under analysis."
             )
 

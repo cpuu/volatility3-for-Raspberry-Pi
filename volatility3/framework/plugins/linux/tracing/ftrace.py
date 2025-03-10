@@ -10,11 +10,9 @@ from enum import Enum
 from dataclasses import dataclass
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
-from volatility3.plugins.linux import hidden_modules, modxview
 from volatility3.framework import constants, exceptions, interfaces
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints, TreeGrid, NotAvailableValue
-from volatility3.framework.symbols.linux import extensions
 from volatility3.framework.constants import architectures
 
 vollog = logging.getLogger(__name__)
@@ -67,7 +65,7 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
     Investigate the ftrace infrastructure to uncover kernel attached callbacks, which can be leveraged
     to hook kernel functions and modify their behaviour."""
 
-    _version = (2, 0, 0)
+    _version = (3, 0, 0)
     _required_framework_version = (2, 19, 0)
 
     @classmethod
@@ -81,15 +79,7 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
                 component=linux_utilities_modules.Modules,
-                version=(1, 1, 0),
-            ),
-            requirements.PluginRequirement(
-                name="modxview", plugin=modxview.Modxview, version=(1, 0, 0)
-            ),
-            requirements.PluginRequirement(
-                name="hidden_modules",
-                plugin=hidden_modules.Hidden_modules,
-                version=(1, 0, 0),
+                version=(2, 0, 0),
             ),
             requirements.BooleanRequirement(
                 name="show_ftrace_flags",
@@ -136,8 +126,8 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
     def parse_ftrace_ops(
         cls,
         context: interfaces.context.ContextInterface,
-        kernel_name: str,
-        known_modules: Dict[str, List[extensions.module]],
+        kernel_module_name: str,
+        known_modules: Dict[str, List[linux_utilities_modules.Modules.ModuleInfo]],
         ftrace_ops: interfaces.objects.ObjectInterface,
         run_hidden_modules: bool = True,
     ) -> Generator[ParsedFtraceOps, None, None]:
@@ -145,70 +135,33 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
         Iterates over embedded ftrace_func_entry entries, which point to hooked memory areas.
 
         Args:
-            known_modules: A dict of known modules, used to locate callbacks origin. Typically obtained through modxview.run_modules_scanners().
+            known_modules: A dict of known modules, used to locate callbacks origin. Typically obtained through run_modules_scanners().
             ftrace_ops: The ftrace_ops struct to parse
             run_hidden_modules: Whether to run the hidden_modules plugin or not. Note: it won't be run, even if specified, \
-if the "hidden_modules" key is present in known_modules.
+            if the "hidden_modules" key is present in known_modules.
 
         Yields:
             An iterable of ParsedFtraceOps dataclasses, containing a selection of useful fields (callback, hook, module) related to an ftrace_ops struct
         """
-        kernel = context.modules[kernel_name]
-        kernel_layer = context.layers[kernel.layer_name]
+        kernel = context.modules[kernel_module_name]
         callback = ftrace_ops.func
-        callback_symbol = module_address = module_name = None
 
-        # Try to lookup within the known modules if the callback address fits
-        module = linux_utilities_modules.Modules.module_lookup_by_address(
-            context,
-            kernel.layer_name,
-            modxview.Modxview.flatten_run_modules_results(known_modules),
-            callback,
-        )
-        # Run hidden_modules plugin if a callback origin couldn't be determined (only done once, results are re-used afterwards)
-        if (
-            module is None
-            and run_hidden_modules
-            and "hidden_modules" not in known_modules
-        ):
-            vollog.info(
-                "A callback module origin could not be determined. hidden_modules plugin will be run to detect additional modules.",
-            )
-            known_modules_addresses = set(
-                kernel_layer.canonicalize(module.vol.offset)
-                for module in modxview.Modxview.flatten_run_modules_results(
-                    known_modules
-                )
-            )
-            modules_memory_boundaries = (
-                hidden_modules.Hidden_modules.get_modules_memory_boundaries(
-                    context, kernel_name
-                )
-            )
-            known_modules["hidden_modules"] = list(
-                hidden_modules.Hidden_modules.get_hidden_modules(
-                    context,
-                    kernel_name,
-                    known_modules_addresses,
-                    modules_memory_boundaries,
-                )
-            )
-            # Lookup the updated list to see if hidden_modules was able
-            # to find the missing module
-            module = linux_utilities_modules.Modules.module_lookup_by_address(
+        mod_info, callback_symbol = (
+            linux_utilities_modules.Modules.module_lookup_by_address(
                 context,
-                kernel.layer_name,
-                modxview.Modxview.flatten_run_modules_results(known_modules),
+                kernel_module_name,
+                known_modules,
                 callback,
             )
+        )
 
-        # Fetch more information about the module
-        if module is not None:
-            module_address = module.vol.offset
-            module_name = module.get_name()
-            callback_symbol = module.get_symbol_by_address(callback)
+        if mod_info:
+            module_address = mod_info.start
+            module_name = mod_info.name
         else:
-            vollog.warning(
+            callback_symbol = module_address = module_name = None
+
+            vollog.debug(
                 f"Could not determine ftrace_ops@{ftrace_ops.vol.offset:#x} callback {callback:#x} module origin.",
             )
 
@@ -264,16 +217,15 @@ if the "hidden_modules" key is present in known_modules.
         kernel = self.context.modules[kernel_name]
 
         if not kernel.has_symbol("ftrace_ops_list"):
-            raise exceptions.SymbolError(
-                "ftrace_ops_list",
-                kernel.symbol_table_name,
-                'The provided symbol table does not include the "ftrace_ops_list" symbol. This means you are either analyzing an unsupported kernel version or that your symbol table is corrupted.',
+            vollog.error(
+                'The provided symbol table does not include the "ftrace_ops_list" symbol. This means you are either analyzing an unsupported kernel version or that your symbol table is corrupted.'
             )
+            return
 
-        # Do not run hidden_modules by default, but only on failure to find a module
-        known_modules = modxview.Modxview.run_modules_scanners(
-            self.context, kernel_name, run_hidden_modules=False
+        known_modules = linux_utilities_modules.Modules.run_modules_scanners(
+            self.context, kernel_name, run_hidden_modules=True
         )
+
         for ftrace_ops in self.iterate_ftrace_ops_list(self.context, kernel_name):
             for ftrace_ops_parsed in self.parse_ftrace_ops(
                 self.context,
