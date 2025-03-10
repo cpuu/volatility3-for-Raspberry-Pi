@@ -11,7 +11,7 @@ from Crypto.Cipher import ARC4, DES, AES
 from volatility3.framework import interfaces, renderers, exceptions
 from volatility3.framework.configuration import requirements
 from volatility3.framework.exceptions import InvalidAddressException
-from volatility3.framework.interfaces.layers import IteratorValue
+
 from volatility3.framework.layers import registry
 from volatility3.framework.symbols.windows import versions
 from volatility3.plugins.windows import hashdump
