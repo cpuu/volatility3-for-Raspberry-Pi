@@ -10,6 +10,8 @@ from Crypto.Cipher import ARC4, DES, AES
 
 from volatility3.framework import interfaces, renderers, exceptions
 from volatility3.framework.configuration import requirements
+from volatility3.framework.exceptions import InvalidAddressException
+
 from volatility3.framework.layers import registry
 from volatility3.framework.symbols.windows import versions
 from volatility3.plugins.windows import hashdump
@@ -119,7 +121,14 @@ class Lsadump(interfaces.plugins.PluginInterface):
 
         secret = None
         if enc_secret_key:
-            enc_secret_value = next(enc_secret_key.get_values(), None)
+            try:
+                enc_secret_value = next(enc_secret_key.get_values(), None)
+            except (
+                InvalidAddressException,
+                registry.RegistryException,
+            ):
+                enc_secret_value = None
+
             if enc_secret_value:
                 try:
                     enc_secret = sechive.read(
@@ -194,7 +203,15 @@ class Lsadump(interfaces.plugins.PluginInterface):
             if not sec_val_key:
                 continue
 
-            enc_secret_value = next(sec_val_key.get_values(), None)
+            try:
+                enc_secret_value = next(sec_val_key.get_values(), None)
+            except (
+                StopIteration,
+                InvalidAddressException,
+                registry.RegistryException,
+            ):
+                enc_secret_value = None
+
             if not enc_secret_value:
                 continue
 
@@ -210,7 +227,15 @@ class Lsadump(interfaces.plugins.PluginInterface):
             else:
                 secret = self.decrypt_aes(enc_secret, lsakey)
 
-            yield (0, (key.get_name(), format_hints.HexBytes(secret), secret))
+            try:
+                key_name = key.get_name()
+            except (
+                InvalidAddressException,
+                registry.RegistryException,
+            ):
+                key_name = renderers.UnreadableValue()
+
+            yield (0, (key_name, format_hints.HexBytes(secret), secret))
 
     def run(self):
         offset = self.config.get("offset", None)

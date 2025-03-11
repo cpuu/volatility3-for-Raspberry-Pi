@@ -8,7 +8,12 @@ from typing import List, Optional, Sequence, Iterable, Tuple, Union
 
 from volatility3.framework import objects, renderers, exceptions, interfaces, constants
 from volatility3.framework.configuration import requirements
-from volatility3.framework.layers.registry import RegistryHive, RegistryFormatException
+from volatility3.framework.layers.registry import (
+    RegistryHive,
+    RegistryFormatException,
+    InvalidAddressException,
+    RegistryException,
+)
 from volatility3.framework.renderers import TreeGrid, conversion, format_hints
 from volatility3.framework.symbols.windows.extensions.registry import RegValueTypes
 from volatility3.plugins.windows.registry import hivelist
@@ -77,7 +82,17 @@ class PrintKey(interfaces.plugins.PluginInterface):
             return None
         node = node_path[-1]
         key_path_items = [hive] + node_path[1:]
-        key_path = "\\".join([k.get_name() for k in key_path_items])
+        key_path_names = []
+        for k in key_path_items:
+            try:
+                key_path_names.append(k.get_name())
+            except (
+                InvalidAddressException,
+                RegistryException,
+            ):
+                key_path_names.append("-")
+        key_path = "\\".join([k for k in key_path_names])
+
         if node.vol.type_name.endswith(constants.BANG + "_CELL_DATA"):
             raise RegistryFormatException(
                 hive.name, "Encountered _CELL_DATA instead of _CM_KEY_NODE"
@@ -99,7 +114,10 @@ class PrintKey(interfaces.plugins.PluginInterface):
                 if key_node.vol.offset not in [x.vol.offset for x in node_path]:
                     try:
                         key_node.get_name()
-                    except exceptions.InvalidAddressException as excp:
+                    except (
+                        exceptions.InvalidAddressException,
+                        RegistryException,
+                    ) as excp:
                         vollog.debug(excp)
                         continue
 
@@ -148,7 +166,7 @@ class PrintKey(interfaces.plugins.PluginInterface):
                     key_node_name = node.get_name()
                 except (
                     exceptions.InvalidAddressException,
-                    RegistryFormatException,
+                    RegistryException,
                 ) as excp:
                     vollog.debug(excp)
                     key_node_name = renderers.UnreadableValue()
@@ -175,7 +193,7 @@ class PrintKey(interfaces.plugins.PluginInterface):
                     value_node_name = node.get_name() or "(Default)"
                 except (
                     exceptions.InvalidAddressException,
-                    RegistryFormatException,
+                    RegistryException,
                 ) as excp:
                     vollog.debug(excp)
                     value_node_name = renderers.UnreadableValue()
@@ -184,7 +202,7 @@ class PrintKey(interfaces.plugins.PluginInterface):
                     value_type = RegValueTypes(node.Type).name
                 except (
                     exceptions.InvalidAddressException,
-                    RegistryFormatException,
+                    RegistryException,
                 ) as excp:
                     vollog.debug(excp)
                     value_type = renderers.UnreadableValue()
@@ -219,7 +237,7 @@ class PrintKey(interfaces.plugins.PluginInterface):
                     except (
                         ValueError,
                         exceptions.InvalidAddressException,
-                        RegistryFormatException,
+                        RegistryException,
                     ) as excp:
                         vollog.debug(excp)
                         value_data = renderers.UnreadableValue()
@@ -261,13 +279,13 @@ class PrintKey(interfaces.plugins.PluginInterface):
             except (
                 exceptions.InvalidAddressException,
                 KeyError,
-                RegistryFormatException,
+                RegistryException,
             ) as excp:
                 if isinstance(excp, KeyError):
                     vollog.debug(
                         f"Key '{key}' not found in Hive at offset {hex(hive.hive_offset)}."
                     )
-                elif isinstance(excp, RegistryFormatException):
+                elif isinstance(excp, RegistryException):
                     vollog.debug(excp)
                 elif isinstance(excp, exceptions.InvalidAddressException):
                     vollog.debug(

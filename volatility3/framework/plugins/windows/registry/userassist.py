@@ -13,7 +13,10 @@ from typing import Any, Generator, List, Tuple
 from volatility3.framework import constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
 from volatility3.framework.layers.physical import BufferDataLayer
-from volatility3.framework.layers.registry import RegistryHive, RegistryFormatException
+from volatility3.framework.layers.registry import (
+    RegistryHive,
+    RegistryException,
+)
 from volatility3.framework.renderers import conversion, format_hints
 from volatility3.framework.symbols import intermed
 from volatility3.plugins.windows.registry import hivelist
@@ -172,7 +175,7 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
                 "software\\microsoft\\windows\\currentversion\\explorer\\userassist",
                 return_list=True,
             )
-        except RegistryFormatException as e:
+        except RegistryException as e:
             vollog.warning(
                 f"Error accessing UserAssist key in {hive_name} at {hive.hive_offset:#x}: {e}"
             )
@@ -238,7 +241,14 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
 
                 # output any subkeys under Count
                 for subkey in countkey.get_subkeys():
-                    subkey_name = subkey.get_name()
+                    try:
+                        subkey_name = subkey.get_name()
+                    except (
+                        exceptions.InvalidAddressException,
+                        RegistryException,
+                    ):
+                        subkey_name = renderers.UnreadableValue()
+
                     result = (
                         1,
                         (
@@ -260,7 +270,14 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
 
                 # output any values under Count
                 for value in countkey.get_values():
-                    value_name = value.get_name()
+                    try:
+                        value_name = value.get_name()
+                    except (
+                        exceptions.InvalidAddressException,
+                        RegistryException,
+                    ):
+                        value_name = renderers.UnreadableValue()
+
                     with contextlib.suppress(UnicodeDecodeError):
                         value_name = codecs.encode(value_name, "rot_13")
 

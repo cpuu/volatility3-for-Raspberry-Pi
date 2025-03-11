@@ -9,9 +9,8 @@ from typing import Iterator, Optional, Union, cast
 
 from volatility3.framework import constants, exceptions, interfaces, objects
 from volatility3.framework.layers.registry import (
-    RegistryFormatException,
+    RegistryException,
     RegistryHive,
-    RegistryInvalidIndex,
 )
 
 vollog = logging.getLogger(__name__)
@@ -103,7 +102,7 @@ class CMHIVE(objects.StructType):
 
         for attr in ["FileFullPath", "FileUserName", "HiveRootPath"]:
             with contextlib.suppress(
-                AttributeError, exceptions.InvalidAddressException
+                AttributeError, exceptions.InvalidAddressException, RegistryException
             ):
                 name = getattr(self, attr)
                 if name.Length > 0:
@@ -199,7 +198,10 @@ class CM_KEY_NODE(objects.StructType):
         # We could change the array type to a struct with both parts
         try:
             signature = node.cast("string", max_length=2, encoding="latin-1")
-        except (exceptions.InvalidAddressException, RegistryFormatException):
+        except (
+            exceptions.InvalidAddressException,
+            RegistryException,
+        ):
             return None
 
         listjump = None
@@ -227,7 +229,7 @@ class CM_KEY_NODE(objects.StructType):
                         subnode = hive.get_node(subnode_offset)
                     except (
                         exceptions.InvalidAddressException,
-                        RegistryFormatException,
+                        RegistryException,
                     ):
                         vollog.log(
                             constants.LOGLEVEL_VVV,
@@ -244,21 +246,25 @@ class CM_KEY_NODE(objects.StructType):
         hive = self._context.layers[self.vol.layer_name]
         if not isinstance(hive, RegistryHive):
             raise TypeError("CM_KEY_NODE was not instantiated on a RegistryHive layer")
-        child_list = hive.get_cell(self.ValueList.List).u.KeyList
-        child_list.count = self.ValueList.Count
 
         try:
+            child_list = hive.get_cell(self.ValueList.List).u.KeyList
+            child_list.count = self.ValueList.Count
+
             for v in child_list:
                 if v != 0:
                     try:
                         node = hive.get_node(v)
-                    except (RegistryInvalidIndex, RegistryFormatException) as excp:
+                    except (RegistryException,) as excp:
                         vollog.debug(f"Invalid address {excp}")
                         continue
                     if isinstance(node, CM_KEY_VALUE):
                         yield node
 
-        except (exceptions.InvalidAddressException, RegistryFormatException) as excp:
+        except (
+            exceptions.InvalidAddressException,
+            RegistryException,
+        ) as excp:
             vollog.debug(f"Invalid address in get_values iteration: {excp}")
             return None
 
@@ -347,7 +353,7 @@ class CM_KEY_VALUE(objects.StructType):
                             offset=layer.get_cell(block_offset).vol.offset,
                             length=amount,
                         )
-                    except exceptions.InvalidAddressException:
+                    except (exceptions.InvalidAddressException, RegistryException):
                         vollog.debug(
                             f"Failed to read {amount:x} bytes of data, padding with {amount:x}"
                         )
@@ -357,7 +363,7 @@ class CM_KEY_VALUE(objects.StructType):
             # but the length at the start could be negative so just adding 4 to jump past it
             try:
                 data = layer.read(self.Data + 4, datalen)
-            except exceptions.InvalidAddressException:
+            except (exceptions.InvalidAddressException, RegistryException):
                 vollog.debug(
                     f"Failed to read {datalen:x} bytes of data, returning {datalen:x} null bytes"
                 )

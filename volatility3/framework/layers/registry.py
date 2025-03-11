@@ -19,11 +19,15 @@ from volatility3.framework.symbols.windows import extensions
 vollog = logging.getLogger(__name__)
 
 
-class RegistryFormatException(exceptions.LayerException):
+class RegistryException(exceptions.LayerException):
+    """Base Registry Exception class for catching Registry layer errors."""
+
+
+class RegistryFormatException(RegistryException):
     """Thrown when an error occurs with the underlying Registry file format."""
 
 
-class RegistryInvalidIndex(exceptions.LayerException):
+class RegistryInvalidIndex(RegistryException):
     """Thrown when an index that doesn't exist or can't be found occurs."""
 
 
@@ -176,7 +180,7 @@ class RegistryHive(linear.LinearlyMappedLayer):
         cell = self.get_cell(cell_offset)
         try:
             signature = cell.cast("string", max_length=2, encoding="latin-1")
-        except (RegistryInvalidIndex, exceptions.InvalidAddressException):
+        except (RegistryException, exceptions.InvalidAddressException):
             vollog.debug(
                 f"Failed to get cell signature for cell (0x{cell.vol.offset:x})"
             )
@@ -296,7 +300,7 @@ class RegistryHive(linear.LinearlyMappedLayer):
                     self.name,
                     hex(offset & 0x7FFFFFFF),
                     hex(self._get_hive_maxaddr(volatile)),
-                    "volative" if volatile else "non-volatile",
+                    "volatile" if volatile else "non-volatile",
                     self.get_name(),
                 ),
             )

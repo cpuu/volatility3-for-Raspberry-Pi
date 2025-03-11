@@ -311,7 +311,10 @@ def _build_guid_name_map(key: reg_extensions.CM_KEY_NODE) -> Dict[str, str]:
             if value.get_name() == "Id":
                 task_id_value = value
                 break
-        except exceptions.InvalidAddressException:
+        except (
+            exceptions.InvalidAddressException,
+            registry.RegistryException,
+        ):
             continue
 
     if (
@@ -323,10 +326,16 @@ def _build_guid_name_map(key: reg_extensions.CM_KEY_NODE) -> Dict[str, str]:
         except exceptions.InvalidAddressException:
             id_str = None
 
-        if isinstance(id_str, bytes):
-            mapping[id_str.decode("utf-16le", errors="replace").rstrip(NULL)] = str(
-                key.get_name()
-            )
+        try:
+            if isinstance(id_str, bytes):
+                mapping[id_str.decode("utf-16le", errors="replace").rstrip(NULL)] = str(
+                    key.get_name()
+                )
+        except (
+            exceptions.InvalidAddressException,
+            registry.RegistryException,
+        ) as excp:
+            vollog.debug(f"Exception occurred while decoding id_str: {excp}")
 
     for subkey in key.get_subkeys():
         mapping.update(_build_guid_name_map(subkey))
@@ -1210,14 +1219,14 @@ information about triggers, actions, run times, and creation times."""
             task_key = software_hive.get_key(
                 "Microsoft\\Windows NT\\CurrentVersion\\Schedule\\TaskCache\\Tasks"
             )
-        except (KeyError, registry.RegistryFormatException):
+        except (KeyError, registry.RegistryException):
             task_key = None
 
         try:
             task_tree = software_hive.get_key(
                 "Microsoft\\Windows NT\\CurrentVersion\\Schedule\\TaskCache\\Tree"
             )
-        except (KeyError, registry.RegistryFormatException):
+        except (KeyError, registry.RegistryException):
             task_tree = None
 
         return (task_key, task_tree)  # type: ignore
@@ -1230,13 +1239,30 @@ information about triggers, actions, run times, and creation times."""
         for value in key.get_values():
             try:
                 name = str(value.get_name())
-            except exceptions.InvalidAddressException:
+            except (
+                exceptions.InvalidAddressException,
+                registry.RegistryException,
+            ):
                 continue
 
             if name in ["Actions", "Triggers", "DynamicInfo"]:
                 values[name] = value
 
-        task_name = guid_mapping.get(str(key.get_name()), renderers.NotAvailableValue())
+        try:
+            key_name = str(key.get_name())
+        except (
+            exceptions.InvalidAddressException,
+            registry.RegistryException,
+        ):
+            key_name = None
+
+        try:
+            task_name = guid_mapping.get(key_name, renderers.NotAvailableValue())
+        except (
+            exceptions.InvalidAddressException,
+            registry.RegistryException,
+        ):
+            task_name = renderers.NotAvailableValue()
 
         try:
             action_set = cls.parse_actions_value(values["Actions"])
@@ -1351,7 +1377,7 @@ information about triggers, actions, run times, and creation times."""
                     else renderers.NotAvailableValue()
                 ),
                 working_directory,
-                str(key.get_name()),
+                key_name or renderers.NotAvailableValue(),
             )
 
     def _generator(self) -> Iterator[Tuple[int, _ScheduledTaskEntry]]:

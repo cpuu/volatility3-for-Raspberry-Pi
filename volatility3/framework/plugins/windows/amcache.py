@@ -544,7 +544,7 @@ class Amcache(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                     amcache.get_key("Root\\InventoryDriverBinary")  # type: ignore
                 )
             )
-        except (KeyError, registry.RegistryFormatException):
+        except (KeyError, registry.RegistryException):
             # Registry key not found
             pass
 
@@ -555,7 +555,7 @@ class Amcache(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                     amcache.get_key("Root\\Programs")
                 )  # type: ignore
             }
-        except (KeyError, registry.RegistryFormatException):
+        except (KeyError, registry.RegistryException):
             programs = {}
 
         try:
@@ -565,7 +565,7 @@ class Amcache(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 ),
                 key=_entry_sort_key,
             )
-        except (KeyError, registry.RegistryFormatException):
+        except (KeyError, registry.RegistryException):
             files = []
 
         for program_id, file_entries in itertools.groupby(
@@ -594,7 +594,7 @@ class Amcache(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                     amcache.get_key("Root\\InventoryApplication")  # type: ignore
                 )
             )
-        except (KeyError, registry.RegistryFormatException):
+        except (KeyError, registry.RegistryException):
             programs = {}
 
         try:
@@ -604,7 +604,7 @@ class Amcache(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 ),
                 key=_entry_sort_key,
             )
-        except (KeyError, registry.RegistryFormatException):
+        except (KeyError, registry.RegistryException):
             files = []
 
         for program_id, file_entries in itertools.groupby(
