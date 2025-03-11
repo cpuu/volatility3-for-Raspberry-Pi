@@ -73,13 +73,11 @@ class Envars(interfaces.plugins.PluginInterface):
                 )
             except (
                 KeyError,
-                registry.RegistryFormatException,
-                registry.RegistryInvalidIndex,
+                registry.RegistryException,
             ):
                 with contextlib.suppress(
                     KeyError,
-                    registry.RegistryFormatException,
-                    registry.RegistryInvalidIndex,
+                    registry.RegistryException,
                 ):
                     sys = hive.get_key(
                         "ControlSet001\\Control\\Session Manager\\Environment"
@@ -87,8 +85,7 @@ class Envars(interfaces.plugins.PluginInterface):
             if sys:
                 with contextlib.suppress(
                     KeyError,
-                    registry.RegistryFormatException,
-                    registry.RegistryInvalidIndex,
+                    registry.RegistryException,
                 ):
                     for node in sys.get_values():
                         try:
@@ -97,8 +94,7 @@ class Envars(interfaces.plugins.PluginInterface):
                                 values.append(value_node_name)
                         except (
                             exceptions.InvalidAddressException,
-                            registry.RegistryFormatException,
-                            registry.RegistryInvalidIndex,
+                            registry.RegistryException,
                         ):
                             vollog.log(
                                 constants.LOGLEVEL_VVV,
@@ -110,15 +106,13 @@ class Envars(interfaces.plugins.PluginInterface):
             ## The user-specific variables
             with contextlib.suppress(
                 KeyError,
-                registry.RegistryFormatException,
-                registry.RegistryInvalidIndex,
+                registry.RegistryException,
             ):
                 ntuser = hive.get_key("Environment")
             if ntuser:
                 with contextlib.suppress(
                     KeyError,
-                    registry.RegistryFormatException,
-                    registry.RegistryInvalidIndex,
+                    registry.RegistryException,
                 ):
                     for node in ntuser.get_values():
                         try:
@@ -127,8 +121,7 @@ class Envars(interfaces.plugins.PluginInterface):
                                 values.append(value_node_name)
                         except (
                             exceptions.InvalidAddressException,
-                            registry.RegistryFormatException,
-                            registry.RegistryInvalidIndex,
+                            registry.RegistryException,
                         ):
                             vollog.log(
                                 constants.LOGLEVEL_VVV,
@@ -141,8 +134,7 @@ class Envars(interfaces.plugins.PluginInterface):
                 key = hive.get_key("Volatile Environment")
             except (
                 KeyError,
-                registry.RegistryFormatException,
-                registry.RegistryInvalidIndex,
+                registry.RegistryException,
             ):
                 continue
             try:
@@ -153,8 +145,7 @@ class Envars(interfaces.plugins.PluginInterface):
                             values.append(value_node_name)
                     except (
                         exceptions.InvalidAddressException,
-                        registry.RegistryFormatException,
-                        registry.RegistryInvalidIndex,
+                        registry.RegistryException,
                     ):
                         vollog.log(
                             constants.LOGLEVEL_VVV,

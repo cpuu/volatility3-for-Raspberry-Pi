@@ -162,7 +162,7 @@ class SvcScan(interfaces.plugins.PluginInterface):
             except (
                 KeyError,
                 exceptions.InvalidAddressException,
-                registry.RegistryFormatException,
+                registry.RegistryException,
             ):
                 try:
                     return cast(
@@ -171,7 +171,7 @@ class SvcScan(interfaces.plugins.PluginInterface):
                 except (
                     KeyError,
                     exceptions.InvalidAddressException,
-                    registry.RegistryFormatException,
+                    registry.RegistryException,
                 ):
                     vollog.log(
                         constants.LOGLEVEL_VVVV,

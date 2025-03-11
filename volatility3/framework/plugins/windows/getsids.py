@@ -116,8 +116,7 @@ class GetSIDs(interfaces.plugins.PluginInterface):
                         sid = str(subkey.get_name())
                     except (
                         exceptions.InvalidAddressException,
-                        layers.registry.RegistryFormatException,
-                        layers.registry.RegistryInvalidIndex,
+                        layers.registry.RegistryException,
                     ):
                         continue
 
@@ -127,8 +126,7 @@ class GetSIDs(interfaces.plugins.PluginInterface):
                             value_node_name = node.get_name() or "(Default)"
                         except (
                             exceptions.InvalidAddressException,
-                            layers.registry.RegistryFormatException,
-                            layers.registry.RegistryInvalidIndex,
+                            layers.registry.RegistryException,
                         ):
                             continue
                         try:
@@ -162,13 +160,13 @@ class GetSIDs(interfaces.plugins.PluginInterface):
                         except (
                             ValueError,
                             exceptions.InvalidAddressException,
-                            layers.registry.RegistryFormatException,
+                            layers.registry.RegistryException,
                         ):
                             continue
             except (
                 KeyError,
                 exceptions.InvalidAddressException,
-                layers.registry.RegistryFormatException,
+                layers.registry.RegistryException,
             ):
                 continue
 

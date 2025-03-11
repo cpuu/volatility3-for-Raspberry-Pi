@@ -80,7 +80,7 @@ class Certificates(interfaces.plugins.PluginInterface):
             ]:
                 with contextlib.suppress(
                     KeyError,
-                    registry.RegistryFormatException,
+                    registry.RegistryException,
                     exceptions.InvalidAddressException,
                 ):
                     # Walk it

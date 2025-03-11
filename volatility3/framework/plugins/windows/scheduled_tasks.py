@@ -313,8 +313,7 @@ def _build_guid_name_map(key: reg_extensions.CM_KEY_NODE) -> Dict[str, str]:
                 break
         except (
             exceptions.InvalidAddressException,
-            registry.RegistryFormatException,
-            registry.RegistryInvalidIndex,
+            registry.RegistryException,
         ):
             continue
 
@@ -334,8 +333,7 @@ def _build_guid_name_map(key: reg_extensions.CM_KEY_NODE) -> Dict[str, str]:
                 )
         except (
             exceptions.InvalidAddressException,
-            registry.RegistryFormatException,
-            registry.RegistryInvalidIndex,
+            registry.RegistryException,
         ) as excp:
             vollog.debug(f"Exception occurred while decoding id_str: {excp}")
 
@@ -1221,14 +1219,14 @@ information about triggers, actions, run times, and creation times."""
             task_key = software_hive.get_key(
                 "Microsoft\\Windows NT\\CurrentVersion\\Schedule\\TaskCache\\Tasks"
             )
-        except (KeyError, registry.RegistryFormatException):
+        except (KeyError, registry.RegistryException):
             task_key = None
 
         try:
             task_tree = software_hive.get_key(
                 "Microsoft\\Windows NT\\CurrentVersion\\Schedule\\TaskCache\\Tree"
             )
-        except (KeyError, registry.RegistryFormatException):
+        except (KeyError, registry.RegistryException):
             task_tree = None
 
         return (task_key, task_tree)  # type: ignore
@@ -1243,8 +1241,7 @@ information about triggers, actions, run times, and creation times."""
                 name = str(value.get_name())
             except (
                 exceptions.InvalidAddressException,
-                registry.RegistryFormatException,
-                registry.RegistryFormatException,
+                registry.RegistryException,
             ):
                 continue
 
@@ -1255,8 +1252,7 @@ information about triggers, actions, run times, and creation times."""
             key_name = str(key.get_name())
         except (
             exceptions.InvalidAddressException,
-            registry.RegistryFormatException,
-            registry.RegistryFormatException,
+            registry.RegistryException,
         ):
             key_name = None
 
@@ -1264,8 +1260,7 @@ information about triggers, actions, run times, and creation times."""
             task_name = guid_mapping.get(key_name, renderers.NotAvailableValue())
         except (
             exceptions.InvalidAddressException,
-            registry.RegistryFormatException,
-            registry.RegistryFormatException,
+            registry.RegistryException,
         ):
             task_name = renderers.NotAvailableValue()
 

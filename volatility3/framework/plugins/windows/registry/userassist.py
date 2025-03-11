@@ -15,8 +15,7 @@ from volatility3.framework.configuration import requirements
 from volatility3.framework.layers.physical import BufferDataLayer
 from volatility3.framework.layers.registry import (
     RegistryHive,
-    RegistryFormatException,
-    RegistryInvalidIndex,
+    RegistryException,
 )
 from volatility3.framework.renderers import conversion, format_hints
 from volatility3.framework.symbols import intermed
@@ -176,7 +175,7 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
                 "software\\microsoft\\windows\\currentversion\\explorer\\userassist",
                 return_list=True,
             )
-        except RegistryFormatException as e:
+        except RegistryException as e:
             vollog.warning(
                 f"Error accessing UserAssist key in {hive_name} at {hive.hive_offset:#x}: {e}"
             )
@@ -246,8 +245,7 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
                         subkey_name = subkey.get_name()
                     except (
                         exceptions.InvalidAddressException,
-                        RegistryFormatException,
-                        RegistryInvalidIndex,
+                        RegistryException,
                     ):
                         subkey_name = renderers.UnreadableValue()
 
@@ -276,8 +274,7 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
                         value_name = value.get_name()
                     except (
                         exceptions.InvalidAddressException,
-                        RegistryFormatException,
-                        RegistryInvalidIndex,
+                        RegistryException,
                     ):
                         value_name = renderers.UnreadableValue()
 

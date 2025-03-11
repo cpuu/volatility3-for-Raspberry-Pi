@@ -88,16 +88,14 @@ class GetServiceSIDs(interfaces.plugins.PluginInterface):
             except (
                 KeyError,
                 exceptions.InvalidAddressException,
-                registry.RegistryFormatException,
-                registry.RegistryInvalidIndex,
+                registry.RegistryException,
             ):
                 try:
                     services = hive.get_key(r"ControlSet001\Services")
                 except (
                     KeyError,
                     exceptions.InvalidAddressException,
-                    registry.RegistryFormatException,
-                    registry.RegistryInvalidIndex,
+                    registry.RegistryException,
                 ):
                     continue
 
@@ -107,8 +105,7 @@ class GetServiceSIDs(interfaces.plugins.PluginInterface):
                         sid_name = s.get_name()
                     except (
                         exceptions.InvalidAddressException,
-                        registry.RegistryFormatException,
-                        registry.RegistryInvalidIndex,
+                        registry.RegistryException,
                     ):
                         continue
 

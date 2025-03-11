@@ -125,8 +125,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
                 enc_secret_value = next(enc_secret_key.get_values(), None)
             except (
                 InvalidAddressException,
-                registry.RegistryFormatException,
-                registry.RegistryInvalidIndex,
+                registry.RegistryException,
             ):
                 enc_secret_value = None
 
@@ -209,8 +208,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
             except (
                 StopIteration,
                 InvalidAddressException,
-                registry.RegistryFormatException,
-                registry.RegistryInvalidIndex,
+                registry.RegistryException,
             ):
                 enc_secret_value = None
 
@@ -233,8 +231,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
                 key_name = key.get_name()
             except (
                 InvalidAddressException,
-                registry.RegistryFormatException,
-                registry.RegistryInvalidIndex,
+                registry.RegistryException,
             ):
                 key_name = renderers.UnreadableValue()
 
