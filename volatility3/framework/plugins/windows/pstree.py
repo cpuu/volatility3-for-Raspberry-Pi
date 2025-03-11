@@ -5,7 +5,7 @@ import datetime
 import logging
 from typing import Callable, Dict, Set, Tuple
 
-from volatility3.framework import objects, interfaces, renderers, exceptions
+from volatility3.framework import interfaces, renderers, exceptions
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
 from volatility3.plugins.windows import pslist
@@ -52,7 +52,7 @@ class PsTree(interfaces.plugins.PluginInterface):
 
     def find_level(
         self,
-        pid: objects.Pointer,
+        pid: int,
         filter_func: Callable[
             [interfaces.objects.ObjectInterface], bool
         ] = lambda _: False,
@@ -104,7 +104,7 @@ class PsTree(interfaces.plugins.PluginInterface):
 
         process_pids = set([])
 
-        def yield_processes(pid, descendant: bool = False):
+        def yield_processes(pid: int, descendant: bool = False):
             if pid in process_pids:
                 vollog.debug(f"Pid cycle: already processed pid {pid}")
                 return None
