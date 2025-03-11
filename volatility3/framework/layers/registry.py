@@ -95,7 +95,7 @@ class RegistryHive(linear.LinearlyMappedLayer):
                 f"Exception when setting hive {self.name} max address, using {hex(self._maxaddr)}",
             )
 
-    def _find_registry_process(self) -> Optional["extensions.EPROCESS"]:
+    def _find_registry_process(self) -> Optional[extensions.EPROCESS]:
         """Walk the active process list and return the Registry process if it exists. Duplicates
         PsList.list_processes() since pulling in the plugin causes problems.
 
