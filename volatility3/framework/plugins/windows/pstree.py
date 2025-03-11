@@ -20,7 +20,9 @@ class PsTree(interfaces.plugins.PluginInterface):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._processes: Dict[objects.Pointer, Tuple[interfaces.objects.ObjectInterface, int]] = {}
+        self._processes: Dict[
+            objects.Pointer, Tuple[interfaces.objects.ObjectInterface, int]
+        ] = {}
         self._levels: Dict[objects.Pointer, int] = {}
         self._children: Dict[objects.Pointer, Set[int]] = {}
         self._ancestors: Set[objects.Pointer] = set([])
