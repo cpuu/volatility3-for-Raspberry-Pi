@@ -103,7 +103,7 @@ class RegistryHive(linear.LinearlyMappedLayer):
             The Registry EPROCESS object if it exists, or None
         """
 
-        kernel = self.context.modules.get("kernel")
+        kernel = self.context.modules.get(self.config["kernel_module_name"])
 
         if not kernel or not kernel.offset:
             raise ValueError(
