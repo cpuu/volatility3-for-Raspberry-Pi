@@ -62,9 +62,9 @@ def runvol_plugin(
     return runvol(args, volatility, python)
 
 
-def runvolshell(img, volshell, python, volshellargs=None, globalargs=None):
-    volshellargs = volshellargs or []
-    globalargs = globalargs or []
+def runvolshell(
+    img, volshell, python, volshellargs: Tuple = (), globalargs: Tuple = ()
+):
     args = (
         globalargs
         + (
@@ -196,7 +196,9 @@ def count_entries_flat(plugin_json_out: List[dict]):
 #
 
 
-def basic_volshell_test(image, volatility, python, globalargs):
+def basic_volshell_test(
+    image, volatility, python, volshellargs: Tuple = (), globalargs: Tuple = ()
+):
     # Basic VolShell test to verify requirements and ensure VolShell runs without crashing
 
     volshell_commands = [
@@ -216,7 +218,7 @@ def basic_volshell_test(image, volatility, python, globalargs):
             img=image,
             volshell=volatility,
             python=python,
-            volshellargs=("--script", filename),
+            volshellargs=("--script", filename) + volshellargs,
             globalargs=globalargs,
         )
     finally:

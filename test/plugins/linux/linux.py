@@ -8,7 +8,7 @@ from test import test_volatility, LinuxSamples
 class TestLinuxVolshell:
     def test_linux_volshell(self, image, volatility, python):
         out = test_volatility.basic_volshell_test(
-            image, volatility, python, globalargs=("-l",)
+            image, volatility, python, volshellargs=("-l",)
         )
         assert out.count(b"<task_struct") > 100
 

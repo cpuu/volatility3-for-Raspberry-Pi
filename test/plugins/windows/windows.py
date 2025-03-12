@@ -10,7 +10,7 @@ from test import test_volatility, WindowsSamples
 class TestWindowsVolshell:
     def test_windows_volshell(self, image, volatility, python):
         out = test_volatility.basic_volshell_test(
-            image, volatility, python, globalargs=("-w",)
+            image, volatility, python, volshellargs=("-w",)
         )
         assert out.count(b"<EPROCESS") > 40
 
