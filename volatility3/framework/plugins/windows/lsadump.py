@@ -16,8 +16,6 @@ class Lsadump(lsadump.Lsadump):
 
     def __getattr__(self, *args, **kwargs):
         warnings.warn(
-            DeprecationWarning(
-                "This plugin is now called windows.registry.lsadump.Lsadump"
-            )
+            FutureWarning("This plugin is now called windows.registry.lsadump.Lsadump")
         )
         return super().__getattr__(*args, **kwargs)

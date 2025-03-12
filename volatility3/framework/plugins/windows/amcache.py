@@ -16,8 +16,6 @@ class Amcache(amcache.Amcache):
 
     def __getattr__(self, *args, **kwargs):
         warnings.warn(
-            DeprecationWarning(
-                "This plugin is now called windows.registry.amcache.Amcache"
-            )
+            FutureWarning("This plugin is now called windows.registry.amcache.Amcache")
         )
         return super().__getattr__(*args, **kwargs)

@@ -16,7 +16,7 @@ class Cachedump(cachedump.Cachedump):
 
     def __getattr__(self, *args, **kwargs):
         warnings.warn(
-            DeprecationWarning(
+            FutureWarning(
                 "This plugin is now called windows.registry.cachedump.Cachedump"
             )
         )

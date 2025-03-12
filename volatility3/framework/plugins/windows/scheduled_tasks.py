@@ -17,7 +17,7 @@ information about triggers, actions, run times, and creation times (deprecated).
 
     def __getattr__(self, *args, **kwargs):
         warnings.warn(
-            DeprecationWarning(
+            FutureWarning(
                 "This plugin is now called windows.registry.scheduled_tasks.ScheduledTasks"
             )
         )
