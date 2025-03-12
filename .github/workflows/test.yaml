@@ -31,6 +31,8 @@ jobs:
         gunzip linux-sample-1.bin.gz
         curl -sLO "https://downloads.volatilityfoundation.org/volatility3/images/win-xp-laptop-2005-06-25.img.gz"
         gunzip win-xp-laptop-2005-06-25.img.gz
+        curl -sLO "https://downloads.volatilityfoundation.org/volatility3/images/win-10_19041-2025_03.dmp.gz"
+        gunzip win-10_19041-2025_03.dmp.gz
         cd -
 
     - name: Download and Extract symbols
@@ -47,7 +49,7 @@ jobs:
         pytest ./test/plugins/linux/linux.py --volatility=volshell.py --image-dir=./test_images -k test_linux_volshell -v
 
         # Volatility
-        pytest ./test/plugins/windows/windows.py --volatility=vol.py --image-dir=./test_images -k "test_windows and not test_windows_volshell" -v
+        pytest ./test/plugins/windows/windows.py --volatility=vol.py --image=./test_images/win-10_19041-2025_03.dmp -k "test_windows and not test_windows_volshell" -v
         pytest ./test/plugins/linux/linux.py --volatility=vol.py --image-dir=./test_images -k "test_linux and not test_linux_volshell" -v
 
     - name: Clean up post-test
