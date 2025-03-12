@@ -13,6 +13,8 @@ class Sample:
 class WindowsSamples(Enum):
     WINDOWSXP_GENERIC = Sample("./test_images/win-xp-laptop-2005-06-25.img")
     """WindowsXP sample from early Volatility training."""
+    WINDOWS10_GENERIC = Sample("./test_images/win-10_19041-2025_03.dmp")
+    """Windows10 CrashDump sample."""
 
 
 class LinuxSamples(Enum):
