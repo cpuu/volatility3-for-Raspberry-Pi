@@ -1,4 +1,8 @@
 from enum import Enum
+from pathlib import Path
+
+TESTS_ROOT_DIR = Path(__file__).parent
+WINDOWS_TESTS_DATA_DIR = TESTS_ROOT_DIR / "plugins" / "windows" / "test_data"
 
 
 class Sample:
