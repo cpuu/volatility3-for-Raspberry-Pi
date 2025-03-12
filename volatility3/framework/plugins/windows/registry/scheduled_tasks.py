@@ -1108,8 +1108,8 @@ class DynamicInfo:
 
 
 class ScheduledTasks(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
-    """Decodes scheduled task information from the Windows registry, including \
-information about triggers, actions, run times, and creation times."""
+    """Decodes scheduled task information from the Windows registry, including
+    information about triggers, actions, run times, and creation times."""
 
     _required_framework_version = (2, 11, 0)
     _version = (2, 0, 0)

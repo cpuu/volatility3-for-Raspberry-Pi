@@ -14,10 +14,11 @@ class Cachedump(cachedump.Cachedump):
     _required_framework_version = (2, 0, 0)
     _version = (1, 0, 2)
 
-    def __getattr__(self, *args, **kwargs):
+    def __getattribute__(self, *args, **kwargs):
         warnings.warn(
             FutureWarning(
-                "This plugin is now called windows.registry.cachedump.Cachedump"
+                "The windows.cachedump.Cachedump plugin is deprecated and will be removed on "
+                "September 19, 2025. Use windows.registry.cachedump.Cachedump instead."
             )
         )
-        return super().__getattr__(*args, **kwargs)
+        return super().__getattribute__(*args, **kwargs)

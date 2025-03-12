@@ -14,10 +14,11 @@ class Hashdump(hashdump.Hashdump):
     _required_framework_version = (2, 0, 0)
     _version = (1, 1, 1)
 
-    def __getattr__(self, *args, **kwargs):
+    def __getattribute__(self, *args, **kwargs):
         warnings.warn(
             FutureWarning(
-                "This plugin is now called windows.registry.hashdump.Hashdump"
+                "The windows.hashdump.Hashdump plugin is deprecated and will be removed on "
+                "September 19, 2025. Use windows.registry.hashdump.Hashdump instead."
             )
         )
-        return super().__getattr__(*args, **kwargs)
+        return super().__getattribute__(*args, **kwargs)
