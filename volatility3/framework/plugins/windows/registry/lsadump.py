@@ -14,8 +14,7 @@ from volatility3.framework.exceptions import InvalidAddressException
 
 from volatility3.framework.layers import registry
 from volatility3.framework.symbols.windows import versions
-from volatility3.plugins.windows import hashdump
-from volatility3.plugins.windows.registry import hivelist
+from volatility3.plugins.windows.registry import hashdump, hivelist
 from volatility3.framework.renderers import format_hints
 
 vollog = logging.getLogger(__name__)
