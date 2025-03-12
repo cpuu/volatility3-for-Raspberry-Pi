@@ -101,7 +101,7 @@ class TestWindowsDlllist:
 
 
 class TestWindowsModules:
-    def test_windows_generic_modules(self, volatility, python):
+    def test_windows_specific_modules(self, volatility, python):
         image = WindowsSamples.WINDOWSXP_GENERIC.value.path
         rc, out, _err = test_volatility.runvol_plugin(
             "windows.modules.Modules",
