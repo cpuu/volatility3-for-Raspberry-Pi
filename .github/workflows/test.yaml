@@ -45,7 +45,7 @@ jobs:
     - name: Testing...
       run: |
         # VolShell
-        pytest ./test/plugins/windows/windows.py --volatility=volshell.py --image=./test_images/win-10_19041-2025_03.dmp -k test_windows_volshell -v
+        pytest ./test/plugins/windows/windows.py --volatility=volshell.py --image-dir=./test_images -k test_windows_volshell -v
         pytest ./test/plugins/linux/linux.py --volatility=volshell.py --image-dir=./test_images -k test_linux_volshell -v
 
         # Volatility
