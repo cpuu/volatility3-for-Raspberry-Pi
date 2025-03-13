@@ -18,7 +18,7 @@ class Cachedump(cachedump.Cachedump):
         warnings.warn(
             FutureWarning(
                 "The windows.cachedump.Cachedump plugin is deprecated and will be removed on "
-                "September 19, 2025. Use windows.registry.cachedump.Cachedump instead."
+                "2025-09-25. Use windows.registry.cachedump.Cachedump instead."
             )
         )
         return super().__getattribute__(*args, **kwargs)

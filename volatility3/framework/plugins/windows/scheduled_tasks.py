@@ -19,7 +19,7 @@ class ScheduledTasks(scheduled_tasks.ScheduledTasks):
         warnings.warn(
             FutureWarning(
                 "The windows.registry.scheduled_tasks.ScheduledTasks plugin is deprecated and will be removed on "
-                "September 19, 2025. Use windows.registry.scheduled_tasks.ScheduledTasks instead."
+                "2025-09-25. Use windows.registry.scheduled_tasks.ScheduledTasks instead."
             )
         )
         return super().__getattribute__(*args, **kwargs)

@@ -18,7 +18,7 @@ class Hashdump(hashdump.Hashdump):
         warnings.warn(
             FutureWarning(
                 "The windows.hashdump.Hashdump plugin is deprecated and will be removed on "
-                "September 19, 2025. Use windows.registry.hashdump.Hashdump instead."
+                "2025-09-25. Use windows.registry.hashdump.Hashdump instead."
             )
         )
         return super().__getattribute__(*args, **kwargs)

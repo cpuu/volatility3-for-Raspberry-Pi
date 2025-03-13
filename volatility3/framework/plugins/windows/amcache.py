@@ -18,7 +18,7 @@ class Amcache(amcache.Amcache):
         warnings.warn(
             FutureWarning(
                 "The windows.amcache.Amcache plugin is deprecated and will be removed on "
-                "September 19, 2025. Use windows.registry.amcache.Amcache instead."
+                "2025-09-25. Use windows.registry.amcache.Amcache instead."
             )
         )
         return super().__getattribute__(*args, **kwargs)

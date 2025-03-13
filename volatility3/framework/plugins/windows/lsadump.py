@@ -18,7 +18,7 @@ class Lsadump(lsadump.Lsadump):
         warnings.warn(
             FutureWarning(
                 "The windows.lsadump.Lsadump plugin is deprecated and will be removed on "
-                "September 19, 2025. Use windows.registry.lsadump.Lsadump instead."
+                "2025-09-25. Use windows.registry.lsadump.Lsadump instead."
             )
         )
         return super().__getattribute__(*args, **kwargs)
