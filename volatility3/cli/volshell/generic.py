@@ -539,10 +539,11 @@ class Volshell(interfaces.plugins.PluginInterface):
             location = "file:" + request.pathname2url(location)
         print(f"Running code from {location}\n")
         accessor = resources.ResourceAccessor()
-        with accessor.open(url=location) as fp:
-            self.__console.runsource(
-                io.TextIOWrapper(fp, encoding="utf-8").read(), symbol="exec"
-            )
+        with io.TextIOWrapper(accessor.open(url=location), encoding="utf-8") as fp:
+            if has_ipython:
+                self.__console.ex(fp.read())
+            else:
+                self.__console.runsource(fp.read(), symbol="exec")
         print("\nCode complete")
 
     def load_file(self, location: str):
