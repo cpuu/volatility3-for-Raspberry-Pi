@@ -98,7 +98,7 @@ class Modules(interfaces.configuration.VersionableInterface):
                 module = kernel.object("module", offset=module.offset, absolute=True)
                 symbol_name = module.get_symbol_by_address(target_address)
 
-            if symbol_name:
+            if symbol_name and symbol_name.find(constants.BANG) != -1:
                 symbol_name = symbol_name.split(constants.BANG)[1]
 
             return match, symbol_name
