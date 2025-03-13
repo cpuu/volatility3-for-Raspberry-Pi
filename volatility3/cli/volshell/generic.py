@@ -81,9 +81,6 @@ class Volshell(interfaces.plugins.PluginInterface):
         if not has_ipython:
             try:
                 import readline
-            except ImportError:
-                pass
-            else:
                 import rlcompleter
 
                 completer = rlcompleter.Completer(
@@ -92,6 +89,8 @@ class Volshell(interfaces.plugins.PluginInterface):
                 readline.set_completer(completer.complete)
                 readline.parse_and_bind("tab: complete")
                 print("Readline imported successfully")
+            except ImportError:
+                pass
 
         # TODO: provide help, consider generic functions (pslist?) and/or providing windows/linux functions
 
