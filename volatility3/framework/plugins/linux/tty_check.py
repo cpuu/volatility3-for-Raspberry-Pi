@@ -12,7 +12,6 @@ from volatility3.framework.interfaces import plugins
 from volatility3.framework.objects import utility
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols import linux
-from volatility3.plugins.linux import lsmod
 
 vollog = logging.getLogger(__name__)
 
@@ -35,9 +34,6 @@ class tty_check(plugins.PluginInterface):
                 component=linux_utilities_modules.Modules,
                 version=(2, 0, 0),
             ),
-            requirements.PluginRequirement(
-                name="lsmod", plugin=lsmod.Lsmod, version=(2, 0, 0)
-            ),
             requirements.VersionRequirement(
                 name="linuxutils", component=linux.LinuxUtilities, version=(2, 0, 0)
             ),
@@ -45,12 +41,6 @@ class tty_check(plugins.PluginInterface):
 
     def _generator(self):
         vmlinux = self.context.modules[self.config["kernel"]]
-
-        modules = lsmod.Lsmod.list_modules(self.context, vmlinux.name)
-
-        handlers = linux.LinuxUtilities.generate_kernel_handler_info(
-            self.context, vmlinux.name, modules
-        )
 
         try:
             tty_drivers = vmlinux.object_from_symbol("tty_drivers").cast("list_head")
@@ -63,6 +53,10 @@ class tty_check(plugins.PluginInterface):
                 "This structure is not present in the supplied symbol table."
                 "This means you are either analyzing an unsupported kernel version or that your symbol table is corrupt."
             )
+
+        known_modules = linux_utilities_modules.Modules.run_modules_scanners(
+            self.context, self.config["kernel"], run_hidden_modules=True
+        )
 
         for tty in tty_drivers.to_list(
             vmlinux.symbol_table_name + constants.BANG + "tty_driver", "tty_drivers"
@@ -87,13 +81,23 @@ class tty_check(plugins.PluginInterface):
                 except exceptions.InvalidAddressException:
                     continue
 
-                module_name, symbol_name = (
-                    linux_utilities_modules.Modules.lookup_module_address(
-                        self.context, vmlinux.name, handlers, recv_buf
+                module_info, symbol_name = (
+                    linux_utilities_modules.Modules.module_lookup_by_address(
+                        self.context, vmlinux.name, known_modules, recv_buf
                     )
                 )
 
-                yield (0, (name, format_hints.Hex(recv_buf), module_name, symbol_name))
+                if module_info:
+                    module_name = module_info.name
+                else:
+                    module_name = renderers.NotAvailableValue()
+
+                yield 0, (
+                    name,
+                    format_hints.Hex(recv_buf),
+                    module_name,
+                    symbol_name or renderers.NotAvailableValue(),
+                )
 
     def run(self):
         return renderers.TreeGrid(
