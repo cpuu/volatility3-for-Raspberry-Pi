@@ -265,7 +265,6 @@ class Modules(interfaces.configuration.VersionableInterface):
                     f"Invalid gatherer sent through `caller_wanted_gatherers`: {gatherer}"
                 )
 
-
         kernel = context.modules[kernel_module_name]
 
         address_mask = context.layers[kernel.layer_name].address_mask
