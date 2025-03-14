@@ -237,14 +237,9 @@ class Modules(interfaces.configuration.VersionableInterface):
         to not operate any inter-plugin results triage.
 
         Rules for `caller_wanted_sources`:
-
-            If `ModuleGathers.all_gathers_identifier` is specified then every source will be populated
-
-            If `ModuleGathers.Scanner` is in the list, then at least one other sources must be
-            specified so a comparison will be populated
+            If `ModuleGatherers.all_gathers_identifier` is specified then every source will be populated
 
             If empty or an invalid source is specified then a ValueError is thrown
-
         Args:
             called_wanted_sources: The list of sources to gather modules.
             flatten: Whether to de-duplicate modules across sources
