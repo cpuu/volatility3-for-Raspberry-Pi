@@ -90,7 +90,9 @@ class Volshell(interfaces.plugins.PluginInterface):
                 readline.parse_and_bind("tab: complete")
                 print("Readline imported successfully")
             except ImportError:
-                pass
+                print(
+                    "Readline or rlcompleter module could not be imported. Tab completion will not be available."
+                )
 
         # TODO: provide help, consider generic functions (pslist?) and/or providing windows/linux functions
 
@@ -539,7 +541,9 @@ class Volshell(interfaces.plugins.PluginInterface):
             location = "file:" + request.pathname2url(location)
         print(f"Running code from {location}\n")
         accessor = resources.ResourceAccessor()
-        with io.TextIOWrapper(accessor.open(url=location), encoding="utf-8") as fp:
+        with accessor.open(url=location) as handle, io.TextIOWrapper(
+            handle, encoding="utf-8"
+        ) as fp:
             if has_ipython:
                 self.__console.ex(fp.read())
             else:
