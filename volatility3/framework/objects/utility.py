@@ -2,6 +2,8 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 
+import re
+
 from typing import Optional, Union
 
 from volatility3.framework import interfaces, objects, constants, exceptions
@@ -101,7 +103,9 @@ def pointer_to_string(
     )
 
 
-def gather_contiguous_bytes_from_address(layer, address: int, count: int) -> bytes:
+def gather_contiguous_bytes_from_address(
+    context, data_layer, starting_address: int, count: int
+) -> bytes:
     """
     This method reconstructs a string from memory while also carefully examining each page
 
@@ -115,48 +119,63 @@ def gather_contiguous_bytes_from_address(layer, address: int, count: int) -> byt
 
     data = b""
 
-    left_to_read = count
+    last_address = None
 
-    # read as many pages as possible that are contiguous
-    # if the first page is missed, we re-raise the InvalidAddressException
-    # if we have at least 1 page that was read succesfully,
-    # then we try to construct a string from it
-    while left_to_read > 0:
-        # compute aligned address of current page and next the page
-        aligned = address & ~0xFFF
-        next_page = aligned + 0xFFF + 1
+    for address, length, _, _, _ in data_layer.mapping(
+        offset=starting_address, length=count, ignore_errors=True
+    ):
+        # Used to track when we hit a paged out page
+        if not last_address:
+            last_address = address + length
 
-        # all fits on the current page, last read
-        if address + left_to_read < next_page:
-            try:
-                data += layer.read(address, left_to_read)
-            except exceptions.InvalidAddressException:
-                # if we have data, just break the loop
-                if data:
-                    break
-                # Raise if no data was read as this means the first page was invalid
-                else:
-                    raise
+        # we hit a swapped out page
+        elif last_address and last_address != address:
+            break
 
-            left_to_read = 0
+        data += data_layer.read(address, length)
 
-        else:
-            # how many bytes are left on the current page
-            len_to_read = next_page - address
-
-            try:
-                data += layer.read(address, len_to_read)
-            except exceptions.InvalidAddressException:
-                if data:
-                    break
-                # Raise if no data was read as this means the first page was invalid
-                else:
-                    raise
-
-            address += len_to_read
-            left_to_read -= len_to_read
+    # if we were able to read from the first page, we want to try and construct the string
+    # if the first page fails -> throw exception
+    if data:
+        return data
+    else:
+        raise exceptions.InvalidAddressException(
+            layer_name=data_layer, invalid_address=starting_address
+        )
 
     return data
+
+
+def bytes_to_decoded_string(data: bytes, encoding: str, errors: str) -> bytes:
+    """
+    This function takes a bytes buffer that contains at a string of unknown
+    length starting at the first byte, and returns the properly decoded string
+
+    It starts by using Python's `bytes.decode` to attempt to decode the entire string
+    It then finds the termination character (\ufffd or \x00) and splices the string
+    Finally, it returns this spliced string after its been decoded with the
+        caller-specified encoding
+    """
+    # this is the standard byte used to replace bad unicode characters
+    unicode_replacement_char = "\ufffd"
+
+    # used to find the terminating byte
+    termination_re = re.compile(f"{unicode_replacement_char}|\x00")
+
+    # run over the entire string, letting Python replace invalid characters
+    full_decoded_string = data.decode(encoding=encoding, errors="replace")
+
+    # stop at the first terminating character or get the whole string if not found
+    try:
+        idx = termination_re.search(full_decoded_string).start()
+    except AttributeError:
+        idx = len(full_decoded_string)
+
+    # cut at terminating byte, if found
+    data = data[:idx]
+
+    # return with caller-specified encoding and errors
+    return data.decode(encoding=encoding, errors=errors)
 
 
 def address_to_string(
@@ -188,45 +207,11 @@ def address_to_string(
     if count < 1:
         raise ValueError("Count must be greater than 0")
 
-    encodings = {
-        "utf-8": 1,
-        "utf8": 1,
-        "utf-16": 2,
-        "utf16": 2,
-        "utf32": 4,
-        "utf-32": 4,
-    }
-    if encoding not in encodings:
-        raise ValueError(
-            f"Encoding ({encoding} is invalid. Must be one of {[e for e in encodings]}."
-        )
-
     layer = context.layers[layer_name]
 
-    data = gather_contiguous_bytes_from_address(layer, address, count)
+    data = gather_contiguous_bytes_from_address(context, layer, address, count)
 
-    # we need to find the ending nulls, which the amount of nulls varies based on encoding
-    ending_nulls = b"\x00" * encodings[encoding]
-
-    end_idx = data.find(ending_nulls)
-    # send back the bytes even if the ending nulls aren't found (can be on the next page)
-    if end_idx == -1:
-        return data
-
-    # cut at the nulls
-    data = data[:end_idx]
-
-    # For utf16 and utf32, just looking for the nulls cuts the final null from the string when its ascii characters
-    # This occurs as the string 'vol.py' in utf-16 will look like this, with two ending nulls:
-    # "v\x00o\x00l\x00.\x00p\x00y\x00\x00\x00"
-    # By cutting at the first \x00\x00, we are taking the second byte of the character for 'y'
-    # With real unicode strings this character can be non-zero
-    # This check and added null, pads out the last byte(s) to the width of each character to avoid this issue
-    end_size = len(ending_nulls)
-    if len(data) > end_size and len(data) % end_size != 0:
-        data += b"\x00" * (end_size - (len(data) % end_size))
-
-    return data.decode(encoding=encoding, errors=errors)
+    return bytes_to_decoded_string(data=data, errors=errors, encoding=encoding)
 
 
 def array_of_pointers(
