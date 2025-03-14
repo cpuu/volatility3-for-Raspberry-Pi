@@ -726,7 +726,7 @@ class Netfilter(interfaces.plugins.PluginInterface):
 
     _version = (1, 1, 1)
 
-    _required_linux_utilities_modules_version = (2, 0, 0)
+    _required_linux_utilities_modules_version = (3, 0, 0)
     _required_linuxutils_version = (2, 1, 0)
     _required_lsmod_version = (2, 0, 0)
     _required_linuxnet_version = (1, 0, 0)

@@ -19,10 +19,25 @@ vollog = logging.getLogger(__name__)
 class Modules(interfaces.configuration.VersionableInterface):
     """Kernel modules related utilities."""
 
-    _version = (2, 0, 0)
+    _version = (3, 0, 0)
     _required_framework_version = (2, 0, 0)
 
     framework.require_interface_version(*_required_framework_version)
+
+    # Valid sources of kernel modules to send to `run_module_scanners`
+    source_kernel_identifier = "kernel"
+    source_lsmod_identifier = "lsmod"
+    source_sysfs_identifier = "check_modules"
+    source_hidden_identifier = "hidden_modules"
+
+    # With few exceptions, rootkit checking plugins want all sources
+    # This provides a stable identifier as new sources are added over time
+    all_sources_identifier = [
+        source_kernel_identifier,
+        source_lsmod_identifier,
+        source_sysfs_identifier,
+        source_hidden_identifier,
+    ]
 
     class ModuleInfo(NamedTuple):
         """
@@ -34,13 +49,13 @@ class Modules(interfaces.configuration.VersionableInterface):
         start: int
         end: int
 
-    @staticmethod
+    @classmethod
     def module_lookup_by_address(
+        cls,
         context: interfaces.context.ContextInterface,
         kernel_module_name: str,
         modules: Iterable[ModuleInfo],
         target_address: int,
-        run_hidden_modules: bool = True,
     ) -> Optional[Tuple[ModuleInfo, Optional[str]]]:
         """
         Determine if a target address lies in a module memory space.
@@ -195,7 +210,7 @@ class Modules(interfaces.configuration.VersionableInterface):
     def get_kernel_module_info(
         context: interfaces.context.ContextInterface,
         kernel_module_name: str,
-    ) -> ModuleInfo:
+    ) -> Iterator[ModuleInfo]:
         """
         Returns a ModuleInfo instance that encodes the kernel
         This is required to map function pointers to the kerenl executable
@@ -210,77 +225,173 @@ class Modules(interfaces.configuration.VersionableInterface):
         end_addr = kernel.object_from_symbol("_etext")
         end_addr = end_addr.vol.offset & address_mask
 
-        return Modules.ModuleInfo(
-            start_addr, constants.linux.KERNEL_NAME, start_addr, end_addr
+        return [
+            Modules.ModuleInfo(
+                start_addr, constants.linux.KERNEL_NAME, start_addr, end_addr
+            )
+        ]
+
+    @classmethod
+    def _get_hidden_modules_results(
+        cls,
+        context: str,
+        kernel_module_name: str,
+        run_results: Dict[str, List[ModuleInfo]],
+    ):
+        known_modules_addresses = set()
+
+        kernel = context.modules[kernel_module_name]
+
+        # Walk each sources' results
+        for results in run_results.values():
+            for modinfo in results:
+                address = context.layers[kernel.layer_name].canonicalize(modinfo.start)
+                known_modules_addresses.add(address)
+
+        modules_memory_boundaries = cls.get_modules_memory_boundaries(
+            context, kernel_module_name
         )
+
+        hidden_results = []
+
+        address_mask = context.layers[kernel.layer_name].address_mask
+
+        for module in cls.get_hidden_modules(
+            context,
+            kernel_module_name,
+            known_modules_addresses,
+            modules_memory_boundaries,
+        ):
+            modinfo = cls.get_module_info_for_module(address_mask, module)
+            if modinfo:
+                hidden_results.append(modinfo)
+
+        return hidden_results
+
+    @classmethod
+    def _get_list_modules(
+        cls, context: interfaces.context.ContextInterface, kernel_module_name: str
+    ) -> List[ModuleInfo]:
+        """
+        Gather `module` instances from lsmod
+        """
+        yield from cls.list_modules(context, kernel_module_name)
+
+    @classmethod
+    def _get_sysfs_modules(
+        cls, context: interfaces.context.ContextInterface, kernel_module_name: str
+    ) -> List[ModuleInfo]:
+        """
+        Gather the `module` instances from sysfs
+        """
+        kernel = context.modules[kernel_module_name]
+
+        sysfs_modules: dict = cls.get_kset_modules(context, kernel_module_name)
+
+        for m_offset in sysfs_modules.values():
+            yield kernel.object(object_type="module", offset=m_offset, absolute=True)
+
+    @classmethod
+    def _validated_sources(cls, caller_wanted_sources) -> List[str]:
+        """
+        Called by `run_modules_scanners` to validate the caller supplied sources list
+        An exception is thrown if an empty source list is given or a list containing an invalid source
+        """
+        if not caller_wanted_sources:
+            raise ValueError("`caller_wanted_sources` must have at least one source.")
+
+        if (
+            len(caller_wanted_sources) == 1
+            and caller_wanted_sources[0] == Modules.source_hidden_identifier
+        ):
+            raise ValueError(
+                f"{Modules.source_hidden_identifier} cannot be the only source or there is nothing to compare against."
+            )
+
+        wanted_sources = []
+
+        for source in caller_wanted_sources:
+            if source not in Modules.all_sources_identifier:
+                raise ValueError(
+                    f"Invalid source sent through `caller_wanted_sources`: {source}"
+                )
+
+            wanted_sources.append(source)
+
+        return wanted_sources
 
     @classmethod
     def run_modules_scanners(
         cls,
         context: interfaces.context.ContextInterface,
-        kernel_name: str,
-        run_hidden_modules: bool = True,
+        kernel_module_name: str,
+        caller_wanted_sources: List[str],
         flatten: bool = True,
     ) -> Dict[str, List[ModuleInfo]]:
         """Run module scanning plugins and aggregate the results. It is designed
         to not operate any inter-plugin results triage.
 
+        Rules for `caller_wanted_sources`:
+
+            If `Modules.all_sources_identifier` is specified then every source will be populated
+
+            If `Modules.source_hidden_identifier` is in the list, then at least one other sources must be
+            specified so a comparison will be populated
+
+            If empty or an invalid source is specified then a ValueError is thrown
+
         Args:
-            run_hidden_modules: specify if the hidden_modules plugin should be run
+            called_wanted_sources: The list of sources to gather modules.
+            flatten: Whether to de-duplicate modules across sources
         Returns:
             Dictionary mapping each plugin to its corresponding result
         """
 
-        kernel = context.modules[kernel_name]
+        module_gatherers = {
+            Modules.source_kernel_identifier: cls.get_kernel_module_info,
+            Modules.source_lsmod_identifier: cls._get_list_modules,
+            Modules.source_sysfs_identifier: cls._get_sysfs_modules,
+        }
+
+        kernel = context.modules[kernel_module_name]
 
         address_mask = context.layers[kernel.layer_name].address_mask
 
+        wanted_sources = Modules._validated_sources(caller_wanted_sources)
+
         run_results = {}
 
-        # the kernel module boundaries
-        run_results["kernel"] = [cls.get_kernel_module_info(context, kernel_name)]
+        run_hidden_modules = False
 
-        # lsmod
-        run_results["lsmod"] = []
+        # Special case hidden modules since it gathers modules on its own
+        if Modules.source_hidden_identifier in wanted_sources:
+            run_hidden_modules = True
+            wanted_sources.remove(Modules.source_hidden_identifier)
 
-        for module in cls.list_modules(context, kernel_name):
-            modinfo = cls.get_module_info_for_module(address_mask, module)
-            if modinfo:
-                run_results["lsmod"].append(modinfo)
+        # Walk each source, gathering modules
+        for wanted_source in wanted_sources:
+            run_results[wanted_source] = []
 
-        # check_modules
-        run_results["check_modules"] = []
+            gatherer = module_gatherers[wanted_source]
 
-        sysfs_modules: dict = cls.get_kset_modules(context, kernel_name)
+            # process each module coming from back the current source
+            for module in gatherer(context, kernel_module_name):
+                # the kernel sends back a ModuleInfo directly
+                if wanted_source == Modules.source_kernel_identifier:
+                    modinfo = module
+                else:
+                    modinfo = cls.get_module_info_for_module(address_mask, module)
 
-        for m_offset in sysfs_modules.values():
-            module = kernel.object(object_type="module", offset=m_offset, absolute=True)
-            modinfo = cls.get_module_info_for_module(address_mask, module)
-            if modinfo:
-                run_results["check_modules"].append(modinfo)
-
-        # hidden_modules
-        if run_hidden_modules:
-            known_modules_addresses = set(
-                context.layers[kernel.layer_name].canonicalize(modinfo.start)
-                for modinfo in run_results["kernel"]
-                + run_results["lsmod"]
-                + run_results["check_modules"]
-            )
-            modules_memory_boundaries = cls.get_modules_memory_boundaries(
-                context, kernel_name
-            )
-            run_results["hidden_modules"] = []
-
-            for module in cls.get_hidden_modules(
-                context,
-                kernel_name,
-                known_modules_addresses,
-                modules_memory_boundaries,
-            ):
-                modinfo = cls.get_module_info_for_module(address_mask, module)
                 if modinfo:
-                    run_results["hidden_modules"].append(modinfo)
+                    run_results[wanted_source].append(modinfo)
+
+        # run hidden modules against the other sources
+        if run_hidden_modules:
+            run_results[Modules.source_hidden_identifier] = (
+                cls._get_hidden_modules_results(
+                    context, kernel_module_name, run_results
+                )
+            )
 
         if flatten:
             return cls.flatten_run_modules_results(run_results)

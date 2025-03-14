@@ -29,7 +29,7 @@ class Keyboard_notifiers(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
                 component=linux_utilities_modules.Modules,
-                version=(2, 0, 0),
+                version=(3, 0, 0),
             ),
             requirements.VersionRequirement(
                 name="linuxutils", component=linux.LinuxUtilities, version=(2, 0, 0)
@@ -56,7 +56,9 @@ class Keyboard_notifiers(interfaces.plugins.PluginInterface):
             return
 
         known_modules = linux_utilities_modules.Modules.run_modules_scanners(
-            self.context, self.config["kernel"], run_hidden_modules=True
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
+            caller_wanted_sources=linux_utilities_modules.Modules.all_sources_identifier,
         )
 
         knl = vmlinux.object(

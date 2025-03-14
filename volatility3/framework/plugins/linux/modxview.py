@@ -34,7 +34,7 @@ spot modules presence and taints."""
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
                 component=linux_utilities_modules.Modules,
-                version=(2, 0, 0),
+                version=(3, 0, 0),
             ),
             requirements.VersionRequirement(
                 name="linux-tainting", component=tainting.Tainting, version=(1, 0, 0)
@@ -93,13 +93,22 @@ spot modules presence and taints."""
 
         kernel = self.context.modules[kernel_name]
 
+        wanted_sources = [
+            linux_utilities_modules.Modules.source_lsmod_identifier,
+            linux_utilities_modules.Modules.source_sysfs_identifier,
+            linux_utilities_modules.Modules.source_hidden_identifier,
+        ]
+
         run_results = linux_utilities_modules.Modules.run_modules_scanners(
-            self.context, kernel_name, flatten=False
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
+            caller_wanted_sources=wanted_sources,
+            flatten=False,
         )
 
         aggregated_modules = {}
         # We want to be explicit on the plugins results we are interested in
-        for plugin_name in ["lsmod", "check_modules", "hidden_modules"]:
+        for plugin_name in wanted_sources:
             # Iterate over each recovered module
             for mod_info in run_results[plugin_name]:
                 # Use offsets as unique keys, whether a module

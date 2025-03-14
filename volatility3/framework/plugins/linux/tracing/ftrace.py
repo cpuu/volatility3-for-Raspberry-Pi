@@ -79,7 +79,7 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
                 component=linux_utilities_modules.Modules,
-                version=(2, 0, 0),
+                version=(3, 0, 0),
             ),
             requirements.BooleanRequirement(
                 name="show_ftrace_flags",
@@ -223,7 +223,9 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
             return
 
         known_modules = linux_utilities_modules.Modules.run_modules_scanners(
-            self.context, kernel_name, run_hidden_modules=True
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
+            caller_wanted_sources=linux_utilities_modules.Modules.all_sources_identifier,
         )
 
         for ftrace_ops in self.iterate_ftrace_ops_list(self.context, kernel_name):
