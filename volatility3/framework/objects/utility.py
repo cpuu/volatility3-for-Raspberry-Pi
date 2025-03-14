@@ -120,17 +120,13 @@ def gather_contiguous_bytes_from_address(
     data = b""
 
     if isinstance(data_layer, interfaces.layers.TranslationLayerInterface):
-        last_address = None
+        last_address = starting_address
 
         for address, length, _, _, _ in data_layer.mapping(
             offset=starting_address, length=count, ignore_errors=True
         ):
-            # Used to track when we hit a paged out page
-            if not last_address:
-                last_address = address + length
-
             # we hit a swapped out page
-            elif last_address and last_address != address:
+            if last_address != address:
                 break
 
             data += data_layer.read(address, length)
