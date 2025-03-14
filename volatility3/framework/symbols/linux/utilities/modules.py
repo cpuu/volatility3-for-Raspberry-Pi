@@ -1,6 +1,18 @@
 import logging
 import warnings
-from typing import Iterable, Iterator, List, Optional, Tuple, NamedTuple, Dict, Set
+from typing import (
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    NamedTuple,
+    Dict,
+    Set,
+    Generator,
+    Union,
+)
+from abc import ABCMeta, abstractmethod
 
 from volatility3 import framework
 from volatility3.framework import (
@@ -10,10 +22,42 @@ from volatility3.framework import (
     exceptions,
     objects,
 )
+
 from volatility3.framework.objects import utility
 from volatility3.framework.symbols.linux import extensions
 
 vollog = logging.getLogger(__name__)
+
+
+class ModuleInfo(NamedTuple):
+    """
+    Used to track the name and boundary of a kernel module
+    """
+
+    offset: int
+    name: str
+    start: int
+    end: int
+
+
+class ModuleGathererInterface(
+    interfaces.configuration.VersionableInterface, metaclass=ABCMeta
+):
+    _version = (1, 0, 0)
+    _required_framework_version = (2, 0, 0)
+
+    framework.require_interface_version(*_required_framework_version)
+
+    gatherer_return_type = Generator[Union[ModuleInfo, "extensions.module"], None, None]
+
+    @classmethod
+    @abstractmethod
+    def gather_modules(
+        cls, context: interfaces.context.ContextInterface, kernel_module_name: str
+    ) -> gatherer_return_type:
+        """
+        This method must return a generator (yield) of each `gatherer_return_type` found from its source
+        """
 
 
 class Modules(interfaces.configuration.VersionableInterface):
@@ -23,31 +67,6 @@ class Modules(interfaces.configuration.VersionableInterface):
     _required_framework_version = (2, 0, 0)
 
     framework.require_interface_version(*_required_framework_version)
-
-    # Valid sources of kernel modules to send to `run_module_scanners`
-    source_kernel_identifier = "kernel"
-    source_lsmod_identifier = "lsmod"
-    source_sysfs_identifier = "check_modules"
-    source_hidden_identifier = "hidden_modules"
-
-    # With few exceptions, rootkit checking plugins want all sources
-    # This provides a stable identifier as new sources are added over time
-    all_sources_identifier = [
-        source_kernel_identifier,
-        source_lsmod_identifier,
-        source_sysfs_identifier,
-        source_hidden_identifier,
-    ]
-
-    class ModuleInfo(NamedTuple):
-        """
-        Used to track the name and boundary of a kernel module
-        """
-
-        offset: int
-        name: str
-        start: int
-        end: int
 
     @classmethod
     def module_lookup_by_address(
@@ -204,138 +223,41 @@ class Modules(interfaces.configuration.VersionableInterface):
 
         end = start + module.get_core_size()
 
-        return Modules.ModuleInfo(module.vol.offset, mod_name, start, end)
-
-    @staticmethod
-    def get_kernel_module_info(
-        context: interfaces.context.ContextInterface,
-        kernel_module_name: str,
-    ) -> Iterator[ModuleInfo]:
-        """
-        Returns a ModuleInfo instance that encodes the kernel
-        This is required to map function pointers to the kerenl executable
-        """
-        kernel = context.modules[kernel_module_name]
-
-        address_mask = context.layers[kernel.layer_name].address_mask
-
-        start_addr = kernel.object_from_symbol("_text")
-        start_addr = start_addr.vol.offset & address_mask
-
-        end_addr = kernel.object_from_symbol("_etext")
-        end_addr = end_addr.vol.offset & address_mask
-
-        return [
-            Modules.ModuleInfo(
-                start_addr, constants.linux.KERNEL_NAME, start_addr, end_addr
-            )
-        ]
+        return ModuleInfo(module.vol.offset, mod_name, start, end)
 
     @classmethod
-    def _get_hidden_modules_results(
-        cls,
-        context: str,
-        kernel_module_name: str,
-        run_results: Dict[str, List[ModuleInfo]],
-    ):
-        known_modules_addresses = set()
-
-        kernel = context.modules[kernel_module_name]
-
-        # Walk each sources' results
-        for results in run_results.values():
-            for modinfo in results:
-                address = context.layers[kernel.layer_name].canonicalize(modinfo.start)
-                known_modules_addresses.add(address)
-
-        modules_memory_boundaries = cls.get_modules_memory_boundaries(
-            context, kernel_module_name
-        )
-
-        hidden_results = []
-
-        address_mask = context.layers[kernel.layer_name].address_mask
-
-        for module in cls.get_hidden_modules(
-            context,
-            kernel_module_name,
-            known_modules_addresses,
-            modules_memory_boundaries,
-        ):
-            modinfo = cls.get_module_info_for_module(address_mask, module)
-            if modinfo:
-                hidden_results.append(modinfo)
-
-        return hidden_results
-
-    @classmethod
-    def _get_list_modules(
-        cls, context: interfaces.context.ContextInterface, kernel_module_name: str
-    ) -> List[ModuleInfo]:
+    def _validate_gatherers(cls, caller_wanted_gatherers) -> List[str]:
         """
-        Gather `module` instances from lsmod
+        Called by `run_modules_scanners` to validate the caller supplied gatherers list
+        An exception is thrown if an empty gatherers list is given or a list containing an invalid source
         """
-        yield from cls.list_modules(context, kernel_module_name)
-
-    @classmethod
-    def _get_sysfs_modules(
-        cls, context: interfaces.context.ContextInterface, kernel_module_name: str
-    ) -> List[ModuleInfo]:
-        """
-        Gather the `module` instances from sysfs
-        """
-        kernel = context.modules[kernel_module_name]
-
-        sysfs_modules: dict = cls.get_kset_modules(context, kernel_module_name)
-
-        for m_offset in sysfs_modules.values():
-            yield kernel.object(object_type="module", offset=m_offset, absolute=True)
-
-    @classmethod
-    def _validated_sources(cls, caller_wanted_sources) -> List[str]:
-        """
-        Called by `run_modules_scanners` to validate the caller supplied sources list
-        An exception is thrown if an empty source list is given or a list containing an invalid source
-        """
-        if not caller_wanted_sources:
-            raise ValueError("`caller_wanted_sources` must have at least one source.")
-
-        if (
-            len(caller_wanted_sources) == 1
-            and caller_wanted_sources[0] == Modules.source_hidden_identifier
-        ):
+        if not caller_wanted_gatherers:
             raise ValueError(
-                f"{Modules.source_hidden_identifier} cannot be the only source or there is nothing to compare against."
+                "`caller_wanted_gatherers` must have at least one gatherer."
             )
 
-        wanted_sources = []
-
-        for source in caller_wanted_sources:
-            if source not in Modules.all_sources_identifier:
+        for gatherer in caller_wanted_gatherers:
+            if gatherer not in ModuleGatherers.all_gatherers_identifier:
                 raise ValueError(
-                    f"Invalid source sent through `caller_wanted_sources`: {source}"
+                    f"Invalid gatherer sent through `caller_wanted_gatherers`: {gatherer}"
                 )
-
-            wanted_sources.append(source)
-
-        return wanted_sources
 
     @classmethod
     def run_modules_scanners(
         cls,
         context: interfaces.context.ContextInterface,
         kernel_module_name: str,
-        caller_wanted_sources: List[str],
+        caller_wanted_gatherers: List[ModuleGathererInterface],
         flatten: bool = True,
-    ) -> Dict[str, List[ModuleInfo]]:
+    ) -> Dict[ModuleGathererInterface, List[ModuleInfo]]:
         """Run module scanning plugins and aggregate the results. It is designed
         to not operate any inter-plugin results triage.
 
         Rules for `caller_wanted_sources`:
 
-            If `Modules.all_sources_identifier` is specified then every source will be populated
+            If `ModuleGathers.all_gathers_identifier` is specified then every source will be populated
 
-            If `Modules.source_hidden_identifier` is in the list, then at least one other sources must be
+            If `ModuleGathers.Scanner` is in the list, then at least one other sources must be
             specified so a comparison will be populated
 
             If empty or an invalid source is specified then a ValueError is thrown
@@ -346,52 +268,30 @@ class Modules(interfaces.configuration.VersionableInterface):
         Returns:
             Dictionary mapping each plugin to its corresponding result
         """
-
-        module_gatherers = {
-            Modules.source_kernel_identifier: cls.get_kernel_module_info,
-            Modules.source_lsmod_identifier: cls._get_list_modules,
-            Modules.source_sysfs_identifier: cls._get_sysfs_modules,
-        }
+        # Throws ValueError if invalid gatherers sent in
+        Modules._validate_gatherers(caller_wanted_gatherers)
 
         kernel = context.modules[kernel_module_name]
 
         address_mask = context.layers[kernel.layer_name].address_mask
 
-        wanted_sources = Modules._validated_sources(caller_wanted_sources)
+        run_results: Dict[ModuleGathererInterface, List[ModuleInfo]] = {}
 
-        run_results = {}
-
-        run_hidden_modules = False
-
-        # Special case hidden modules since it gathers modules on its own
-        if Modules.source_hidden_identifier in wanted_sources:
-            run_hidden_modules = True
-            wanted_sources.remove(Modules.source_hidden_identifier)
-
-        # Walk each source, gathering modules
-        for wanted_source in wanted_sources:
-            run_results[wanted_source] = []
-
-            gatherer = module_gatherers[wanted_source]
+        # Walk each source gathering modules
+        for gatherer in caller_wanted_gatherers:
+            run_results[gatherer] = []
 
             # process each module coming from back the current source
-            for module in gatherer(context, kernel_module_name):
+            for module in gatherer.gather_modules(context, kernel_module_name):
+
                 # the kernel sends back a ModuleInfo directly
-                if wanted_source == Modules.source_kernel_identifier:
+                if gatherer == ModuleGathererKernel:
                     modinfo = module
                 else:
                     modinfo = cls.get_module_info_for_module(address_mask, module)
 
                 if modinfo:
-                    run_results[wanted_source].append(modinfo)
-
-        # run hidden modules against the other sources
-        if run_hidden_modules:
-            run_results[Modules.source_hidden_identifier] = (
-                cls._get_hidden_modules_results(
-                    context, kernel_module_name, run_results
-                )
-            )
+                    run_results[gatherer].append(modinfo)
 
         if flatten:
             return cls.flatten_run_modules_results(run_results)
@@ -449,7 +349,7 @@ class Modules(interfaces.configuration.VersionableInterface):
         Returns:
             List of ModuleInfo objects
         """
-        uniq_modules: List[Modules.ModuleInfo] = []
+        uniq_modules: List[ModuleInfo] = []
 
         seen_addresses: int = set()
 
@@ -645,3 +545,98 @@ class Modules(interfaces.configuration.VersionableInterface):
             True if all the addresses meet the alignment
         """
         return all(addr % address_alignment == 0 for addr in addresses)
+
+
+class ModuleGathererLsmod(ModuleGathererInterface):
+    """
+    Gathers modules from the main kernel list
+    """
+
+    @classmethod
+    def gather_modules(
+        cls, context: interfaces.context.ContextInterface, kernel_module_name: str
+    ) -> ModuleGathererInterface.gatherer_return_type:
+        yield from Modules.list_modules(context, kernel_module_name)
+
+
+class ModuleGathererSysFs(ModuleGathererInterface):
+    """
+    Gathers modules from the sysfs /sys/modules objects
+    """
+
+    @classmethod
+    def gather_modules(
+        cls, context: interfaces.context.ContextInterface, kernel_module_name: str
+    ) -> ModuleGathererInterface.gatherer_return_type:
+        kernel = context.modules[kernel_module_name]
+
+        sysfs_modules: dict = Modules.get_kset_modules(context, kernel_module_name)
+
+        for m_offset in sysfs_modules.values():
+            yield kernel.object(object_type="module", offset=m_offset, absolute=True)
+
+
+class ModuleGathererScanner(ModuleGathererInterface):
+    """
+    Gathers modules by scanning memory
+    """
+
+    @classmethod
+    def gather_modules(
+        cls, context: interfaces.context.ContextInterface, kernel_module_name: str
+    ) -> ModuleGathererInterface.gatherer_return_type:
+        modules_memory_boundaries = Modules.get_modules_memory_boundaries(
+            context, kernel_module_name
+        )
+
+        # Send in an empty list to not filter on any modules
+        yield from Modules.get_hidden_modules(
+            context=context,
+            vmlinux_module_name=kernel_module_name,
+            known_module_addresses=[],
+            modules_memory_boundaries=modules_memory_boundaries,
+        )
+
+
+class ModuleGathererKernel(ModuleGathererInterface):
+    """
+    Creates a ModuleInfo instance for the kernel so that plugins
+    can determine when function pointers reference the kernel
+    """
+
+    @classmethod
+    def gather_modules(
+        cls, context: interfaces.context.ContextInterface, kernel_module_name: str
+    ) -> ModuleGathererInterface.gatherer_return_type:
+        """
+        Returns a ModuleInfo instance that encodes the kernel
+        This is required to map function pointers to the kerenl executable
+        """
+        kernel = context.modules[kernel_module_name]
+
+        address_mask = context.layers[kernel.layer_name].address_mask
+
+        start_addr = kernel.object_from_symbol("_text")
+        start_addr = start_addr.vol.offset & address_mask
+
+        end_addr = kernel.object_from_symbol("_etext")
+        end_addr = end_addr.vol.offset & address_mask
+
+        yield ModuleInfo(start_addr, constants.linux.KERNEL_NAME, start_addr, end_addr)
+
+
+class ModuleGatherers(interfaces.configuration.VersionableInterface):
+    _version = (1, 0, 0)
+    _required_framework_version = (2, 0, 0)
+
+    framework.require_interface_version(*_required_framework_version)
+
+    # Valid sources of cores kernel module gatherers to send to `run_module_scanners`
+    # With few exceptions, rootkit checking plugins want all sources
+    # This provides a stable identifier as new sources are added over time
+    all_gatherers_identifier = [
+        ModuleGathererLsmod,
+        ModuleGathererSysFs,
+        ModuleGathererScanner,
+        ModuleGathererKernel,
+    ]

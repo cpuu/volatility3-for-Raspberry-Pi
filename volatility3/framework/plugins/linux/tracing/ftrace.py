@@ -5,7 +5,7 @@
 # Public researches: https://i.blackhat.com/USA21/Wednesday-Handouts/us-21-Fixing-A-Memory-Forensics-Blind-Spot-Linux-Kernel-Tracing-wp.pdf
 
 import logging
-from typing import Dict, List, Generator
+from typing import List, Generator
 from enum import Enum
 from dataclasses import dataclass
 
@@ -65,7 +65,7 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
     Investigate the ftrace infrastructure to uncover kernel attached callbacks, which can be leveraged
     to hook kernel functions and modify their behaviour."""
 
-    _version = (3, 0, 0)
+    _version = (4, 0, 0)
     _required_framework_version = (2, 19, 0)
 
     @classmethod
@@ -80,6 +80,11 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
                 name="linux_utilities_modules",
                 component=linux_utilities_modules.Modules,
                 version=(3, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="linux_utilities_module_gatherers",
+                component=linux_utilities_modules.ModuleGatherers,
+                version=(1, 0, 0),
             ),
             requirements.BooleanRequirement(
                 name="show_ftrace_flags",
@@ -127,9 +132,8 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
         cls,
         context: interfaces.context.ContextInterface,
         kernel_module_name: str,
-        known_modules: Dict[str, List[linux_utilities_modules.Modules.ModuleInfo]],
+        known_modules: List[linux_utilities_modules.ModuleInfo],
         ftrace_ops: interfaces.objects.ObjectInterface,
-        run_hidden_modules: bool = True,
     ) -> Generator[ParsedFtraceOps, None, None]:
         """Parse an ftrace_ops struct to highlight ftrace kernel hooking.
         Iterates over embedded ftrace_func_entry entries, which point to hooked memory areas.
@@ -137,8 +141,6 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
         Args:
             known_modules: A dict of known modules, used to locate callbacks origin. Typically obtained through run_modules_scanners().
             ftrace_ops: The ftrace_ops struct to parse
-            run_hidden_modules: Whether to run the hidden_modules plugin or not. Note: it won't be run, even if specified, \
-            if the "hidden_modules" key is present in known_modules.
 
         Yields:
             An iterable of ParsedFtraceOps dataclasses, containing a selection of useful fields (callback, hook, module) related to an ftrace_ops struct
@@ -225,7 +227,7 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
         known_modules = linux_utilities_modules.Modules.run_modules_scanners(
             context=self.context,
             kernel_module_name=self.config["kernel"],
-            caller_wanted_sources=linux_utilities_modules.Modules.all_sources_identifier,
+            caller_wanted_gatherers=linux_utilities_modules.ModuleGatherers.all_gatherers_identifier,
         )
 
         for ftrace_ops in self.iterate_ftrace_ops_list(self.context, kernel_name):

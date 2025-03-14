@@ -37,6 +37,11 @@ spot modules presence and taints."""
                 version=(3, 0, 0),
             ),
             requirements.VersionRequirement(
+                name="linux_utilities_module_gatherers",
+                component=linux_utilities_modules.ModuleGatherers,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
                 name="linux-tainting", component=tainting.Tainting, version=(1, 0, 0)
             ),
             requirements.BooleanRequirement(
@@ -89,44 +94,42 @@ spot modules presence and taints."""
         )
 
     def _generator(self):
-        kernel_name = self.config["kernel"]
+        kernel = self.context.modules[self.config["kernel"]]
 
-        kernel = self.context.modules[kernel_name]
-
-        wanted_sources = [
-            linux_utilities_modules.Modules.source_lsmod_identifier,
-            linux_utilities_modules.Modules.source_sysfs_identifier,
-            linux_utilities_modules.Modules.source_hidden_identifier,
+        wanted_gatherers = [
+            linux_utilities_modules.ModuleGathererLsmod,
+            linux_utilities_modules.ModuleGathererSysFs,
+            linux_utilities_modules.ModuleGathererScanner,
         ]
 
         run_results = linux_utilities_modules.Modules.run_modules_scanners(
             context=self.context,
             kernel_module_name=self.config["kernel"],
-            caller_wanted_sources=wanted_sources,
+            caller_wanted_gatherers=wanted_gatherers,
             flatten=False,
         )
 
         aggregated_modules = {}
         # We want to be explicit on the plugins results we are interested in
-        for plugin_name in wanted_sources:
+        for gatherer in wanted_gatherers:
             # Iterate over each recovered module
-            for mod_info in run_results[plugin_name]:
+            for mod_info in run_results[gatherer]:
                 # Use offsets as unique keys, whether a module
                 # appears in many plugin runs or not
                 if aggregated_modules.get(mod_info.offset, None) is not None:
                     # Append the plugin to the list of originating plugins
-                    aggregated_modules[mod_info.offset].append(plugin_name)
+                    aggregated_modules[mod_info.offset].append(gatherer)
                 else:
-                    aggregated_modules[mod_info.offset] = [plugin_name]
+                    aggregated_modules[mod_info.offset] = [gatherer]
 
-        for module_offset, originating_plugins in aggregated_modules.items():
-            # Tainting parsing capabilities applied to the module
+        for module_offset, gatherers in aggregated_modules.items():
             module = kernel.object("module", offset=module_offset, absolute=True)
 
+            # Tainting parsing capabilities applied to the module
             if self.config.get("plain_taints"):
                 taints = tainting.Tainting.get_taints_as_plain_string(
                     self.context,
-                    kernel_name,
+                    self.config["kernel"],
                     module.taints,
                     True,
                 )
@@ -134,7 +137,7 @@ spot modules presence and taints."""
                 taints = ",".join(
                     tainting.Tainting.get_taints_parsed(
                         self.context,
-                        kernel_name,
+                        self.config["kernel"],
                         module.taints,
                         True,
                     )
@@ -145,9 +148,9 @@ spot modules presence and taints."""
                 (
                     module.get_name() or NotAvailableValue(),
                     format_hints.Hex(module_offset),
-                    "lsmod" in originating_plugins,
-                    "check_modules" in originating_plugins,
-                    "hidden_modules" in originating_plugins,
+                    linux_utilities_modules.ModuleGathererLsmod in gatherers,
+                    linux_utilities_modules.ModuleGathererSysFs in gatherers,
+                    linux_utilities_modules.ModuleGathererScanner in gatherers,
                     taints or NotAvailableValue(),
                 ),
             )
@@ -158,7 +161,7 @@ spot modules presence and taints."""
             ("Address", format_hints.Hex),
             ("In procfs", bool),
             ("In sysfs", bool),
-            ("Hidden", bool),
+            ("In scan", bool),
             ("Taints", str),
         ]
 

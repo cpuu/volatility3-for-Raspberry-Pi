@@ -35,6 +35,11 @@ class tty_check(plugins.PluginInterface):
                 version=(3, 0, 0),
             ),
             requirements.VersionRequirement(
+                name="linux_utilities_module_gatherers",
+                component=linux_utilities_modules.ModuleGatherers,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
                 name="linuxutils", component=linux.LinuxUtilities, version=(2, 0, 0)
             ),
         ]
@@ -57,7 +62,7 @@ class tty_check(plugins.PluginInterface):
         known_modules = linux_utilities_modules.Modules.run_modules_scanners(
             context=self.context,
             kernel_module_name=self.config["kernel"],
-            caller_wanted_sources=linux_utilities_modules.Modules.all_sources_identifier,
+            caller_wanted_gatherers=linux_utilities_modules.ModuleGatherers.all_gatherers_identifier,
         )
 
         for tty in tty_drivers.to_list(
