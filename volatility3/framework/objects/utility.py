@@ -2,9 +2,11 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 
+import re
+
 from typing import Optional, Union
 
-from volatility3.framework import interfaces, objects, constants
+from volatility3.framework import interfaces, objects, constants, exceptions
 
 
 def rol(value: int, count: int, max_bits: int = 64) -> int:
@@ -33,6 +35,7 @@ def array_to_string(
     count: Optional[int] = None,
     errors: str = "replace",
     block_size=32,
+    encoding="utf-8",
 ) -> str:
     """Takes a Volatility 'Array' of characters and returns a Python string.
 
@@ -60,6 +63,7 @@ def array_to_string(
         count=count,
         errors=errors,
         block_size=block_size,
+        encoding=encoding,
     )
 
 
@@ -68,6 +72,7 @@ def pointer_to_string(
     count: int,
     errors: str = "replace",
     block_size=32,
+    encoding="utf-8",
 ) -> str:
     """Takes a Volatility 'Pointer' to characters and returns a Python string.
 
@@ -94,7 +99,99 @@ def pointer_to_string(
         count=count,
         errors=errors,
         block_size=block_size,
+        encoding=encoding,
     )
+
+
+def gather_contiguous_bytes_from_address(
+    context, data_layer, starting_address: int, count: int
+) -> bytes:
+    """
+    This method reconstructs a string from memory while also carefully examining each page
+
+    It goes page-by-page reading the bytes. This is done by calculating page boundaries
+    and then only reading one page at a time.
+
+    If a page is missing, the code initially catches the exception.
+    If data is non-empty (meaning at least one read succeeded), then we return what was read
+    If the first page fails, then we re-raise the exception
+    """
+
+    data = b""
+
+    if isinstance(data_layer, interfaces.layers.TranslationLayerInterface):
+        last_address = starting_address
+
+        for address, length, _, _, _ in data_layer.mapping(
+            offset=starting_address, length=count, ignore_errors=True
+        ):
+            # we hit a swapped out page
+            if last_address != address:
+                break
+
+            data += data_layer.read(address, length)
+
+            last_address = address + length
+
+    elif starting_address + count < data_layer.maximum_address:
+        data = data_layer.read(starting_address, count)
+
+    # if we were able to read from the first page, we want to try and construct the string
+    # if the first page fails -> throw exception
+    if data:
+        return data
+    else:
+        raise exceptions.InvalidAddressException(
+            layer_name=data_layer, invalid_address=starting_address
+        )
+
+
+def bytes_to_decoded_string(
+    data: bytes, encoding: str, errors: str, return_truncated: bool = True
+) -> bytes:
+    """
+    Args:
+        data: The `bytes` buffer containing the string of a string at offset 0
+        encoding: An encoding value for the encoding paramater of `bytes.decode`
+        errors: An errors value for the errors parameter of `bytes.decode`
+        return_truncated: Dictates whether truncated strings should be returned or
+        if a ValueError should be thrown if a truncated (broken) string was decoded
+    Returns:
+        bytes: The decoded string starting at offset of data
+
+    This function takes a bytes buffer that contains at a string of unknown
+    length starting at the first byte, and returns the properly decoded string
+
+    It starts by using Python's `bytes.decode` to attempt to decode the entire string
+    It then finds the termination character (\ufffd or \x00) and splices the string
+    Finally, it returns this spliced string after its been decoded with the
+        caller-specified encoding
+    """
+    # this is the standard byte used to replace bad unicode characters
+    unicode_replacement_char = "\ufffd"
+
+    # used to find the terminating byte
+    termination_re = re.compile(f"{unicode_replacement_char}|\x00")
+
+    # run over the entire string, letting Python replace invalid characters
+    full_decoded_string = data.decode(encoding=encoding, errors="replace")
+
+    # stop at the first terminating character or get the whole string if not found
+    try:
+        idx = termination_re.search(full_decoded_string).start()
+    except AttributeError:
+        if return_truncated:
+            idx = len(full_decoded_string)
+        else:
+            raise ValueError(
+                "return_truncated set to False and truncated string decoded."
+            )
+
+    # cut at terminating byte, if found
+    data = data[:idx]
+
+    # return with caller-specified encoding and errors
+    return data.decode(encoding=encoding, errors=errors)
 
 
 def address_to_string(
@@ -104,6 +201,7 @@ def address_to_string(
     count: int,
     errors: str = "replace",
     block_size=32,
+    encoding="utf-8",
 ) -> str:
     """Reads a null-terminated string from a given specified memory address, processing
        it in blocks for efficiency.
@@ -126,18 +224,10 @@ def address_to_string(
         raise ValueError("Count must be greater than 0")
 
     layer = context.layers[layer_name]
-    text = b""
-    while len(text) < count:
-        current_block_size = min(count - len(text), block_size)
-        temp_text = layer.read(address + len(text), current_block_size)
-        idx = temp_text.find(b"\x00")
-        if idx != -1:
-            temp_text = temp_text[:idx]
-            text += temp_text
-            break
-        text += temp_text
 
-    return text.decode(errors=errors)
+    data = gather_contiguous_bytes_from_address(context, layer, address, count)
+
+    return bytes_to_decoded_string(data=data, errors=errors, encoding=encoding)
 
 
 def array_of_pointers(
