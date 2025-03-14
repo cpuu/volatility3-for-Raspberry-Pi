@@ -39,7 +39,7 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.get_modules_memory_boundaries,
         removal_date="2025-09-25",
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
     )
     def get_modules_memory_boundaries(
         context: interfaces.context.ContextInterface,
@@ -52,7 +52,7 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.get_module_address_alignment,
         removal_date="2025-09-25",
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
     )
     @classmethod
     def _get_module_address_alignment(
@@ -80,7 +80,7 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.get_hidden_modules,
         removal_date="2025-09-25",
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
     )
     @classmethod
     def get_hidden_modules(
@@ -120,7 +120,7 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.validate_alignment_patterns,
         removal_date="2025-09-25",
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
     )
     def _validate_alignment_patterns(
         addresses: Iterable[int],

@@ -40,7 +40,7 @@ class Lsmod(plugins.PluginInterface):
     @classmethod
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.list_modules,
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
         removal_date="2025-09-25",
     )
     def list_modules(

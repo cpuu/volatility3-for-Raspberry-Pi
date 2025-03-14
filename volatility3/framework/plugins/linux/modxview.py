@@ -50,7 +50,7 @@ spot modules presence and taints."""
     @classmethod
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.flatten_run_modules_results,
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
         removal_date="2025-09-25",
     )
     def flatten_run_modules_results(
@@ -73,7 +73,7 @@ spot modules presence and taints."""
     @classmethod
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.run_modules_scanners,
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
         removal_date="2025-09-25",
     )
     def run_modules_scanners(
