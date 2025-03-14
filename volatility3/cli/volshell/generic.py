@@ -8,6 +8,7 @@ import random
 import string
 import struct
 import sys
+import textwrap
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Type, Union
 from urllib import parse, request
 
@@ -22,6 +23,14 @@ try:
     has_capstone = True
 except ImportError:
     has_capstone = False
+
+try:
+    from IPython import terminal
+    from traitlets import config as traitlets_config
+
+    has_ipython = True
+except ImportError:
+    has_ipython = False
 
 
 class Volshell(interfaces.plugins.PluginInterface):
@@ -69,43 +78,67 @@ class Volshell(interfaces.plugins.PluginInterface):
         """
 
         # Try to enable tab completion
-        try:
-            import readline
-        except ImportError:
-            pass
-        else:
-            import rlcompleter
+        if not has_ipython:
+            try:
+                import readline
+                import rlcompleter
 
-            completer = rlcompleter.Completer(namespace=self._construct_locals_dict())
-            readline.set_completer(completer.complete)
-            readline.parse_and_bind("tab: complete")
-            print("Readline imported successfully")
+                completer = rlcompleter.Completer(
+                    namespace=self._construct_locals_dict()
+                )
+                readline.set_completer(completer.complete)
+                readline.parse_and_bind("tab: complete")
+                print("Readline imported successfully")
+            except ImportError:
+                print(
+                    "Readline or rlcompleter module could not be imported. Tab completion will not be available."
+                )
 
         # TODO: provide help, consider generic functions (pslist?) and/or providing windows/linux functions
 
         mode = self.__module__.split(".")[-1]
         mode = mode[0].upper() + mode[1:]
 
-        banner = f"""
-    Call help() to see available functions
+        banner = textwrap.dedent(
+            f"""
+            Call help() to see available functions
 
-    Volshell mode        : {mode}
-    Current Layer        : {self.current_layer}
-    Current Symbol Table : {self.current_symbol_table}
-    Current Kernel Name  : {self.current_kernel_name}
-"""
+            Volshell mode        : {mode}
+            Current Layer        : {self.current_layer}
+            Current Symbol Table : {self.current_symbol_table}
+            Current Kernel Name  : {self.current_kernel_name}
+            """
+        )
 
         sys.ps1 = f"({self.current_layer}) >>> "
         # Dict self._construct_locals_dict() will have priority on keys
         combined_locals = additional_locals.copy()
         combined_locals.update(self._construct_locals_dict())
-        self.__console = code.InteractiveConsole(locals=combined_locals)
+        if has_ipython:
+
+            class LayerNamePrompt(terminal.prompts.Prompts):
+                def in_prompt_tokens(self, cli=None):
+                    slf = self.shell.user_ns.get("self")
+                    layer_name = slf.current_layer if slf else "no_layer"
+                    return [(terminal.prompts.Token.Prompt, f"[{layer_name}]> ")]
+
+            c = traitlets_config.Config()
+            c.TerminalInteractiveShell.prompts_class = LayerNamePrompt
+            c.InteractiveShellEmbed.banner2 = banner
+            self.__console = terminal.embed.InteractiveShellEmbed(
+                config=c, user_ns=combined_locals
+            )
+        else:
+            self.__console = code.InteractiveConsole(locals=combined_locals)
         # Since we have to do work to add the option only once for all different modes of volshell, we can't
         # rely on the default having been set
         if self.config.get("script", None) is not None:
             self.run_script(location=self.config["script"])
 
-        self.__console.interact(banner=banner)
+        if has_ipython:
+            self.__console()
+        else:
+            self.__console.interact(banner=banner)
 
         return renderers.TreeGrid([("Terminating", str)], None)
 
@@ -508,10 +541,13 @@ class Volshell(interfaces.plugins.PluginInterface):
             location = "file:" + request.pathname2url(location)
         print(f"Running code from {location}\n")
         accessor = resources.ResourceAccessor()
-        with accessor.open(url=location) as fp:
-            self.__console.runsource(
-                io.TextIOWrapper(fp, encoding="utf-8").read(), symbol="exec"
-            )
+        with accessor.open(url=location) as handle, io.TextIOWrapper(
+            handle, encoding="utf-8"
+        ) as fp:
+            if has_ipython:
+                self.__console.ex(fp.read())
+            else:
+                self.__console.runsource(fp.read(), symbol="exec")
         print("\nCode complete")
 
     def load_file(self, location: str):
