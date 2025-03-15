@@ -37,17 +37,17 @@ spot modules presence and taints."""
                 version=(3, 0, 0),
             ),
             requirements.VersionRequirement(
-                name="linux_utilities_module_gatherers",
+                name="linux_utilities_module_gatherer_lsmod",
                 component=linux_utilities_modules.ModuleGathererLsmod,
                 version=(1, 0, 0),
             ),
             requirements.VersionRequirement(
-                name="linux_utilities_module_gatherers",
+                name="linux_utilities_module_gatherer_sysfs",
                 component=linux_utilities_modules.ModuleGathererSysFs,
                 version=(1, 0, 0),
             ),
             requirements.VersionRequirement(
-                name="linux_utilities_module_gatherers",
+                name="linux_utilities_module_gatherer_scanner",
                 component=linux_utilities_modules.ModuleGathererScanner,
                 version=(1, 0, 0),
             ),
