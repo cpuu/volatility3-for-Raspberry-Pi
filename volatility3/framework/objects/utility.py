@@ -105,7 +105,7 @@ def pointer_to_string(
 
 def gather_contiguous_bytes_from_address(
     context, data_layer, starting_address: int, count: int
-) -> bytes:
+) -> str:
     """
     This method reconstructs a string from memory while also carefully examining each page
 
