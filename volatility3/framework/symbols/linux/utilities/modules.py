@@ -268,7 +268,7 @@ class Modules(interfaces.configuration.VersionableInterface):
                     f"Invalid gatherer sent through `caller_wanted_gatherers`: {gatherer}"
                 )
 
-            if gatherer.name is None or len(gatherer.name) == 0:
+            if not gatherer.name:
                 raise ValueError(
                     f"{gatherer} does not have a valid name attribute, which is required. It must be a non-zero length string."
                 )
