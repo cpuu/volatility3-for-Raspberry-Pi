@@ -10,7 +10,6 @@ from volatility3.framework import renderers, interfaces, exceptions, deprecation
 from volatility3.framework.constants import architectures
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.configuration import requirements
-from volatility3.plugins.linux import lsmod
 
 vollog = logging.getLogger(__name__)
 
@@ -29,13 +28,10 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
                 description="Linux kernel",
                 architectures=architectures.LINUX_ARCHS,
             ),
-            requirements.PluginRequirement(
-                name="lsmod", plugin=lsmod.Lsmod, version=(2, 0, 0)
-            ),
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
                 component=linux_utilities_modules.Modules,
-                version=(2, 0, 0),
+                version=(3, 0, 0),
             ),
         ]
 
@@ -43,7 +39,7 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.get_modules_memory_boundaries,
         removal_date="2025-09-25",
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
     )
     def get_modules_memory_boundaries(
         context: interfaces.context.ContextInterface,
@@ -56,7 +52,7 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.get_module_address_alignment,
         removal_date="2025-09-25",
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
     )
     @classmethod
     def _get_module_address_alignment(
@@ -84,7 +80,7 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.get_hidden_modules,
         removal_date="2025-09-25",
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
     )
     @classmethod
     def get_hidden_modules(
@@ -124,7 +120,7 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.validate_alignment_patterns,
         removal_date="2025-09-25",
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
     )
     def _validate_alignment_patterns(
         addresses: Iterable[int],
@@ -163,7 +159,9 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
 
         known_module_addresses = {
             vmlinux_layer.canonicalize(module.vol.offset)
-            for module in lsmod.Lsmod.list_modules(context, vmlinux_module_name)
+            for module in linux_utilities_modules.Modules.list_modules(
+                context, vmlinux_module_name
+            )
         }
         return known_module_addresses
 

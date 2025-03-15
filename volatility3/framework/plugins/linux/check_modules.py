@@ -33,7 +33,7 @@ class Check_modules(plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
                 component=linux_utilities_modules.Modules,
-                version=(2, 0, 0),
+                version=(3, 0, 0),
             ),
         ]
 
@@ -41,7 +41,7 @@ class Check_modules(plugins.PluginInterface):
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.get_kset_modules,
         removal_date="2025-09-25",
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
     )
     def get_kset_modules(
         cls, context: interfaces.context.ContextInterface, vmlinux_name: str

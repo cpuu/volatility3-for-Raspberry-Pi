@@ -5,7 +5,7 @@
 # Public researches: https://i.blackhat.com/USA21/Wednesday-Handouts/us-21-Fixing-A-Memory-Forensics-Blind-Spot-Linux-Kernel-Tracing-wp.pdf
 
 import logging
-from typing import Dict, Iterable, List, Optional
+from typing import Iterable, List, Optional
 from dataclasses import dataclass
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
@@ -38,7 +38,7 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
     Investigate the tracepoints subsystem to uncover kernel attached probes, which can be leveraged
     to hook kernel functions and modify their behaviour."""
 
-    _version = (1, 0, 0)
+    _version = (2, 0, 0)
     _required_framework_version = (2, 19, 0)
 
     @classmethod
@@ -52,7 +52,12 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
                 component=linux_utilities_modules.Modules,
-                version=(2, 0, 0),
+                version=(3, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="linux_utilities_module_gatherers",
+                component=linux_utilities_modules.ModuleGatherers,
+                version=(1, 0, 0),
             ),
         ]
 
@@ -96,7 +101,7 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
         cls,
         context: interfaces.context.ContextInterface,
         kernel_module_name: str,
-        known_modules: Dict[str, List[linux_utilities_modules.Modules.ModuleInfo]],
+        known_modules: List[linux_utilities_modules.ModuleInfo],
         tracepoint: interfaces.objects.ObjectInterface,
         run_hidden_modules: bool = True,
     ) -> Optional[Iterable[ParsedTracepointFunc]]:
@@ -229,7 +234,9 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
             return
 
         known_modules = linux_utilities_modules.Modules.run_modules_scanners(
-            self.context, kernel_name, run_hidden_modules=False
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
+            caller_wanted_gatherers=linux_utilities_modules.ModuleGatherers.all_gatherers_identifier,
         )
         tracepoints = self.iterate_tracepoints_array(self.context, kernel_name)
 
