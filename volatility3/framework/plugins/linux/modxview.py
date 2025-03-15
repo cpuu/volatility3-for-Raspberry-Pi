@@ -38,7 +38,17 @@ spot modules presence and taints."""
             ),
             requirements.VersionRequirement(
                 name="linux_utilities_module_gatherers",
-                component=linux_utilities_modules.ModuleGatherers,
+                component=linux_utilities_modules.ModuleGathererLsmod,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="linux_utilities_module_gatherers",
+                component=linux_utilities_modules.ModuleGathererSysFs,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="linux_utilities_module_gatherers",
+                component=linux_utilities_modules.ModuleGathererScanner,
                 version=(1, 0, 0),
             ),
             requirements.VersionRequirement(
@@ -113,14 +123,14 @@ spot modules presence and taints."""
         # We want to be explicit on the plugins results we are interested in
         for gatherer in wanted_gatherers:
             # Iterate over each recovered module
-            for mod_info in run_results[gatherer]:
+            for mod_info in run_results[gatherer.name]:
                 # Use offsets as unique keys, whether a module
                 # appears in many plugin runs or not
                 if aggregated_modules.get(mod_info.offset, None) is not None:
                     # Append the plugin to the list of originating plugins
-                    aggregated_modules[mod_info.offset].append(gatherer)
+                    aggregated_modules[mod_info.offset].append(gatherer.name)
                 else:
-                    aggregated_modules[mod_info.offset] = [gatherer]
+                    aggregated_modules[mod_info.offset] = [gatherer.name]
 
         for module_offset, gatherers in aggregated_modules.items():
             module = kernel.object("module", offset=module_offset, absolute=True)
@@ -148,9 +158,9 @@ spot modules presence and taints."""
                 (
                     module.get_name() or NotAvailableValue(),
                     format_hints.Hex(module_offset),
-                    linux_utilities_modules.ModuleGathererLsmod in gatherers,
-                    linux_utilities_modules.ModuleGathererSysFs in gatherers,
-                    linux_utilities_modules.ModuleGathererScanner in gatherers,
+                    linux_utilities_modules.ModuleGathererLsmod.name in gatherers,
+                    linux_utilities_modules.ModuleGathererSysFs.name in gatherers,
+                    linux_utilities_modules.ModuleGathererScanner.name in gatherers,
                     taints or NotAvailableValue(),
                 ),
             )

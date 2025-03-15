@@ -233,19 +233,21 @@ class Modules(interfaces.configuration.VersionableInterface):
         kernel_module_name: str,
         caller_wanted_gatherers: List[ModuleGathererInterface],
         flatten: bool = True,
-    ) -> Dict[ModuleGathererInterface, List[ModuleInfo]]:
+    ) -> Dict[str, List[ModuleInfo]]:
         """Run module scanning plugins and aggregate the results. It is designed
         to not operate any inter-plugin results triage.
 
-        Rules for `caller_wanted_sources`:
+        Rules for `caller_wanted_gatherers`:
             If `ModuleGatherers.all_gathers_identifier` is specified then every source will be populated
 
-            If empty or an invalid source is specified then a ValueError is thrown
+            If empty or an invalid gatherer is specified then a ValueError is thrown
+
+            All gatherer names must be unique
         Args:
             called_wanted_sources: The list of sources to gather modules.
-            flatten: Whether to de-duplicate modules across sources
+            flatten: Whether to de-duplicate modules across gatherers
         Returns:
-            Dictionary mapping each plugin to its corresponding result
+            Dictionary mapping each gatherer to its corresponding result
         """
         if not caller_wanted_gatherers:
             raise ValueError(
@@ -255,11 +257,25 @@ class Modules(interfaces.configuration.VersionableInterface):
         if not isinstance(caller_wanted_gatherers, Iterable):
             raise ValueError("`caller_wanted_gatherers` must be iterable")
 
+        seen_names = set()
+
         for gatherer in caller_wanted_gatherers:
             if not issubclass(gatherer, ModuleGathererInterface):
                 raise ValueError(
                     f"Invalid gatherer sent through `caller_wanted_gatherers`: {gatherer}"
                 )
+
+            if not hasattr(gatherer, "name"):
+                raise ValueError(
+                    f"{gatherer} does not have a name attribute, which is required."
+                )
+
+            if gatherer.name in seen_names:
+                raise ValueError(
+                    f"{gatherer} has a name {gatherer.name} which has already been processed. Names must be unique."
+                )
+
+            seen_names.add(gatherer.name)
 
         kernel = context.modules[kernel_module_name]
 
@@ -269,7 +285,7 @@ class Modules(interfaces.configuration.VersionableInterface):
 
         # Walk each source gathering modules
         for gatherer in caller_wanted_gatherers:
-            run_results[gatherer] = []
+            run_results[gatherer.name] = []
 
             # process each module coming from back the current source
             for module in gatherer.gather_modules(context, kernel_module_name):
@@ -281,7 +297,7 @@ class Modules(interfaces.configuration.VersionableInterface):
                     modinfo = cls.get_module_info_for_module(address_mask, module)
 
                 if modinfo:
-                    run_results[gatherer].append(modinfo)
+                    run_results[gatherer.name].append(modinfo)
 
         if flatten:
             return cls.flatten_run_modules_results(run_results)
