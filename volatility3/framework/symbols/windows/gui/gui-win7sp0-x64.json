@@ -18619,6 +18619,12 @@
       "signed": false,
       "size": 1
     },
+    "char": {
+      "kind": "char",
+      "endian": "little",
+      "signed": false,
+      "size": 1
+    },
     "float": {
       "kind": "float",
       "endian": "little",
