@@ -188,7 +188,7 @@ def bytes_to_decoded_string(
             )
 
     # cut at terminating byte, if found
-    data = data[:idx]
+    data = bytes(full_decoded_string[:idx], encoding=encoding)
 
     # return with caller-specified encoding and errors
     return data.decode(encoding=encoding, errors=errors)
