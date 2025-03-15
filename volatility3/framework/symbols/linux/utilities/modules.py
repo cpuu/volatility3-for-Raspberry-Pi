@@ -51,6 +51,9 @@ class ModuleGathererInterface(
 
     gatherer_return_type = Generator[Union[ModuleInfo, "extensions.module"], None, None]
 
+    # Must be set to a unique, descriptive name of the gathering technique or data structure source
+    name = None
+
     @classmethod
     @abstractmethod
     def gather_modules(
@@ -265,9 +268,9 @@ class Modules(interfaces.configuration.VersionableInterface):
                     f"Invalid gatherer sent through `caller_wanted_gatherers`: {gatherer}"
                 )
 
-            if not hasattr(gatherer, "name"):
+            if gatherer.name is None or len(gatherer.name) == 0:
                 raise ValueError(
-                    f"{gatherer} does not have a name attribute, which is required."
+                    f"{gatherer} does not have a valid name attribute, which is required. It must be a non-zero length string."
                 )
 
             if gatherer.name in seen_names:
