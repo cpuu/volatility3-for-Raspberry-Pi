@@ -105,7 +105,7 @@ def pointer_to_string(
 
 def gather_contiguous_bytes_from_address(
     context, data_layer, starting_address: int, count: int
-) -> str:
+) -> bytes:
     """
     This method reconstructs a string from memory while also carefully examining each page
 
@@ -148,7 +148,7 @@ def gather_contiguous_bytes_from_address(
 
 def bytes_to_decoded_string(
     data: bytes, encoding: str, errors: str, return_truncated: bool = True
-) -> bytes:
+) -> str:
     """
     Args:
         data: The `bytes` buffer containing the string of a string at offset 0
