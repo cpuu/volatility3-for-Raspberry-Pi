@@ -102,11 +102,13 @@ class Windows(interfaces.plugins.PluginInterface):
 
             # procedures can be empty, but if set, should be a valid pointer
             window_proc = window.get_window_procedure()
-            if window_proc is None or window_proc == 0 or window_proc > 0x1000:
+            if window_proc is None:
+                window_proc = renderers.NotAvailableValue()
+            elif window_proc == 0 or window_proc > 0x1000:
                 window_proc = format_hints.Hex(window_proc)
             else:
                 vollog.warning(
-                    f"Invalid window procedure for the window {window.vol.offset:#x}"
+                    f"Invalid window procedure {window_proc} for the window {window.vol.offset:#x}"
                 )
                 continue
 
