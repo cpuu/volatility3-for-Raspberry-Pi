@@ -12464,8 +12464,8 @@
         "directName": {
           "type": {
             "subtype": {
-              "kind": "struct",
-              "name": "nt_symbols!String"
+              "kind": "base",
+              "name": "char"
             },
             "kind": "pointer"
           },
@@ -18074,6 +18074,12 @@
   },
   "base_types": {
     "unsigned char": {
+      "kind": "char",
+      "endian": "little",
+      "signed": false,
+      "size": 1
+    },
+    "char": {
       "kind": "char",
       "endian": "little",
       "signed": false,
