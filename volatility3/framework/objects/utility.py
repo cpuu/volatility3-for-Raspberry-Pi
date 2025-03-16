@@ -148,7 +148,7 @@ def gather_contiguous_bytes_from_address(
 
 def bytes_to_decoded_string(
     data: bytes, encoding: str, errors: str, return_truncated: bool = True
-) -> bytes:
+) -> str:
     """
     Args:
         data: The `bytes` buffer containing the string of a string at offset 0
@@ -188,7 +188,7 @@ def bytes_to_decoded_string(
             )
 
     # cut at terminating byte, if found
-    data = data[:idx]
+    data = bytes(full_decoded_string[:idx], encoding=encoding)
 
     # return with caller-specified encoding and errors
     return data.decode(encoding=encoding, errors=errors)
