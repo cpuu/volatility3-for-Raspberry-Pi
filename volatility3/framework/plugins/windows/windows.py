@@ -9,6 +9,7 @@ from volatility3.framework.objects import utility
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
 from volatility3.plugins.windows import windowstations
+from volatility3.framework.symbols.windows.extensions import gui
 
 vollog = logging.getLogger(__name__)
 
@@ -32,6 +33,9 @@ class Windows(interfaces.plugins.PluginInterface):
                 name="windowstations",
                 component=windowstations.WindowStations,
                 version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="GUIExtensions", component=gui.GUIExtensions, version=(1, 0, 0)
             ),
         ]
 
@@ -88,7 +92,7 @@ class Windows(interfaces.plugins.PluginInterface):
                     )
 
             if process_name is None:
-                vollog.warning(
+                vollog.debug(
                     f"Invalid process reference for the process hosting window {window.vol.offset:#x}"
                 )
                 continue
@@ -107,7 +111,7 @@ class Windows(interfaces.plugins.PluginInterface):
             elif window_proc == 0 or window_proc > 0x1000:
                 window_proc = format_hints.Hex(window_proc)
             else:
-                vollog.warning(
+                vollog.debug(
                     f"Invalid window procedure {window_proc} for the window {window.vol.offset:#x}"
                 )
                 continue

@@ -10,8 +10,8 @@ from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.windows import versions
-from volatility3.framework.symbols.windows.extensions import gui
 from volatility3.plugins.windows import poolscanner, modules
+from volatility3.framework.symbols.windows.extensions import gui
 
 vollog = logging.getLogger(__name__)
 
@@ -51,6 +51,9 @@ class WindowStations(interfaces.plugins.PluginInterface):
             ),
             requirements.VersionRequirement(
                 name="modules", component=modules.Modules, version=(3, 0, 0)
+            ),
+            requirements.VersionRequirement(
+                name="GUIExtensions", component=gui.GUIExtensions, version=(1, 0, 0)
             ),
         ]
 
