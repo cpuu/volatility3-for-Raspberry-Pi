@@ -9,7 +9,6 @@ from volatility3.framework.objects import utility
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
 from volatility3.plugins.windows import windowstations
-from volatility3.framework.symbols.windows.extensions import gui
 
 vollog = logging.getLogger(__name__)
 
@@ -33,9 +32,6 @@ class Windows(interfaces.plugins.PluginInterface):
                 name="windowstations",
                 component=windowstations.WindowStations,
                 version=(1, 0, 0),
-            ),
-            requirements.VersionRequirement(
-                name="GUIExtensions", component=gui.GUIExtensions, version=(1, 0, 0)
             ),
         ]
 

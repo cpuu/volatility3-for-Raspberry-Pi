@@ -325,10 +325,9 @@ class GUIExtensions(interfaces.configuration.VersionableInterface):
                 encoding="utf16",
             )
 
-
-class_types = {
-    "tagWINDOWSTATION": GUIExtensions.tagWINDOWSTATION,
-    "tagDESKTOP": GUIExtensions.tagDESKTOP,
-    "tagWND": GUIExtensions.tagWND,
-    "_LARGE_UNICODE_STRING": GUIExtensions.LARGE_UNICODE_STRING,
-}
+    class_types = {
+        "tagWINDOWSTATION": tagWINDOWSTATION,
+        "tagDESKTOP": tagDESKTOP,
+        "tagWND": tagWND,
+        "_LARGE_UNICODE_STRING": LARGE_UNICODE_STRING,
+    }

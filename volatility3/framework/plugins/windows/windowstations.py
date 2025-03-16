@@ -99,7 +99,7 @@ class WindowStations(interfaces.plugins.PluginInterface):
             config_path=config_path,
             sub_path=os.path.join("windows", "gui"),
             filename=symbol_filename,
-            class_types=gui.class_types,
+            class_types=gui.GUIExtensions.class_types,
             table_mapping=table_mapping,
         )
 
