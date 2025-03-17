@@ -99,13 +99,13 @@ class module(generic.GenericIntelProcess):
 
         return self.mem[module_mem_index]
 
-    def _get_mem_size(self, mod_mem_type_name):
+    def _get_mem_size(self, mod_mem_type_name) -> int:
         return self._get_mem_type(mod_mem_type_name).size
 
-    def _get_mem_base(self, mod_mem_type_name):
+    def _get_mem_base(self, mod_mem_type_name) -> int:
         return self._get_mem_type(mod_mem_type_name).base
 
-    def get_module_base(self):
+    def get_module_base(self) -> int:
         if self.has_member("mem"):  # kernels 6.4+
             return self._get_mem_base("MOD_TEXT")
         elif self.has_member("core_layout"):
@@ -115,7 +115,7 @@ class module(generic.GenericIntelProcess):
 
         raise AttributeError("Unable to get module base")
 
-    def get_init_size(self):
+    def get_init_size(self) -> int:
         if self.has_member("mem"):  # kernels 6.4+
             return (
                 self._get_mem_size("MOD_INIT_TEXT")
@@ -129,7 +129,7 @@ class module(generic.GenericIntelProcess):
 
         raise AttributeError("Unable to determine .init section size of module")
 
-    def get_core_size(self):
+    def get_core_size(self) -> int:
         if self.has_member("mem"):  # kernels 6.4+
             return (
                 self._get_mem_size("MOD_TEXT")
@@ -144,7 +144,7 @@ class module(generic.GenericIntelProcess):
 
         raise AttributeError("Unable to determine core size of module")
 
-    def get_core_text_size(self):
+    def get_core_text_size(self) -> int:
         if self.has_member("mem"):  # kernels 6.4+
             return self._get_mem_size("MOD_TEXT")
         elif self.has_member("core_layout"):
@@ -154,7 +154,7 @@ class module(generic.GenericIntelProcess):
 
         raise AttributeError("Unable to determine core text size of module")
 
-    def get_module_core(self):
+    def get_module_core(self) -> objects.Pointer:
         if self.has_member("mem"):  # kernels 6.4+
             return self._get_mem_base("MOD_TEXT")
         elif self.has_member("core_layout"):
@@ -163,7 +163,7 @@ class module(generic.GenericIntelProcess):
             return self.module_core
         raise AttributeError("Unable to get module core")
 
-    def get_module_init(self):
+    def get_module_init(self) -> objects.Pointer:
         if self.has_member("mem"):  # kernels 6.4+
             return self._get_mem_base("MOD_INIT_TEXT")
         elif self.has_member("init_layout"):
@@ -172,9 +172,12 @@ class module(generic.GenericIntelProcess):
             return self.module_init
         raise AttributeError("Unable to get module init")
 
-    def get_name(self):
+    def get_name(self) -> Optional[str]:
         """Get the name of the module as a string"""
-        return utility.array_to_string(self.name)
+        try:
+            return utility.array_to_string(self.name)
+        except exceptions.InvalidAddressException:
+            return None
 
     def _get_sect_count(self, grp: interfaces.objects.ObjectInterface) -> int:
         """Try to determine the number of valid sections"""
@@ -336,46 +339,70 @@ class module(generic.GenericIntelProcess):
         return None
 
     @property
-    def section_symtab(self):
-        if self.has_member("kallsyms"):
-            return self.kallsyms.symtab
-        elif self.has_member("symtab"):
-            return self.symtab
+    def section_symtab(self) -> Optional[interfaces.objects.ObjectInterface]:
+        try:
+            if self.has_member("kallsyms"):
+                return self.kallsyms.symtab
+            elif self.has_member("symtab"):
+                return self.symtab
+        except exceptions.InvalidAddressException:
+            vollog.debug(
+                f"Page fault encountered when accessing symtab of ELF at {self.vol.offset:#x} in {self.vol.layer_name}"
+            )
+            return None
 
         raise AttributeError("Unable to get symtab")
 
     @property
-    def num_symtab(self):
-        if self.has_member("kallsyms"):
-            return int(self.kallsyms.num_symtab)
-        elif self.has_member("num_symtab"):
-            return int(self.member("num_symtab"))
+    def num_symtab(self) -> Optional[int]:
+        try:
+            if self.has_member("kallsyms"):
+                return int(self.kallsyms.num_symtab)
+            elif self.has_member("num_symtab"):
+                return int(self.member("num_symtab"))
+        except exceptions.InvalidAddressException:
+            vollog.debug(
+                f"Page fault encountered when accessing num_symtab of ELF at {self.vol.offset:#x} in {self.vol.layer_name}"
+            )
+            return None
 
         raise AttributeError("Unable to determine number of symbols")
 
     @property
-    def section_strtab(self):
-        # Newer kernels
-        if self.has_member("kallsyms"):
-            return self.kallsyms.strtab
-        # Older kernels
-        elif self.has_member("strtab"):
-            return self.strtab
+    def section_strtab(self) -> Optional[interfaces.objects.ObjectInterface]:
+        try:
+            # Newer kernels
+            if self.has_member("kallsyms"):
+                return self.kallsyms.strtab
+            # Older kernels
+            elif self.has_member("strtab"):
+                return self.strtab
+        except exceptions.InvalidAddressException:
+            vollog.debug(
+                f"Page fault encountered when accessing strtab of ELF at {self.vol.offset:#x} in {self.vol.layer_name}"
+            )
+            return None
 
         raise AttributeError("Unable to get strtab")
 
     @property
-    def section_typetab(self):
-        if self.has_member("kallsyms") and self.kallsyms.has_member("typetab"):
-            # kernels >= 4.5 8244062ef1e54502ef55f54cced659913f244c3e: kallsyms was added
-            # kernels >= 5.2 1c7651f43777cdd59c1aaa82c87324d3e7438c7b: types have its own array
-            return self.kallsyms.typetab
+    def section_typetab(self) -> Optional[interfaces.objects.ObjectInterface]:
+        try:
+            if self.has_member("kallsyms") and self.kallsyms.has_member("typetab"):
+                # kernels >= 4.5 8244062ef1e54502ef55f54cced659913f244c3e: kallsyms was added
+                # kernels >= 5.2 1c7651f43777cdd59c1aaa82c87324d3e7438c7b: types have its own array
+                return self.kallsyms.typetab
+        except exceptions.InvalidAddressException:
+            vollog.debug(
+                f"Page fault encountered when accessing typetab of ELF at {self.vol.offset:#x} in {self.vol.layer_name}"
+            )
+            return None
 
         raise AttributeError("Unable to get typetab section, it needs a kernel >= 5.2")
 
     def get_symbol_type(
         self, symbol: interfaces.objects.ObjectInterface, symbol_index: int
-    ) -> str:
+    ) -> Optional[str]:
         """Determines the type of a given ELF symbol.
 
         Args:
@@ -385,14 +412,20 @@ class module(generic.GenericIntelProcess):
         Returns:
             A single-character string representing the symbol type
         """
-        if self.has_member("kallsyms") and self.kallsyms.has_member("typetab"):
-            # kernels >= 5.2 1c7651f43777cdd59c1aaa82c87324d3e7438c7b types have its own array
-            layer = self._context.layers[self.vol.layer_name]
-            sym_type = layer.read(self.section_typetab + symbol_index, 1)
-            sym_type = sym_type.decode("utf-8", errors="ignore")
-        else:
-            # kernels < 5.2 the type was stored in the st_info
-            sym_type = chr(symbol.st_info)
+        try:
+            if self.has_member("kallsyms") and self.kallsyms.has_member("typetab"):
+                # kernels >= 5.2 1c7651f43777cdd59c1aaa82c87324d3e7438c7b types have its own array
+                layer = self._context.layers[self.vol.layer_name]
+                sym_type = layer.read(self.section_typetab + symbol_index, 1)
+                sym_type = sym_type.decode("utf-8", errors="ignore")
+            else:
+                # kernels < 5.2 the type was stored in the st_info
+                sym_type = chr(symbol.st_info)
+        except exceptions.InvalidAddressException:
+            vollog.debug(
+                f"Page fault encountered when accessing symbol type of index {symbol_index} of ELF at {self.vol.offset:#x} in {self.vol.layer_name}"
+            )
+            return None
 
         return sym_type
 
