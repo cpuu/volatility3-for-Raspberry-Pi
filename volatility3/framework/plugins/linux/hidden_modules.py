@@ -6,19 +6,22 @@ from typing import List, Set, Tuple, Iterable
 from volatility3.framework.symbols.linux.utilities import (
     modules as linux_utilities_modules,
 )
-from volatility3.framework import renderers, interfaces, exceptions, deprecation
+from volatility3.framework import interfaces, exceptions, deprecation
 from volatility3.framework.constants import architectures
-from volatility3.framework.renderers import format_hints
 from volatility3.framework.configuration import requirements
+from volatility3.framework.symbols.linux import extensions
 
 vollog = logging.getLogger(__name__)
 
 
-class Hidden_modules(interfaces.plugins.PluginInterface):
+class Hidden_modules(linux_utilities_modules.ModuleDisplayPlugin):
     """Carves memory to find hidden kernel modules"""
 
     _required_framework_version = (2, 10, 0)
-    _version = (2, 0, 0)
+    _version = (3, 0, 0)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(self.find_hidden_modules, *args, **kwargs)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -29,9 +32,9 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
                 architectures=architectures.LINUX_ARCHS,
             ),
             requirements.VersionRequirement(
-                name="linux_utilities_modules",
-                component=linux_utilities_modules.Modules,
-                version=(3, 0, 0),
+                name="linux_utilities_modules_module_display_plugin",
+                component=linux_utilities_modules.ModuleDisplayPlugin,
+                version=(1, 0, 0),
             ),
         ]
 
@@ -165,38 +168,29 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
         }
         return known_module_addresses
 
-    def _generator(self):
-        vmlinux_module_name = self.config["kernel"]
-        known_module_addresses = self.get_lsmod_module_addresses(
-            self.context, vmlinux_module_name
-        )
-        modules_memory_boundaries = (
-            linux_utilities_modules.Modules.get_modules_memory_boundaries(
-                self.context, vmlinux_module_name
-            )
-        )
-
-        for module in linux_utilities_modules.Modules.get_hidden_modules(
-            self.context,
-            vmlinux_module_name,
-            known_module_addresses,
-            modules_memory_boundaries,
-        ):
-            module_addr = module.vol.offset
-            module_name = module.get_name() or renderers.NotAvailableValue()
-            fields = (format_hints.Hex(module_addr), module_name)
-            yield (0, fields)
-
-    def run(self):
-        if self.context.symbol_space.verify_table_versions(
+    @classmethod
+    def find_hidden_modules(
+        cls, context, vmlinux_module_name: str
+    ) -> extensions.module:
+        if context.symbol_space.verify_table_versions(
             "dwarf2json", lambda version, _: (not version) or version < (0, 8, 0)
         ):
             raise exceptions.SymbolSpaceError(
                 "Invalid symbol table, please ensure the ISF table produced by dwarf2json was created with version 0.8.0 or later"
             )
 
-        headers = [
-            ("Address", format_hints.Hex),
-            ("Name", str),
-        ]
-        return renderers.TreeGrid(headers, self._generator())
+        known_module_addresses = cls.get_lsmod_module_addresses(
+            context, vmlinux_module_name
+        )
+        modules_memory_boundaries = (
+            linux_utilities_modules.Modules.get_modules_memory_boundaries(
+                context, vmlinux_module_name
+            )
+        )
+
+        yield from linux_utilities_modules.Modules.get_hidden_modules(
+            context,
+            vmlinux_module_name,
+            known_module_addresses,
+            modules_memory_boundaries,
+        )

@@ -21,11 +21,15 @@ from volatility3.framework import (
     deprecation,
     exceptions,
     objects,
+    renderers,
 )
-
+from volatility3.framework.constants import architectures
+from volatility3.framework.renderers import format_hints
 from volatility3.framework.configuration import requirements
 from volatility3.framework.objects import utility
 from volatility3.framework.symbols.linux import extensions
+from volatility3.framework.interfaces import plugins
+from volatility3.framework.symbols.linux.utilities import tainting
 
 vollog = logging.getLogger(__name__)
 
@@ -684,3 +688,82 @@ class ModuleGatherers(
             )
 
         return reqs
+
+
+class ModuleDisplayPlugin(plugins.PluginInterface):
+    """
+    Plugins that enumerate kernel modules (lsmod, check_modules, etc.)
+    must inherit from this class to have unified output columns across plugins.
+    The constructor of the plugin must call super() with the `implementation` set
+    """
+
+    _version = (1, 0, 0)
+    _required_framework_version = (2, 0, 0)
+
+    framework.require_interface_version(*_required_framework_version)
+
+    def __init__(self, implementation, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.implementation = implementation
+
+    @classmethod
+    def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
+        return [
+            requirements.ModuleRequirement(
+                name="kernel",
+                description="Linux kernel",
+                architectures=architectures.LINUX_ARCHS,
+            ),
+            requirements.VersionRequirement(
+                name="linux_utilities_modules",
+                component=Modules,
+                version=(3, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="linux-tainting", component=tainting.Tainting, version=(1, 0, 0)
+            ),
+        ]
+
+    def _generator(self):
+        """
+        Uses the implementation set in the constructor call to produce consistent output fields
+        across module gathering plugins
+        """
+        for module in self.implementation(self.context, self.config["kernel"]):
+            try:
+                name = utility.array_to_string(module.name)
+            except exceptions.InvalidAddressException:
+                vollog.debug(
+                    f"Unable to recover name for module {module.vol.offset:#x} from implementation {self.implementation}"
+                )
+                continue
+
+            code_size = format_hints.Hex(
+                module.get_init_size() + module.get_core_size()
+            )
+
+            taints = ",".join(
+                tainting.Tainting.get_taints_parsed(
+                    self.context, self.config["kernel"], module.taints, True
+                )
+            )
+
+            yield 0, (
+                format_hints.Hex(module.vol.offset),
+                name,
+                format_hints.Hex(code_size),
+                taints,
+                renderers.NotAvailableValue(),  # will become the load arguments after this inital conversion is merged
+            )
+
+    def run(self):
+        return renderers.TreeGrid(
+            [
+                ("Offset", format_hints.Hex),
+                ("Module Name", str),
+                ("Code Size", format_hints.Hex),
+                ("Taints", str),
+                ("Load Arguments", str),
+            ],
+            self._generator(),
+        )
