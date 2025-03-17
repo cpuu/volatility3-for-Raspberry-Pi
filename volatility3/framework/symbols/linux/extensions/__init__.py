@@ -256,7 +256,9 @@ class module(generic.GenericIntelProcess):
             elf_sym_obj.cached_strtab = self.section_strtab
             yield elf_sym_obj
 
-    def get_symbols_names_and_addresses(self, max_symbols: int = 4096) -> Iterable[Tuple[str, int]]:
+    def get_symbols_names_and_addresses(
+        self, max_symbols: int = 4096
+    ) -> Iterable[Tuple[str, int]]:
         """Get names and addresses for each symbol of the module
 
         Yields:
@@ -265,7 +267,9 @@ class module(generic.GenericIntelProcess):
         layer = self._context.layers[self.vol.layer_name]
         for iteration_counter, elf_sym_obj in enumerate(self.get_symbols()):
             if iteration_counter > max_symbols:
-                vollog.debug(f"Hit maximum symbols ({max_symbols}) for ELF at {self.vol.offset:#x} in layer {self.vol.layer_name}")
+                vollog.debug(
+                    f"Hit maximum symbols ({max_symbols}) for ELF at {self.vol.offset:#x} in layer {self.vol.layer_name}"
+                )
                 return
 
             sym_name = elf_sym_obj.get_name()
