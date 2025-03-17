@@ -20,7 +20,7 @@ class Lsmod(linux_utilities_modules.ModuleDisplayPlugin):
     _version = (3, 0, 0)
 
     def __init__(self, *args, **kwargs):
-        super().__init__(linux_utilities_modules.ModuleGathererLsmod, *args, **kwargs)
+        super().__init__(linux_utilities_modules.Modules.list_modules, *args, **kwargs)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -31,9 +31,9 @@ class Lsmod(linux_utilities_modules.ModuleDisplayPlugin):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="linux_utilities_modules_gatherers_lsmod",
-                component=linux_utilities_modules.ModuleGathererLsmod,
-                version=(1, 0, 0),
+                name="linux_utilities_modules",
+                component=linux_utilities_modules.Modules,
+                version=(3, 0, 0),
             ),
             requirements.VersionRequirement(
                 name="linux_utilities_modules_module_display_plugin",
