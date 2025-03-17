@@ -1994,7 +1994,10 @@ class bpf_prog(objects.StructType):
             # 'prog_aux' was added in kernels 3.18
             return None
 
-        return self.aux.get_name()
+        try:
+            return self.aux.get_name()
+        except exceptions.InvalidAddressException:
+            return None
 
     def bpf_jit_binary_hdr_address(self) -> int:
         """Return the jitted BPF program start address
@@ -2056,10 +2059,12 @@ class bpf_prog_aux(objects.StructType):
             # 'name' was added in kernels 4.15
             return None
 
-        if not self.name:
+        try:
+            if not self.name:
+                return None
+            return utility.array_to_string(self.name)
+        except exceptions.InvalidAddressException:
             return None
-
-        return utility.array_to_string(self.name)
 
 
 class cred(objects.StructType):
@@ -2996,7 +3001,9 @@ class latch_tree_root(objects.StructType):
             rb_node = rb_node_ptr.dereference()
             lt_node = self._get_lt_node_from_rb_node(rb_node, idx)
             c = comp_function(key, lt_node)
-            if c < 0:
+            if c is None:
+                return None
+            elif c < 0:
                 rb_node_ptr = rb_node.rb_left
             elif c > 0:
                 rb_node_ptr = rb_node.rb_right
