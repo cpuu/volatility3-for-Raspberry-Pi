@@ -305,7 +305,6 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
     def _assert_versions(cls) -> None:
         """Verify versions of shared dependencies"""
         linux_utilities_modules_version_required = (3, 0, 0)
-
         if not requirements.VersionRequirement.matches_required(
             linux_utilities_modules_version_required,
             linux_utilities_modules.Modules.version,
