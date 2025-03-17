@@ -6,12 +6,12 @@ import functools
 import logging
 from typing import Iterator, List, Optional, Tuple
 
+import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from volatility3.framework import constants, exceptions, interfaces
 from volatility3.framework.configuration import requirements
 from volatility3.framework.constants import linux as linux_constants
 from volatility3.framework.objects import utility
 from volatility3.framework.symbols import linux
-from volatility3.plugins.linux import lsmod
 
 vollog = logging.getLogger(__name__)
 
@@ -304,28 +304,35 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
     @classmethod
     def _assert_versions(cls) -> None:
         """Verify versions of shared dependencies"""
-        lsmod_version_required = (2, 0, 0)
+        linux_utilities_modules_version_required = (3, 0, 0)
         if not requirements.VersionRequirement.matches_required(
-            lsmod_version_required, lsmod.Lsmod.version
+            linux_utilities_modules_version_required,
+            linux_utilities_modules.Modules.version,
         ):
             raise exceptions.VolatilityException(
-                "Lsmod version not suitable: "
-                f"required {lsmod_version_required} found {lsmod.Lsmod.version}",
+                "linux_utilities_modules.Modules version not suitable: "
+                f"required {linux_utilities_modules_version_required} found {linux_utilities_modules.Modules.version}",
             )
 
         return None
 
-    def _read_bytes(self, address: int, size: int) -> bytes:
+    def _read_bytes(self, address: int, size: int) -> Optional[bytes]:
         layer = self._context.layers[self._layer_name]
-        return layer.read(address, size).decode()
+        try:
+            return layer.read(address, size).decode()
+        except exceptions.InvalidAddressException:
+            return None
 
-    def _read_int(self, address: int, size: int, signed: bool = False) -> int:
+    def _read_int(self, address: int, size: int, signed: bool = False) -> Optional[int]:
         layer = self._context.layers[self._layer_name]
-        return int.from_bytes(
-            layer.read(address, size),
-            byteorder=self._endian,
-            signed=signed,
-        )
+        try:
+            return int.from_bytes(
+                layer.read(address, size),
+                byteorder=self._endian,
+                signed=signed,
+            )
+        except exceptions.InvalidAddressException:
+            return None
 
     def _bootstrap(self) -> None:
         layer = self._context.layers[self._layer_name]
@@ -402,7 +409,20 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
         """
         current_offset = 0
         for sym_idx in range(self._kallsyms_num_syms):
-            kassymbol, compressed_length = self._get_symbol(current_offset, sym_idx)
+            try:
+                kassymbol, compressed_length = self._get_symbol(current_offset, sym_idx)
+            except exceptions.InvalidAddressException:
+                vollog.debug(
+                    f"Unable to reconstruct core symbol at offset {current_offset:#x} and index {sym_idx}"
+                )
+                continue
+
+            if compressed_length is None:
+                vollog.debug(
+                    f"Unable to reconstruct compressed_length at offset {current_offset:#x} and index {sym_idx}"
+                )
+                break
+
             if kassymbol:
                 yield kassymbol
 
@@ -485,7 +505,7 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
         )
         return kassymbolbasic, compressed_length
 
-    def _get_symbol_address_by_index(self, index: int) -> int:
+    def _get_symbol_address_by_index(self, index: int) -> Optional[int]:
         """Return symbol address based on the symbol index in the kallsyms arrays.
         Based on kallsyms_sym_address()
 
@@ -502,6 +522,8 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
             signed_int_size = 4
             sym_offset_ptr = self._kallsyms_offsets_address + (index * signed_int_size)
             sym_addr = self._read_int(sym_offset_ptr, signed_int_size, signed=True)
+            if sym_addr is None:
+                return None
 
             if sym_addr < 0:
                 # Negative offsets are relative to kallsyms_relative_base - 1
@@ -517,35 +539,56 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
                 self._long_size,
                 signed=False,
             )
+            if kallsyms_address is None:
+                return None
+
             return kallsyms_address & layer.address_mask
         else:
             raise exceptions.VolatilityException("Unsupported kernel")
 
     @functools.lru_cache
-    def _get_symbol_pos(self, address: int) -> Tuple[int, int]:
+    def _get_symbol_pos(self, address: int) -> Optional[Tuple[int, int]]:
         """Returns the symbol position in the kallsyms arrays and its size."""
         low = 0
         high = self._kallsyms_num_syms
 
         while high - low > 1:
             mid = low + (high - low) // 2
-            if self._get_symbol_address_by_index(mid) <= address:
+            symbol_index = self._get_symbol_address_by_index(mid)
+            if symbol_index is None:
+                return None, None
+            elif symbol_index <= address:
                 low = mid
             else:
                 high = mid
 
+        # prevent accidental bleed through
+        symbol_index = None
+
         # Search for the first aliased symbol. *Aliased symbols* are symbols with the same address.
-        while low and self._get_symbol_address_by_index(
-            low - 1
-        ) == self._get_symbol_address_by_index(low):
-            low -= 1
+        while low:
+            symbol_index = self._get_symbol_address_by_index(low - 1)
+            if symbol_index is None:
+                return None, None
+
+            if symbol_index == self._get_symbol_address_by_index(low):
+                low -= 1
+            else:
+                break
 
         symbol_start = self._get_symbol_address_by_index(low)
+        if symbol_start is None:
+            return None, None
+
         symbol_end = 0
 
         # Search for next non-aliased symbol.
         for idx in range(low + 1, self._kallsyms_num_syms):
-            if self._get_symbol_address_by_index(idx) > symbol_start:
+            symbol_index = self._get_symbol_address_by_index(idx)
+            if symbol_index is None:
+                return None, None
+
+            if symbol_index > symbol_start:
                 symbol_end = self._get_symbol_address_by_index(idx)
                 break
 
@@ -664,6 +707,8 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
             return None
 
         pos, sym_size = self._get_symbol_pos(address)
+        if pos is None:
+            return None
         offset = self._get_symbol_offset(pos)
         sym_address = self._get_symbol_address_by_index(pos)
         kassymbolbasic, _compressed_length = self._expand_symbol(offset)
@@ -855,7 +900,9 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
         self,
     ) -> List[Tuple[interfaces.objects.ObjectInterface, int, int]]:
         modules_region = []
-        for module in lsmod.Lsmod.list_modules(self._context, self._module_name):
+        for module in linux_utilities_modules.Modules.list_modules(
+            self._context, self._module_name
+        ):
             minimum_address, maximum_address = module.get_module_address_boundaries()
             module_region = module, minimum_address, maximum_address
             modules_region.append(module_region)
@@ -923,21 +970,35 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
         return self._search_module_by_address(address)
 
     @functools.lru_cache
-    def _get_type_cache(self, name: str):
+    def _get_type_cache(self, name: str) -> Optional[interfaces.objects.Template]:
         vmlinux = self._context.modules[self._module_name]
-        return vmlinux.get_type(name)
+        try:
+            return vmlinux.get_type(name)
+        except exceptions.SymbolError:
+            return None
 
     def _mod_tree_comp(
         self, address: int, latch_tree_node: interfaces.objects.ObjectInterface
-    ) -> int:
+    ) -> Optional[int]:
         vmlinux = self._context.modules[self._module_name]
 
-        module_memory_mtn_offset = self._get_type_cache(
-            "module_memory"
-        ).relative_child_offset("mtn")
-        mod_tree_node_mod_offset = self._get_type_cache(
-            "mod_tree_node"
-        ).relative_child_offset("mod")
+        module_memory_mtn = self._get_type_cache("module_memory")
+        if not module_memory_mtn:
+            vollog.debug(
+                "`module_memory` symbol not present in the symbol table. Cannot proceed."
+            )
+            return None
+
+        module_memory_mtn_offset = module_memory_mtn.relative_child_offset("mtn")
+
+        mod_tree_node_mod = self._get_type_cache("mod_tree_node")
+        if not mod_tree_node_mod:
+            vollog.debug(
+                "`mod_tree_node` symbol not present in the symbol table. Cannot proceed."
+            )
+            return None
+
+        mod_tree_node_mod_offset = mod_tree_node_mod.relative_child_offset("mod")
 
         module_memory_offset = (
             latch_tree_node.vol.offset
@@ -1087,7 +1148,9 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
             KASSymbol objects
         """
         layer = self._context.layers[self._layer_name]
-        for module in lsmod.Lsmod.list_modules(self._context, self._module_name):
+        for module in linux_utilities_modules.Modules.list_modules(
+            self._context, self._module_name
+        ):
             module_name = utility.array_to_string(module.name)
             for elf_sym_idx, elf_sym_obj in enumerate(module.get_symbols()):
                 sym_name = elf_sym_obj.get_name()
@@ -1254,21 +1317,24 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
         # this function will still be able to gather the symbols.
         bpf_kallsyms_list = vmlinux.object_from_symbol("bpf_kallsyms")
         for elem in bpf_kallsyms_list.to_list(list_type_symname, list_head_member):
-            # See kernel's bpf_get_kallsym()
-            if list_type == "bpf_ksym":
-                # kernels >= 5.8
-                bpf_ksym = elem
-                sym_name = utility.array_to_string(bpf_ksym.name)
-                sym_addr = bpf_ksym.start
-                sym_size = bpf_ksym.end - bpf_ksym.start
-            else:
-                # list_type == "bpf_prog_aux" 3.18 <= kernels < 5.8
-                bpf_prog_aux = elem
-                bpf_prog = bpf_prog_aux.prog
-                sym_name = bpf_prog.get_name()
-                sym_addr = bpf_prog.bpf_func
-                sym_start, sym_end = bpf_prog.get_address_region()
-                sym_size = sym_end - sym_start
+            try:
+                # See kernel's bpf_get_kallsym()
+                if list_type == "bpf_ksym":
+                    # kernels >= 5.8
+                    bpf_ksym = elem
+                    sym_name = utility.array_to_string(bpf_ksym.name)
+                    sym_addr = bpf_ksym.start
+                    sym_size = bpf_ksym.end - bpf_ksym.start
+                else:
+                    # list_type == "bpf_prog_aux" 3.18 <= kernels < 5.8
+                    bpf_prog_aux = elem
+                    bpf_prog = bpf_prog_aux.prog
+                    sym_name = bpf_prog.get_name()
+                    sym_addr = bpf_prog.bpf_func
+                    sym_start, sym_end = bpf_prog.get_address_region()
+                    sym_size = sym_end - sym_start
+            except exceptions.InvalidAddressException:
+                continue
 
             # The following are also hardcoded in the Linux kernel
             # see kernel's get_ksymbol_bpf(), bpf_get_kallsym() and BPF_SYM_ELF_TYPE
@@ -1322,7 +1388,7 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
             sym_size = symbol_end - symbol_start
         elif vmlinux.has_type("latch_tree_root") and vmlinux.get_type(
             "bpf_prog_aux"
-        ).child_template("ksym_tnode"):
+        ).has_member("ksym_tnode"):
             # For 4.11 <= kernels < 5.7
             # latch_tree_root was added in kernels 4.2 ade3f510f93a5613b672febe88eff8ea7f1c63b7
             # BPF kallsyms support was added in kernels 4.11 74451e66d516c55e309e8d89a4a1e7596e46aacd

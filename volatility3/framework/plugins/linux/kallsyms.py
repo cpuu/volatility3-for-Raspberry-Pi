@@ -106,6 +106,8 @@ class Kallsyms(plugins.PluginInterface):
 
         for symbols_generator in symbol_generators:
             for kassymbol in symbols_generator:
+                if not kassymbol:
+                    continue
                 # Symbol sizes are calculated using the address of the next non-aliased
                 # symbol or the end of the kernel text area _end/_etext. However, some kernel
                 # symbols are located beyond that area, which causes this method to fail for
