@@ -329,7 +329,10 @@ class elf_sym(objects.StructType):
     def get_name(self) -> Optional[str]:
         """Returns the symbol name"""
 
-        addr = self._cached_strtab + self.st_name
+        try:
+            addr = self._cached_strtab + self.st_name
+        except exceptions.InvalidAddressException:
+            return None
 
         layer = self._context.layers[self.vol.layer_name]
         name_bytes = layer.read(addr, self._MAX_NAME_LENGTH, pad=True)
