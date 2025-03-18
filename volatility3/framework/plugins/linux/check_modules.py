@@ -10,11 +10,14 @@ from volatility3.framework import interfaces, deprecation
 from volatility3.framework.configuration import requirements
 from volatility3.framework.objects import utility
 from volatility3.framework.symbols.linux import extensions
+from volatility3.framework.interfaces import plugins
 
 vollog = logging.getLogger(__name__)
 
 
-class Check_modules(linux_utilities_modules.ModuleDisplayPlugin):
+class Check_modules(
+    linux_utilities_modules.ModuleDisplayPlugin, plugins.PluginInterface
+):
     """Compares module list to sysfs info, if available"""
 
     _version = (3, 0, 0)

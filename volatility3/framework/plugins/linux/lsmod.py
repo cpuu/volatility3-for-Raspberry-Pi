@@ -9,11 +9,12 @@ from typing import List, Iterable
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from volatility3.framework import interfaces, deprecation
 from volatility3.framework.configuration import requirements
+from volatility3.framework.interfaces import plugins
 
 vollog = logging.getLogger(__name__)
 
 
-class Lsmod(linux_utilities_modules.ModuleDisplayPlugin):
+class Lsmod(linux_utilities_modules.ModuleDisplayPlugin, plugins.PluginInterface):
     """Lists loaded kernel modules."""
 
     _required_framework_version = (2, 0, 0)

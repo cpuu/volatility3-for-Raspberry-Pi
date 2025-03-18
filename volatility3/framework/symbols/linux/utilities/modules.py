@@ -690,7 +690,7 @@ class ModuleGatherers(
         return reqs
 
 
-class ModuleDisplayPlugin(plugins.PluginInterface):
+class ModuleDisplayPlugin(interfaces.configuration.VersionableInterface):
     """
     Plugins that enumerate kernel modules (lsmod, check_modules, etc.)
     must inherit from this class to have unified output columns across plugins.

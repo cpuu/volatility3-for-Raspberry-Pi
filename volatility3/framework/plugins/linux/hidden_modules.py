@@ -10,11 +10,14 @@ from volatility3.framework import interfaces, exceptions, deprecation
 from volatility3.framework.constants import architectures
 from volatility3.framework.configuration import requirements
 from volatility3.framework.symbols.linux import extensions
+from volatility3.framework.interfaces import plugins
 
 vollog = logging.getLogger(__name__)
 
 
-class Hidden_modules(linux_utilities_modules.ModuleDisplayPlugin):
+class Hidden_modules(
+    linux_utilities_modules.ModuleDisplayPlugin, plugins.PluginInterface
+):
     """Carves memory to find hidden kernel modules"""
 
     _required_framework_version = (2, 10, 0)
