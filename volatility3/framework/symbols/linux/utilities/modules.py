@@ -28,7 +28,6 @@ from volatility3.framework.renderers import format_hints
 from volatility3.framework.configuration import requirements
 from volatility3.framework.objects import utility
 from volatility3.framework.symbols.linux import extensions
-from volatility3.framework.interfaces import plugins
 from volatility3.framework.symbols.linux.utilities import tainting
 
 vollog = logging.getLogger(__name__)
