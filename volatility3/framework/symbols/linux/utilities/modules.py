@@ -701,10 +701,6 @@ class ModuleDisplayPlugin(interfaces.configuration.VersionableInterface):
 
     framework.require_interface_version(*_required_framework_version)
 
-    def __init__(self, implementation, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.implementation = implementation
-
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
         return [
@@ -723,7 +719,7 @@ class ModuleDisplayPlugin(interfaces.configuration.VersionableInterface):
             ),
         ]
 
-    def _generator(self):
+    def generator(self):
         """
         Uses the implementation set in the constructor call to produce consistent output fields
         across module gathering plugins

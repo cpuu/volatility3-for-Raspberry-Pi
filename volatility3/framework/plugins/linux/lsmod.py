@@ -14,14 +14,15 @@ from volatility3.framework.interfaces import plugins
 vollog = logging.getLogger(__name__)
 
 
-class Lsmod(linux_utilities_modules.ModuleDisplayPlugin, plugins.PluginInterface):
+class Lsmod(plugins.PluginInterface):
     """Lists loaded kernel modules."""
 
     _required_framework_version = (2, 0, 0)
     _version = (3, 0, 0)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(linux_utilities_modules.Modules.list_modules, *args, **kwargs)
+    run = linux_utilities_modules.ModuleDisplayPlugin.run
+    _generator = linux_utilities_modules.ModuleDisplayPlugin.generator
+    implementation = linux_utilities_modules.Modules.list_modules
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:

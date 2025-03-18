@@ -15,16 +15,33 @@ from volatility3.framework.interfaces import plugins
 vollog = logging.getLogger(__name__)
 
 
-class Check_modules(
-    linux_utilities_modules.ModuleDisplayPlugin, plugins.PluginInterface
-):
+class Check_modules(plugins.PluginInterface):
     """Compares module list to sysfs info, if available"""
 
     _version = (3, 0, 0)
     _required_framework_version = (2, 0, 0)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(self.compare_kset_and_lsmod, *args, **kwargs)
+    @classmethod
+    def compare_kset_and_lsmod(
+        cls, context: str, vmlinux_name: str
+    ) -> Generator[extensions.module, None, None]:
+        kset_modules = linux_utilities_modules.Modules.get_kset_modules(
+            context=context, vmlinux_name=vmlinux_name
+        )
+
+        lsmod_modules = set(
+            str(utility.array_to_string(modules.name))
+            for modules in linux_utilities_modules.Modules.list_modules(
+                context=context, vmlinux_module_name=vmlinux_name
+            )
+        )
+
+        for mod_name in set(kset_modules.keys()).difference(lsmod_modules):
+            yield kset_modules[mod_name]
+
+    run = linux_utilities_modules.ModuleDisplayPlugin.run
+    _generator = linux_utilities_modules.ModuleDisplayPlugin.generator
+    implementation = compare_kset_and_lsmod
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -51,21 +68,3 @@ class Check_modules(
         cls, context: interfaces.context.ContextInterface, vmlinux_name: str
     ) -> Dict[str, extensions.module]:
         return linux_utilities_modules.Modules.get_kset_modules(context, vmlinux_name)
-
-    @classmethod
-    def compare_kset_and_lsmod(
-        cls, context: str, vmlinux_name: str
-    ) -> Generator[extensions.module, None, None]:
-        kset_modules = linux_utilities_modules.Modules.get_kset_modules(
-            context=context, vmlinux_name=vmlinux_name
-        )
-
-        lsmod_modules = set(
-            str(utility.array_to_string(modules.name))
-            for modules in linux_utilities_modules.Modules.list_modules(
-                context=context, vmlinux_module_name=vmlinux_name
-            )
-        )
-
-        for mod_name in set(kset_modules.keys()).difference(lsmod_modules):
-            yield kset_modules[mod_name]

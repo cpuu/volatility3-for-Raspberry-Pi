@@ -15,16 +15,49 @@ from volatility3.framework.interfaces import plugins
 vollog = logging.getLogger(__name__)
 
 
-class Hidden_modules(
-    linux_utilities_modules.ModuleDisplayPlugin, plugins.PluginInterface
-):
+class Hidden_modules(plugins.PluginInterface):
     """Carves memory to find hidden kernel modules"""
 
     _required_framework_version = (2, 10, 0)
     _version = (3, 0, 0)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(self.find_hidden_modules, *args, **kwargs)
+    @classmethod
+    def get_hidden_modules(
+        cls,
+        context: interfaces.context.ContextInterface,
+        vmlinux_module_name: str,
+        known_module_addresses: Set[int],
+        modules_memory_boundaries: Tuple,
+    ) -> Iterable[interfaces.objects.ObjectInterface]:
+        """Enumerate hidden modules by taking advantage of memory address alignment patterns
+
+        This technique is much faster and uses less memory than the traditional scan method
+        in Volatility2, but it doesn't work with older kernels.
+
+        From kernels 4.2 struct module allocation are aligned to the L1 cache line size.
+        In i386/amd64/arm64 this is typically 64 bytes. However, this can be changed in
+        the Linux kernel configuration via CONFIG_X86_L1_CACHE_SHIFT. The alignment can
+        also be obtained from the DWARF info i.e. DW_AT_alignment<64>, but dwarf2json
+        doesn't support this feature yet.
+        In kernels < 4.2, alignment attributes are absent in the struct module, meaning
+        alignment cannot be guaranteed. Therefore, for older kernels, it's better to use
+        the traditional scan technique.
+
+        Args:
+            context: The context to retrieve required elements (layers, symbol tables) from
+            vmlinux_module_name: The name of the kernel module on which to operate
+            known_module_addresses: Set with known module addresses
+            modules_memory_boundaries: Minimum and maximum address boundaries for module allocation.
+        Yields:
+            module objects
+        """
+        return linux_utilities_modules.get_hidden_modules(
+            vmlinux_module_name, known_module_addresses, modules_memory_boundaries
+        )
+
+    run = linux_utilities_modules.ModuleDisplayPlugin.run
+    _generator = linux_utilities_modules.ModuleDisplayPlugin.generator
+    implementation = linux_utilities_modules.Modules.list_modules
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -88,40 +121,6 @@ class Hidden_modules(
         removal_date="2025-09-25",
         replacement_version=(3, 0, 0),
     )
-    @classmethod
-    def get_hidden_modules(
-        cls,
-        context: interfaces.context.ContextInterface,
-        vmlinux_module_name: str,
-        known_module_addresses: Set[int],
-        modules_memory_boundaries: Tuple,
-    ) -> Iterable[interfaces.objects.ObjectInterface]:
-        """Enumerate hidden modules by taking advantage of memory address alignment patterns
-
-        This technique is much faster and uses less memory than the traditional scan method
-        in Volatility2, but it doesn't work with older kernels.
-
-        From kernels 4.2 struct module allocation are aligned to the L1 cache line size.
-        In i386/amd64/arm64 this is typically 64 bytes. However, this can be changed in
-        the Linux kernel configuration via CONFIG_X86_L1_CACHE_SHIFT. The alignment can
-        also be obtained from the DWARF info i.e. DW_AT_alignment<64>, but dwarf2json
-        doesn't support this feature yet.
-        In kernels < 4.2, alignment attributes are absent in the struct module, meaning
-        alignment cannot be guaranteed. Therefore, for older kernels, it's better to use
-        the traditional scan technique.
-
-        Args:
-            context: The context to retrieve required elements (layers, symbol tables) from
-            vmlinux_module_name: The name of the kernel module on which to operate
-            known_module_addresses: Set with known module addresses
-            modules_memory_boundaries: Minimum and maximum address boundaries for module allocation.
-        Yields:
-            module objects
-        """
-        return linux_utilities_modules.get_hidden_modules(
-            vmlinux_module_name, known_module_addresses, modules_memory_boundaries
-        )
-
     @staticmethod
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.validate_alignment_patterns,
