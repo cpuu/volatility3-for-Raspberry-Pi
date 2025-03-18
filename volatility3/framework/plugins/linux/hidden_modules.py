@@ -6,19 +6,58 @@ from typing import List, Set, Tuple, Iterable
 from volatility3.framework.symbols.linux.utilities import (
     modules as linux_utilities_modules,
 )
-from volatility3.framework import renderers, interfaces, exceptions, deprecation
+from volatility3.framework import interfaces, exceptions, deprecation
 from volatility3.framework.constants import architectures
-from volatility3.framework.renderers import format_hints
 from volatility3.framework.configuration import requirements
+from volatility3.framework.symbols.linux import extensions
+from volatility3.framework.interfaces import plugins
 
 vollog = logging.getLogger(__name__)
 
 
-class Hidden_modules(interfaces.plugins.PluginInterface):
+class Hidden_modules(plugins.PluginInterface):
     """Carves memory to find hidden kernel modules"""
 
     _required_framework_version = (2, 10, 0)
-    _version = (2, 0, 0)
+    _version = (3, 0, 0)
+
+    @classmethod
+    def get_hidden_modules(
+        cls,
+        context: interfaces.context.ContextInterface,
+        vmlinux_module_name: str,
+        known_module_addresses: Set[int],
+        modules_memory_boundaries: Tuple,
+    ) -> Iterable[interfaces.objects.ObjectInterface]:
+        """Enumerate hidden modules by taking advantage of memory address alignment patterns
+
+        This technique is much faster and uses less memory than the traditional scan method
+        in Volatility2, but it doesn't work with older kernels.
+
+        From kernels 4.2 struct module allocation are aligned to the L1 cache line size.
+        In i386/amd64/arm64 this is typically 64 bytes. However, this can be changed in
+        the Linux kernel configuration via CONFIG_X86_L1_CACHE_SHIFT. The alignment can
+        also be obtained from the DWARF info i.e. DW_AT_alignment<64>, but dwarf2json
+        doesn't support this feature yet.
+        In kernels < 4.2, alignment attributes are absent in the struct module, meaning
+        alignment cannot be guaranteed. Therefore, for older kernels, it's better to use
+        the traditional scan technique.
+
+        Args:
+            context: The context to retrieve required elements (layers, symbol tables) from
+            vmlinux_module_name: The name of the kernel module on which to operate
+            known_module_addresses: Set with known module addresses
+            modules_memory_boundaries: Minimum and maximum address boundaries for module allocation.
+        Yields:
+            module objects
+        """
+        return linux_utilities_modules.get_hidden_modules(
+            vmlinux_module_name, known_module_addresses, modules_memory_boundaries
+        )
+
+    run = linux_utilities_modules.ModuleDisplayPlugin.run
+    _generator = linux_utilities_modules.ModuleDisplayPlugin.generator
+    implementation = linux_utilities_modules.Modules.list_modules
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -29,9 +68,9 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
                 architectures=architectures.LINUX_ARCHS,
             ),
             requirements.VersionRequirement(
-                name="linux_utilities_modules",
-                component=linux_utilities_modules.Modules,
-                version=(3, 0, 0),
+                name="linux_utilities_modules_module_display_plugin",
+                component=linux_utilities_modules.ModuleDisplayPlugin,
+                version=(1, 0, 0),
             ),
         ]
 
@@ -82,40 +121,6 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
         removal_date="2025-09-25",
         replacement_version=(3, 0, 0),
     )
-    @classmethod
-    def get_hidden_modules(
-        cls,
-        context: interfaces.context.ContextInterface,
-        vmlinux_module_name: str,
-        known_module_addresses: Set[int],
-        modules_memory_boundaries: Tuple,
-    ) -> Iterable[interfaces.objects.ObjectInterface]:
-        """Enumerate hidden modules by taking advantage of memory address alignment patterns
-
-        This technique is much faster and uses less memory than the traditional scan method
-        in Volatility2, but it doesn't work with older kernels.
-
-        From kernels 4.2 struct module allocation are aligned to the L1 cache line size.
-        In i386/amd64/arm64 this is typically 64 bytes. However, this can be changed in
-        the Linux kernel configuration via CONFIG_X86_L1_CACHE_SHIFT. The alignment can
-        also be obtained from the DWARF info i.e. DW_AT_alignment<64>, but dwarf2json
-        doesn't support this feature yet.
-        In kernels < 4.2, alignment attributes are absent in the struct module, meaning
-        alignment cannot be guaranteed. Therefore, for older kernels, it's better to use
-        the traditional scan technique.
-
-        Args:
-            context: The context to retrieve required elements (layers, symbol tables) from
-            vmlinux_module_name: The name of the kernel module on which to operate
-            known_module_addresses: Set with known module addresses
-            modules_memory_boundaries: Minimum and maximum address boundaries for module allocation.
-        Yields:
-            module objects
-        """
-        return linux_utilities_modules.get_hidden_modules(
-            vmlinux_module_name, known_module_addresses, modules_memory_boundaries
-        )
-
     @staticmethod
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.validate_alignment_patterns,
@@ -165,38 +170,29 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
         }
         return known_module_addresses
 
-    def _generator(self):
-        vmlinux_module_name = self.config["kernel"]
-        known_module_addresses = self.get_lsmod_module_addresses(
-            self.context, vmlinux_module_name
-        )
-        modules_memory_boundaries = (
-            linux_utilities_modules.Modules.get_modules_memory_boundaries(
-                self.context, vmlinux_module_name
-            )
-        )
-
-        for module in linux_utilities_modules.Modules.get_hidden_modules(
-            self.context,
-            vmlinux_module_name,
-            known_module_addresses,
-            modules_memory_boundaries,
-        ):
-            module_addr = module.vol.offset
-            module_name = module.get_name() or renderers.NotAvailableValue()
-            fields = (format_hints.Hex(module_addr), module_name)
-            yield (0, fields)
-
-    def run(self):
-        if self.context.symbol_space.verify_table_versions(
+    @classmethod
+    def find_hidden_modules(
+        cls, context, vmlinux_module_name: str
+    ) -> extensions.module:
+        if context.symbol_space.verify_table_versions(
             "dwarf2json", lambda version, _: (not version) or version < (0, 8, 0)
         ):
             raise exceptions.SymbolSpaceError(
                 "Invalid symbol table, please ensure the ISF table produced by dwarf2json was created with version 0.8.0 or later"
             )
 
-        headers = [
-            ("Address", format_hints.Hex),
-            ("Name", str),
-        ]
-        return renderers.TreeGrid(headers, self._generator())
+        known_module_addresses = cls.get_lsmod_module_addresses(
+            context, vmlinux_module_name
+        )
+        modules_memory_boundaries = (
+            linux_utilities_modules.Modules.get_modules_memory_boundaries(
+                context, vmlinux_module_name
+            )
+        )
+
+        yield from linux_utilities_modules.Modules.get_hidden_modules(
+            context,
+            vmlinux_module_name,
+            known_module_addresses,
+            modules_memory_boundaries,
+        )
