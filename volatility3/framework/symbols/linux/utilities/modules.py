@@ -70,7 +70,7 @@ class ModuleGathererInterface(
 class Modules(interfaces.configuration.VersionableInterface):
     """Kernel modules related utilities."""
 
-    _version = (3, 0, 0)
+    _version = (3, 0, 1)
     _required_framework_version = (2, 0, 0)
 
     framework.require_interface_version(*_required_framework_version)
@@ -558,6 +558,231 @@ class Modules(interfaces.configuration.VersionableInterface):
         """
         return all(addr % address_alignment == 0 for addr in addresses)
 
+    @classmethod
+    def _get_param_handlers(
+        cls, context: interfaces.context.ContextInterface, vmlinux_name: str
+    ) -> Tuple[Dict[int, str], Dict[str, Optional[int]]]:
+        """
+        This function builds the dictionaries needed to map kernel parameters to their types
+        We need these values and information to properly decode each parameter to its input representation
+        """
+        kernel = context.modules[vmlinux_name]
+
+        # All the integer type parameters
+        pairs = {
+            "param_get_invbool": "int",
+            "param_get_bool": "int",
+            "param_get_int": "int",
+            "param_get_ulong": "long unsigned int",
+            "param_get_ullong": "long long unsigned int",
+            "param_get_long": "long int",
+            "param_get_uint": "unsigned int",
+            "param_get_ushort": "short unsigned int",
+            "param_get_short": "short int",
+            "param_get_byte": "char",
+        }
+
+        int_handlers: Dict[int, str] = {}
+
+        for sym_name, val_type in pairs.items():
+            try:
+                sym_address = kernel.get_absolute_symbol_address(sym_name)
+            except exceptions.SymbolError:
+                continue
+
+            int_handlers[sym_address] = val_type
+
+        # Strings, arrays, booleans
+        getters = {
+            "param_get_string": None,
+            "param_array_get": None,
+            "param_get_charp": None,
+            "param_get_bool": None,
+            "param_get_invbool": None,
+        }
+
+        for sym_name in getters:
+            try:
+                sym_address = kernel.get_absolute_symbol_address(sym_name)
+            except exceptions.SymbolError:
+                continue
+
+            getters[sym_name] = sym_address
+
+        return int_handlers, getters
+
+    @classmethod
+    def _get_param_val(
+        cls,
+        context: interfaces.context.ContextInterface,
+        vmlinux_name: str,
+        int_handlers,
+        getters,
+        module,
+        param,
+    ) -> Optional[Union[str, int]]:
+        """
+        Properly determines the type of a parameter and decodes based on the type.
+        The type is determined by examining its `get` function, which will be a pointer to
+        predefined operations handler for particular parameter types.
+        """
+
+        # Attempt to retrieve the `get` pointer. Bail if smeared
+        try:
+            if hasattr(param, "get"):
+                param_func = param.get
+            else:
+                param_func = param.ops.get
+
+        except exceptions.InvalidAddressException:
+            return None
+
+        if not param_func:
+            return None
+
+        kernel = context.modules[vmlinux_name]
+
+        # For arrays, recusively get the value of each member as the type can be different
+        if param_func == getters["param_array_get"]:
+            array = param.arr
+
+            if array.num:
+                max_index = array.num.dereference()
+            else:
+                max_index = array.member("max")
+
+            if max_index > 32:
+                vollog.debug(
+                    f"Skipping array parameter with invalid index for module {module.vol.offset:#x}"
+                )
+                return None
+
+            element_vals = []
+            for i in range(max_index):
+                kp = kernel.object(
+                    object_type="kernel_param",
+                    offset=array.elem + (array.elemsize * i),
+                    absolute=True,
+                )
+
+                element_vals.append(
+                    cls._get_param_val(
+                        context, vmlinux_name, int_handlers, getters, module, kp
+                    )
+                )
+
+            # nothing was gathered
+            if not element_vals:
+                return None
+
+            return ",".join([str(ele) for ele in element_vals])
+
+        # strings types
+        elif param_func in [getters["param_get_string"], getters["param_get_charp"]]:
+            try:
+                if param_func == getters["param_get_string"]:
+                    count = param.member("str").maxlen
+                else:
+                    count = 256
+
+                return utility.pointer_to_string(param.member("str"), count=count)
+            except exceptions.InvalidAddressException:
+                vollog.debug(
+                    f"Skipping string parameter with invalid address for module {module.vol.offset:#x}"
+                )
+                return None
+
+        # The integer handles, which also encompass boolean handlers
+        elif param_func in int_handlers:
+            try:
+                int_value = kernel.object(
+                    object_type=int_handlers[param_func], offset=param.arg
+                )
+            except exceptions.InvalidAddressException:
+                vollog.debug(
+                    f"Skipping {int_handlers[param_func]} parameter with invalid address for module {module.vol.offset:#x}"
+                )
+                return None
+
+            if param_func == getters["param_get_bool"]:
+                if int_value == 0:
+                    return "N"
+                else:
+                    return "Y"
+            elif param_func == getters["param_get_invbool"]:
+                if int_value == 0:
+                    return "Y"
+                else:
+                    return "N"
+            else:
+                return int_value
+
+        else:
+            handler_symbol = kernel.get_symbols_by_absolute_location(param_func)
+
+            msg = f"Unknown kernel parameter handling function ({handler_symbol}) at address {param_func:#x} for module at {module.vol.offset:#x}"
+
+            # If a new kernel has a handler symbol we don't support then we want to always see that information
+            # If the handler doesn't map to a kernel symbol then its smeared/invalid
+            if handler_symbol:
+                vollog.warning(msg)
+            else:
+                vollog.debug(msg)
+
+            return None
+
+    @classmethod
+    def get_load_parameters(
+        cls,
+        context: interfaces.context.ContextInterface,
+        vmlinux_name: str,
+        module: extensions.module,
+    ) -> Generator[Tuple[str, Optional[Union[str, int]]], None, None]:
+        """
+        Recovers the load parameters of the given kernel module
+        Returns a tuple (key,value) for each parameter
+        """
+        if not hasattr(module, "kp"):
+            vollog.debug(
+                "kp member missing for struct module. Cannot recover parameters."
+            )
+            return None
+
+        if module.num_kp > 128:
+            vollog.debug(
+                f"Smeared number of parameters ({module.num_kp}) found for module at offset {module.vol.offset:#x}"
+            )
+            return None
+
+        kernel = context.modules[vmlinux_name]
+
+        int_handlers, getters = cls._get_param_handlers(context, vmlinux_name)
+
+        # Build the array of parameters
+        param_array = kernel.object(
+            object_type="array",
+            offset=module.kp.dereference().vol.offset,
+            subtype=kernel.get_type("kernel_param"),
+            count=module.num_kp,
+            absolute=True,
+        )
+
+        for i in range(len(param_array)):
+            try:
+                param = param_array[i]
+                name = utility.pointer_to_string(param.name, count=32)
+            except exceptions.InvalidAddressException:
+                vollog.debug(
+                    f"Smeared load parameter module at offset {module.vol.offset:#x}"
+                )
+                continue
+
+            value = cls._get_param_val(
+                context, vmlinux_name, int_handlers, getters, module, param
+            )
+
+            yield name, value
+
 
 class ModuleGathererLsmod(ModuleGathererInterface):
     """
@@ -712,7 +937,7 @@ class ModuleDisplayPlugin(interfaces.configuration.VersionableInterface):
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
                 component=Modules,
-                version=(3, 0, 0),
+                version=(3, 0, 1),
             ),
             requirements.VersionRequirement(
                 name="linux-tainting", component=tainting.Tainting, version=(1, 0, 0)
@@ -743,12 +968,18 @@ class ModuleDisplayPlugin(interfaces.configuration.VersionableInterface):
                 )
             )
 
+            parameters_iter = Modules.get_load_parameters(
+                self.context, self.config["kernel"], module
+            )
+
+            parameters = ", ".join([f"{key}={value}" for key, value in parameters_iter])
+
             yield 0, (
                 format_hints.Hex(module.vol.offset),
                 name,
                 format_hints.Hex(code_size),
                 taints,
-                renderers.NotAvailableValue(),  # will become the load arguments after this inital conversion is merged
+                parameters,
             )
 
     def run(self):
