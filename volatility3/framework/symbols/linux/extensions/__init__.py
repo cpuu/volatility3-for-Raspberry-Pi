@@ -3053,7 +3053,7 @@ class kernel_symbol(objects.StructType):
         long_mask = (1 << layer.bits_per_register) - 1
         return (self.vol.offset + off) & long_mask
 
-    def get_name(self) -> str:
+    def _do_get_name(self) -> str:
         if self.has_member("name_offset"):
             # kernel >= 4.19 and CONFIG_HAVE_ARCH_PREL32_RELOCATIONS=y
             # See 7290d58095712a89f845e1bca05334796dd49ed2
@@ -3073,7 +3073,13 @@ class kernel_symbol(objects.StructType):
 
         return name_bytes.decode("utf-8", errors="ignore")
 
-    def get_value(self) -> int:
+    def get_name(self) -> Optional[str]:
+        try:
+            return self._do_get_name()
+        except exceptions.InvalidAddressException:
+            return None
+
+    def _do_get_value(self) -> int:
         if self.has_member("value_offset"):
             # kernel >= 4.19 and CONFIG_HAVE_ARCH_PREL32_RELOCATIONS=y
             # See 7290d58095712a89f845e1bca05334796dd49ed2
@@ -3084,7 +3090,13 @@ class kernel_symbol(objects.StructType):
 
         raise AttributeError("Unsupported kernel_symbol type implementation")
 
-    def get_namespace(self) -> str:
+    def _do_get_value(self) -> Optional[int]:
+        try:
+            return self._do_get_value()
+        except exceptions.InvalidAddressException:
+            return None
+
+    def _do_get_namespace(self) -> str:
         if self.has_member("namespace_offset"):
             # kernel >= 4.19 and CONFIG_HAVE_ARCH_PREL32_RELOCATIONS=y
             # See 7290d58095712a89f845e1bca05334796dd49ed2
@@ -3103,3 +3115,9 @@ class kernel_symbol(objects.StructType):
             namespace_bytes = namespace_bytes[:idx]
 
         return namespace_bytes.decode("utf-8", errors="ignore")
+
+    def get_namespace(self) -> Optional[str]:
+        try:
+            return self._do_get_namespace()
+        except exceptions.InvalidAddressException:
+            return None
