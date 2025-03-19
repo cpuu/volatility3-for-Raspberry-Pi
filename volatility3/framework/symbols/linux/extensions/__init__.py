@@ -3090,7 +3090,7 @@ class kernel_symbol(objects.StructType):
 
         raise AttributeError("Unsupported kernel_symbol type implementation")
 
-    def _do_get_value(self) -> Optional[int]:
+    def get_value(self) -> Optional[int]:
         try:
             return self._do_get_value()
         except exceptions.InvalidAddressException:
