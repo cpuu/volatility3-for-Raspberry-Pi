@@ -73,6 +73,9 @@ class Kallsyms(plugins.PluginInterface):
         # resulting in incorrect values. Unfortunately, there isn't much that can be done
         # in such cases.
         # See comments on .init.scratch in arch/x86/kernel/vmlinux.lds.S for details
+        if not kassymbol or not kassymbol.size:
+            return renderers.NotAvailableValue()
+
         return kassymbol.size if kassymbol.size >= 0 else renderers.NotAvailableValue()
 
     def _generator(self):
@@ -95,6 +98,7 @@ class Kallsyms(plugins.PluginInterface):
             include_core = include_modules = include_ftrace = include_bpf = True
 
         symbol_generators = []
+
         if include_core:
             symbol_generators.append(kas.get_core_symbols())
         if include_modules:
@@ -114,11 +118,17 @@ class Kallsyms(plugins.PluginInterface):
                 # the last symbol, resulting in a negative size.
                 # See comments on .init.scratch in arch/x86/kernel/vmlinux.lds.S for details
                 symbol_size = self._get_symbol_size(kassymbol)
+
+                if kassymbol.exported is None:
+                    exported = renderers.NotAvailableValue()
+                else:
+                    exported = kassymbol.exported
+
                 fields = (
                     format_hints.Hex(kassymbol.address),
-                    kassymbol.type,
+                    kassymbol.type or renderers.NotAvailableValue(),
                     symbol_size,
-                    kassymbol.exported,
+                    exported,
                     kassymbol.subsystem,
                     kassymbol.module_name,
                     kassymbol.name,

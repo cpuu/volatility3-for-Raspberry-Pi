@@ -186,7 +186,10 @@ class KASSymbol(KASSymbolBasic):
         # If lowercase, the symbol is usually local; if uppercase, the symbol is
         # global (external). There are however a few lowercase symbols that are shown
         # for special global symbols ("u", "v" and "w").
-        self.exported = bool(self.type.isupper() or self.type in ("u", "v", "w"))
+        if self.type:
+            self.exported = bool(self.type.isupper() or self.type in ("u", "v", "w"))
+        else:
+            self.exported = None
 
     @functools.cached_property
     def type_description(self) -> Optional[str]:
@@ -200,10 +203,12 @@ class KASSymbol(KASSymbolBasic):
         if symbol_type_description:
             return symbol_type_description
 
-        # Otherwise, use the lowercase version
-        symbol_type_description = linux_constants.NM_TYPES_DESC.get(
-            self.type.lower(), None
-        )
+        if self.type:
+            # Otherwise, use the lowercase version
+            symbol_type_description = linux_constants.NM_TYPES_DESC.get(
+                self.type.lower(), None
+            )
+
         return symbol_type_description
 
 
@@ -767,7 +772,13 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
                 self._kas_config.stop_ksymtab,
             )
 
-        return kernel_symbol is not None and kernel_symbol.get_value() == address
+        if kernel_symbol is not None:
+            if hasattr(kernel_symbol, "get_value"):
+                return kernel_symbol.get_value() == address
+            else:
+                return kernel_symbol.vol.offset == address
+
+        return None
 
     def _elfsym_to_kassymbol(
         self,
@@ -1094,7 +1105,9 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
         name: str,
         other: str,
     ) -> int:
-        if name == other:
+        if name is None or other is None:
+            return None
+        elif name == other:
             return 0
         elif name < other:
             return -1
@@ -1315,7 +1328,14 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
 
         # Even when bpf_jit_kallsyms is disabled (/proc/sys/net/core/bpf_jit_kallsyms = 0),
         # this function will still be able to gather the symbols.
-        bpf_kallsyms_list = vmlinux.object_from_symbol("bpf_kallsyms")
+        try:
+            bpf_kallsyms_list = vmlinux.object_from_symbol("bpf_kallsyms")
+        except exceptions.SymbolError:
+            vollog.debug(
+                "`bpf_kallsyms` symbol not present in the symbol table. Cannot proceed."
+            )
+            return None
+
         for elem in bpf_kallsyms_list.to_list(list_type_symname, list_head_member):
             try:
                 # See kernel's bpf_get_kallsym()
