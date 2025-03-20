@@ -1220,15 +1220,6 @@ class KTIMER(objects.StructType):
             return "Yes"
         return "-"
 
-    def get_raw_dpc(self):
-        """Returns the encoded DPC as an unsigned long long since the pointer is actually encoded"""
-        if symbols.symbol_table_is_64bit(
-            context=self._context, symbol_table_name=self.get_symbol_table_name()
-        ):
-            return self.Dpc.cast("unsigned long long")
-        else:
-            return self.Dpc.cast("unsigned long")
-
     def valid_type(self):
         return self.Header.Type in self.VALID_TYPES
 
@@ -1263,7 +1254,7 @@ class KTIMER(objects.StructType):
             )
 
             low_byte = (wait_never) & 0xFF
-            entry = utility.rol(self.get_raw_dpc() ^ wait_never, low_byte)
+            entry = utility.rol(self.Dpc.get_raw_value() ^ wait_never, low_byte)
             swap_xor = self._context.layers[self.vol.native_layer_name].canonicalize(
                 self.vol.offset
             )
