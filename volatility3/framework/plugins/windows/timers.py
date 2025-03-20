@@ -131,6 +131,7 @@ class Timers(interfaces.plugins.PluginInterface):
         ):
             if not timer.valid_type():
                 continue
+
             try:
                 dpc = timer.get_dpc()
                 if dpc == 0:
@@ -138,7 +139,10 @@ class Timers(interfaces.plugins.PluginInterface):
                 if dpc.DeferredRoutine == 0:
                     continue
                 deferred_routine = dpc.DeferredRoutine
-            except Exception:
+            except Exception as exc:
+                vollog.debug(
+                    f"Failed to get _KTIMER.Dpc: {exc.__class__.__name__} {str(exc)}"
+                )
                 continue
 
             module_symbols = list(
