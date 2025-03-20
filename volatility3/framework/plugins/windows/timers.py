@@ -11,6 +11,7 @@ from volatility3.framework import (
     interfaces,
     constants,
     symbols,
+    exceptions,
 )
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
@@ -139,9 +140,9 @@ class Timers(interfaces.plugins.PluginInterface):
                 if dpc.DeferredRoutine == 0:
                     continue
                 deferred_routine = dpc.DeferredRoutine
-            except Exception as exc:
+            except exceptions.InvalidAddressException as exc:
                 vollog.debug(
-                    f"Failed to get _KTIMER.Dpc: {exc.__class__.__name__} {str(exc)}"
+                    f"Failed to get _KTIMER.Dpc due to {exc.__class__.__name__}"
                 )
                 continue
 
