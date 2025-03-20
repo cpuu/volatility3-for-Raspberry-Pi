@@ -118,11 +118,17 @@ class Kallsyms(plugins.PluginInterface):
                 # the last symbol, resulting in a negative size.
                 # See comments on .init.scratch in arch/x86/kernel/vmlinux.lds.S for details
                 symbol_size = self._get_symbol_size(kassymbol)
+
+                if kassymbol.exported is None:
+                    exported = renderers.NotAvailableValue()
+                else:
+                    exported = kassymbol.exported
+
                 fields = (
                     format_hints.Hex(kassymbol.address),
                     kassymbol.type or renderers.NotAvailableValue(),
                     symbol_size,
-                    kassymbol.exported or renderers.NotAvailableValue(),
+                    exported,
                     kassymbol.subsystem,
                     kassymbol.module_name,
                     kassymbol.name,
