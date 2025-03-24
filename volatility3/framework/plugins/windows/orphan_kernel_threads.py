@@ -34,7 +34,7 @@ class Threads(thrdscan.ThrdScan):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.PluginRequirement(
-                name="thrdscan", plugin=thrdscan.ThrdScan, version=(1, 1, 0)
+                name="thrdscan", plugin=thrdscan.ThrdScan, version=(2, 0, 0)
             ),
             requirements.PluginRequirement(
                 name="ssdt", plugin=ssdt.SSDT, version=(2, 0, 0)
