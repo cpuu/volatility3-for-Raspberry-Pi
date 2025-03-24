@@ -128,8 +128,6 @@ class ObjectInterface(metaclass=abc.ABCMeta):
     """A base object required to be the ancestor of every object used in
     volatility."""
 
-    __slots__ = ()
-
     def __init__(
         self,
         context: "interfaces.context.ContextInterface",
