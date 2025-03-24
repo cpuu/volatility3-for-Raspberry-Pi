@@ -54,7 +54,7 @@ class ReadOnlyMapping(collections.abc.Mapping):
         return dict(self) == dict(other)
 
 
-class ObjectInformation(ReadOnlyMapping):
+class ObjectInformation(collections.abc.Mapping):
     """Contains common information useful/pertinent only to an individual
     object (like an instance)
 
@@ -65,7 +65,14 @@ class ObjectInformation(ReadOnlyMapping):
     in a single place.  These values are based on the :class:`ReadOnlyMapping` class, to prevent their modification.
     """
 
-    __slots__ = ()
+    __slots__ = (
+        "layer_name",
+        "offset",
+        "member_name",
+        "parent",
+        "native_layer_name",
+        "size",
+    )
 
     def __init__(
         self,
@@ -86,16 +93,35 @@ class ObjectInformation(ReadOnlyMapping):
             native_layer_name: If this object references other objects (such as a pointer), what layer those objects live in
             size: The size that the whole structure consumes in bytes
         """
-        super().__init__(
-            {
-                "layer_name": layer_name,
-                "offset": offset,
-                "member_name": member_name,
-                "parent": parent,
-                "native_layer_name": native_layer_name or layer_name,
-                "size": size,
-            }
+        self.layer_name = layer_name
+        self.offset = offset
+        self.member_name = member_name
+        self.parent = parent
+        self.native_layer_name = native_layer_name or layer_name
+        self.size = size
+
+    def __getattr__(self, attr: str) -> Any:
+        """Returns the item as an attribute."""
+        if attr in self.__slots__:
+            return getattr(self, attr)
+        raise AttributeError(
+            f"Object has no attribute: {self.__class__.__name__}.{attr}"
         )
+
+    def __getitem__(self, name: str) -> Any:
+        """Returns the item requested."""
+        return getattr(self, name)
+
+    def __iter__(self):
+        """Returns an iterator of the dictionary items."""
+        return self.__slots__.__iter__()
+
+    def __len__(self) -> int:
+        """Returns the length of the internal dictionary."""
+        return len(self.__slots__)
+
+    def __eq__(self, other):
+        return dict(self) == dict(other)
 
 
 class ObjectInterface(metaclass=abc.ABCMeta):
@@ -137,6 +163,7 @@ class ObjectInterface(metaclass=abc.ABCMeta):
         vol_info_dict = {"type_name": type_name, "offset": normalized_offset}
         self._vol.update(object_info)
         self._vol.update(vol_info_dict)
+        self._vol = collections.ChainMap({}, self._vol)
         self._context = context
 
     def __getattr__(self, attr: str) -> Any:
@@ -321,6 +348,7 @@ class Template:
         super().__init__()
         self._vol = {"type_name": type_name}
         self._vol.update(arguments)
+        self._vol = collections.ChainMap({}, self._vol)
 
     @property
     def vol(self) -> ReadOnlyMapping:

@@ -61,7 +61,7 @@ class TreeNode(interfaces.renderers.TreeNode):
         self._treegrid = treegrid
         self._parent = parent
         self._path = path
-        validated_values = self._validate_values(values)
+        self._validate_values(values)
         self._values = treegrid.RowStructure(*values)  # type: ignore
 
     def __repr__(self) -> str:
@@ -73,12 +73,9 @@ class TreeNode(interfaces.renderers.TreeNode):
     def __len__(self) -> int:
         return len(self._treegrid.children(self))
 
-    def _validate_values(
-        self, values: List[interfaces.renderers.BaseTypes]
-    ) -> List[interfaces.renderers.BaseTypes]:
+    def _validate_values(self, values: List[interfaces.renderers.BaseTypes]) -> None:
         """A function for raising exceptions if a given set of values is
         invalid according to the column properties."""
-        new_values = ()
         if not (
             isinstance(values, collections.abc.Sequence)
             and len(values) == len(self._treegrid.columns)
