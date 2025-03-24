@@ -346,9 +346,8 @@ class Template:
         """Stores the keyword arguments for later object creation."""
         # Allow the updating of template arguments whilst still in template form
         super().__init__()
-        self._vol = {"type_name": type_name}
-        self._vol.update(arguments)
-        self._vol = collections.ChainMap({}, self._vol)
+        vol = {"type_name": type_name}.update(arguments)
+        self._vol = collections.ChainMap({}, vol)
 
     @property
     def vol(self) -> ReadOnlyMapping:
@@ -392,7 +391,7 @@ class Template:
     def clone(self) -> "Template":
         """Returns a copy of the original Template as constructed (without
         `update_vol` additions having been made)"""
-        clone = self.__class__(**self._vol)
+        clone = self.__class__(**self._vol.parents.new_child())
         return clone
 
     def update_vol(self, **new_arguments) -> None:
