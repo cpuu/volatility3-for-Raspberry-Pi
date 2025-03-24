@@ -346,7 +346,8 @@ class Template:
         """Stores the keyword arguments for later object creation."""
         # Allow the updating of template arguments whilst still in template form
         super().__init__()
-        vol = {"type_name": type_name}.update(arguments)
+        vol = {"type_name": type_name}
+        vol.update(arguments)
         self._vol = collections.ChainMap({}, vol)
 
     @property
