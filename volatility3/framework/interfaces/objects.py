@@ -23,6 +23,8 @@ class ReadOnlyMapping(collections.abc.Mapping):
     modified, making an immutable mapping.
     """
 
+    __slots__ = ("_dict",)
+
     def __init__(self, dictionary: Mapping[str, Any]) -> None:
         self._dict = dictionary
 
@@ -63,6 +65,8 @@ class ObjectInformation(ReadOnlyMapping):
     in a single place.  These values are based on the :class:`ReadOnlyMapping` class, to prevent their modification.
     """
 
+    __slots__ = ()
+
     def __init__(
         self,
         layer_name: str,
@@ -97,6 +101,8 @@ class ObjectInformation(ReadOnlyMapping):
 class ObjectInterface(metaclass=abc.ABCMeta):
     """A base object required to be the ancestor of every object used in
     volatility."""
+
+    __slots__ = ()
 
     def __init__(
         self,
@@ -304,6 +310,8 @@ class Template:
     contain different length limits, without affecting all other strings using the same template from a SymbolTable,
     constructed at resolution time and then cached.
     """
+
+    __slots__ = "_vol"
 
     def __init__(self, type_name: str, **arguments) -> None:
         """Stores the keyword arguments for later object creation."""
