@@ -19,8 +19,8 @@ class Volshell(generic.Volshell):
             requirements.ModuleRequirement(
                 name="kernel", description="Darwin kernel module"
             ),
-            requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.IntRequirement(
                 name="pid", description="Process ID", optional=True

@@ -126,8 +126,8 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
                 description="Linux kernel",
                 architectures=architectures.LINUX_ARCHS,
             ),
-            requirements.PluginRequirement(
-                name="mountinfo", plugin=mountinfo.MountInfo, version=(1, 2, 0)
+            requirements.VersionRequirement(
+                name="mountinfo", component=mountinfo.MountInfo, version=(1, 2, 0)
             ),
             requirements.ListRequirement(
                 name="type",
@@ -431,8 +431,8 @@ class InodePages(plugins.PluginInterface):
                 description="Linux kernel",
                 architectures=architectures.LINUX_ARCHS,
             ),
-            requirements.PluginRequirement(
-                name="files", plugin=Files, version=(1, 0, 0)
+            requirements.VersionRequirement(
+                name="files", component=Files, version=(1, 0, 0)
             ),
             requirements.StringRequirement(
                 name="find",
@@ -650,11 +650,11 @@ class RecoverFs(plugins.PluginInterface):
                 description="Linux kernel",
                 architectures=architectures.LINUX_ARCHS,
             ),
-            requirements.PluginRequirement(
-                name="files", plugin=Files, version=(1, 1, 0)
+            requirements.VersionRequirement(
+                name="files", component=Files, version=(1, 1, 0)
             ),
-            requirements.PluginRequirement(
-                name="inodepages", plugin=InodePages, version=(3, 0, 0)
+            requirements.VersionRequirement(
+                name="inodepages", component=InodePages, version=(3, 0, 0)
             ),
             requirements.BooleanRequirement(
                 name="tmpfs_only",

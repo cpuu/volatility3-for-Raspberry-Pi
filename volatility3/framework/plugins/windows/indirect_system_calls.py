@@ -46,12 +46,12 @@ class IndirectSystemCalls(direct_system_calls.DirectSystemCalls):
             requirements.VersionRequirement(
                 name="yarascanner", component=yarascan.YaraScanner, version=(2, 1, 0)
             ),
-            requirements.PluginRequirement(
-                name="yarascan", plugin=yarascan.YaraScan, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="yarascan", component=yarascan.YaraScan, version=(2, 0, 0)
             ),
-            requirements.PluginRequirement(
+            requirements.VersionRequirement(
                 name="direct_system_calls",
-                plugin=direct_system_calls.DirectSystemCalls,
+                component=direct_system_calls.DirectSystemCalls,
                 version=(2, 0, 0),
             ),
         ]

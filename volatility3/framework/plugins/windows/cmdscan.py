@@ -38,8 +38,8 @@ class CmdScan(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
-            requirements.PluginRequirement(
-                name="consoles", plugin=consoles.Consoles, version=(3, 0, 0)
+            requirements.VersionRequirement(
+                name="consoles", component=consoles.Consoles, version=(3, 0, 0)
             ),
             requirements.BooleanRequirement(
                 name="no_registry",

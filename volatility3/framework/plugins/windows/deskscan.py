@@ -31,12 +31,12 @@ class DeskScan(desktops.Desktops):
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.PluginRequirement(
-                name="desktops", plugin=desktops.Desktops, version=(1, 0, 0)
+            requirements.VersionRequirement(
+                name="desktops", component=desktops.Desktops, version=(1, 0, 0)
             ),
-            requirements.PluginRequirement(
+            requirements.VersionRequirement(
                 name="windowstations",
-                plugin=windowstations.WindowStations,
+                component=windowstations.WindowStations,
                 version=(1, 0, 0),
             ),
         ]

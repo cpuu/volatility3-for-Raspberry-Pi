@@ -38,17 +38,17 @@ class Callbacks(interfaces.plugins.PluginInterface):
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.PluginRequirement(
-                name="ssdt", plugin=ssdt.SSDT, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="ssdt", component=ssdt.SSDT, version=(2, 0, 0)
             ),
-            requirements.PluginRequirement(
-                name="poolscanner", plugin=poolscanner.PoolScanner, version=(3, 0, 0)
+            requirements.VersionRequirement(
+                name="poolscanner", component=poolscanner.PoolScanner, version=(3, 0, 0)
             ),
-            requirements.PluginRequirement(
-                name="driverirp", plugin=driverirp.DriverIrp, version=(1, 0, 0)
+            requirements.VersionRequirement(
+                name="driverirp", component=driverirp.DriverIrp, version=(1, 0, 0)
             ),
-            requirements.PluginRequirement(
-                name="handles", plugin=handles.Handles, version=(3, 0, 0)
+            requirements.VersionRequirement(
+                name="handles", component=handles.Handles, version=(3, 0, 0)
             ),
         ]
 

@@ -68,8 +68,8 @@ class GetServiceSIDs(interfaces.plugins.PluginInterface):
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="hivelist", component=hivelist.HiveList, version=(2, 0, 0)
             ),
         ]
 

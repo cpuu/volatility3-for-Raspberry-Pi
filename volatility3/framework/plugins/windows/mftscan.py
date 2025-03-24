@@ -333,8 +333,8 @@ class ADS(interfaces.plugins.PluginInterface):
     @classmethod
     def get_requirements(cls):
         return [
-            requirements.PluginRequirement(
-                name="MFTScan", plugin=MFTScan, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="MFTScan", component=MFTScan, version=(2, 0, 0)
             ),
             requirements.TranslationLayerRequirement(
                 name="primary",
@@ -403,8 +403,8 @@ class ResidentData(interfaces.plugins.PluginInterface):
     @classmethod
     def get_requirements(cls):
         return [
-            requirements.PluginRequirement(
-                name="MFTScan", plugin=MFTScan, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="MFTScan", component=MFTScan, version=(2, 0, 0)
             ),
             requirements.TranslationLayerRequirement(
                 name="primary",
