@@ -133,8 +133,10 @@ class ObjectInterface(metaclass=abc.ABCMeta):
         mask = context.layers[object_info.layer_name].address_mask
         normalized_offset = object_info.offset & mask
 
+        self._vol = kwargs
         vol_info_dict = {"type_name": type_name, "offset": normalized_offset}
-        self._vol = collections.ChainMap({}, vol_info_dict, object_info, kwargs)
+        self._vol.update(object_info)
+        self._vol.update(vol_info_dict)
         self._context = context
 
     def __getattr__(self, attr: str) -> Any:
@@ -317,10 +319,8 @@ class Template:
         """Stores the keyword arguments for later object creation."""
         # Allow the updating of template arguments whilst still in template form
         super().__init__()
-        empty_dict: Dict[str, Any] = {}
-        self._vol = collections.ChainMap(
-            empty_dict, arguments, {"type_name": type_name}
-        )
+        self._vol = {"type_name": type_name}
+        self._vol.update(arguments)
 
     @property
     def vol(self) -> ReadOnlyMapping:
@@ -364,7 +364,7 @@ class Template:
     def clone(self) -> "Template":
         """Returns a copy of the original Template as constructed (without
         `update_vol` additions having been made)"""
-        clone = self.__class__(**self._vol.parents.new_child())
+        clone = self.__class__(**self._vol)
         return clone
 
     def update_vol(self, **new_arguments) -> None:
