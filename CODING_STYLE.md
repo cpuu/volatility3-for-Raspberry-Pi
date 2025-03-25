@@ -81,7 +81,7 @@ Okay for one-liners. Prefer generator expressions over map() or filter() with a 
 Default Arguments
 -----------------
 
-Default arguments are fine, but not with mutable types (because they're consructed once at module load time and can lead to confusion/errors.)
+Default arguments are fine, but not with mutable types (because they're constructed once at module load time and can lead to confusion/errors.)
 
 True/False Evaluations
 ----------------------
