@@ -8,7 +8,7 @@ import collections
 import collections.abc
 import contextlib
 import logging
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, List, Mapping, Optional
 
 from volatility3.framework import constants, interfaces
 
