@@ -99,7 +99,7 @@ class ProcessGhosting(interfaces.plugins.PluginInterface):
         except exceptions.InvalidAddressException:
             delete_pending = None
 
-        if delete_pending and delete_pending == 1:
+        if delete_pending == 1:
             yield file_object.vol.offset, delete_pending, None
 
     @classmethod
@@ -158,7 +158,7 @@ class ProcessGhosting(interfaces.plugins.PluginInterface):
         )
         if not has_imagefilepointer:
             vollog.warning(
-                "ImageFilePointer checks are only supported on Windows 10 builds when the ImageFilePointer member of _EPROCESS is present"
+                "ImageFilePointer checks are only supported on Windows 10+ builds when the ImageFilePointer member of _EPROCESS is present"
             )
 
         for proc in procs:
