@@ -34,7 +34,7 @@ class Threads(thrdscan.ThrdScan):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="thrdscan", component=thrdscan.ThrdScan, version=(1, 1, 0)
+                name="thrdscan", component=thrdscan.ThrdScan, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="ssdt", component=ssdt.SSDT, version=(2, 0, 0)

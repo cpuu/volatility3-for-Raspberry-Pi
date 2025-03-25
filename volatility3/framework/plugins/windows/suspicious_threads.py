@@ -35,7 +35,7 @@ class SuspiciousThreads(interfaces.plugins.PluginInterface):
                 optional=True,
             ),
             requirements.VersionRequirement(
-                name="thrdscan", component=thrdscan.ThrdScan, version=(1, 1, 0)
+                name="thrdscan", component=thrdscan.ThrdScan, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="pslist", component=pslist.PsList, version=(3, 0, 0)
@@ -181,11 +181,11 @@ class SuspiciousThreads(interfaces.plugins.PluginInterface):
                 if not info:
                     continue
 
-                _, _, tid, start_address, _, _ = info
+                _, _, tid, start_address, _, win32_start_address, _, _, _ = info
 
                 addresses = [
                     (start_address, "Start"),
-                    (thread.Win32StartAddress, "Win32Start"),
+                    (win32_start_address, "Win32Start"),
                 ]
 
                 for address, context in addresses:

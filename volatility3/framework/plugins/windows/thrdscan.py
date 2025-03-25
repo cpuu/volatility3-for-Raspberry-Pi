@@ -3,12 +3,12 @@
 ##
 import logging
 import datetime
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Tuple, Optional, Dict
 
 from volatility3.framework import renderers, interfaces, exceptions
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
-from volatility3.plugins.windows import poolscanner
+from volatility3.plugins.windows import poolscanner, pe_symbols
 from volatility3.plugins import timeliner
 
 vollog = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class ThrdScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface)
 
     # version 2.6.0 adds support for scanning for 'Ethread' structures by pool tags
     _required_framework_version = (2, 6, 0)
-    _version = (1, 1, 0)
+    _version = (2, 0, 0)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -67,27 +67,74 @@ class ThrdScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface)
             yield mem_object
 
     @classmethod
-    def gather_thread_info(cls, ethread):
+    def gather_thread_info(
+        cls,
+        ethread: interfaces.objects.ObjectInterface,
+        vads_cache: Dict[int, pe_symbols.ranges_type] = None,
+    ) -> Tuple[
+        int,
+        int,
+        int,
+        int,
+        Optional[str],
+        int,
+        Optional[str],
+        Optional[datetime.datetime],
+        Optional[datetime.datetime],
+    ]:
         try:
             thread_offset = ethread.vol.offset
             owner_proc_pid = ethread.Cid.UniqueProcess
             thread_tid = ethread.Cid.UniqueThread
             thread_start_addr = ethread.StartAddress
+            thread_win32start_addr = ethread.Win32StartAddress
             thread_create_time = (
                 ethread.get_create_time()
             )  # datetime.datetime object / volatility3.framework.renderers.UnparsableValue object
             thread_exit_time = (
                 ethread.get_exit_time()
             )  # datetime.datetime object / volatility3.framework.renderers.UnparsableValue object
+
+            owner_proc = None
+            if vads_cache is not None:
+                owner_proc = ethread.owning_process()
         except exceptions.InvalidAddressException:
             vollog.debug(f"Thread invalid address {ethread.vol.offset:#x}")
             return None
+
+        if vads_cache is not None:
+            vads = pe_symbols.PESymbols.get_vads_for_process_cache(
+                vads_cache, owner_proc
+            )
+            # no vads = terminated/smeared, pid 4 = kernel = don't check VADs
+            if (
+                owner_proc_pid != 4
+                and owner_proc.InheritedFromUniqueProcessId != 4
+                and (not vads or len(vads) < 5)
+            ):
+                vollog.debug(
+                    f"No vads for process at {owner_proc.vol.offset:#x}. Skipping thread at {ethread.vol.offset:#x}"
+                )
+                return None
+
+            start_path = pe_symbols.PESymbols.filepath_for_address(
+                vads, thread_start_addr
+            )
+            win32start_path = pe_symbols.PESymbols.filepath_for_address(
+                vads, thread_win32start_addr
+            )
+        else:
+            start_path = None
+            win32start_path = None
 
         return (
             format_hints.Hex(thread_offset),
             owner_proc_pid,
             thread_tid,
             format_hints.Hex(thread_start_addr),
+            start_path,
+            format_hints.Hex(thread_win32start_addr),
+            win32start_path,
             thread_create_time,
             thread_exit_time,
         )
@@ -95,11 +142,34 @@ class ThrdScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface)
     def _generator(self, filter_func: Callable):
         kernel_name = self.config["kernel"]
 
+        vads_cache: Dict[int, pe_symbols.ranges_type] = {}
+
         for ethread in self.implementation(self.context, kernel_name):
-            info = self.gather_thread_info(ethread)
+            info = self.gather_thread_info(ethread, vads_cache)
 
             if info:
-                yield (0, info)
+                (
+                    offset,
+                    pid,
+                    tid,
+                    start_addr,
+                    start_path,
+                    win32start_addr,
+                    win32start_path,
+                    create_time,
+                    exit_time,
+                ) = info
+                yield 0, (
+                    offset,
+                    pid,
+                    tid,
+                    start_addr,
+                    start_path or renderers.NotAvailableValue(),
+                    win32start_addr,
+                    win32start_path or renderers.NotAvailableValue(),
+                    create_time,
+                    exit_time,
+                )
 
     def generate_timeline(self):
         filt_func = self.filter_func(self.config)
@@ -145,6 +215,9 @@ class ThrdScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface)
                 ("PID", int),
                 ("TID", int),
                 ("StartAddress", format_hints.Hex),
+                ("StartPath", str),
+                ("Win32StartAddress", format_hints.Hex),
+                ("Win32StartPath", str),
                 ("CreateTime", datetime.datetime),
                 ("ExitTime", datetime.datetime),
             ],

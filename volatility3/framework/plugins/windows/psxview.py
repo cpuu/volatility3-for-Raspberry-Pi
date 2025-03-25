@@ -55,7 +55,7 @@ We recommend using -r pretty if you are looking at this plugin's output in a ter
                 name="psscan", component=psscan.PsScan, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="thrdscan", component=thrdscan.ThrdScan, version=(1, 0, 0)
+                name="thrdscan", component=thrdscan.ThrdScan, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="handles", component=handles.Handles, version=(3, 0, 0)
