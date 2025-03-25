@@ -139,8 +139,8 @@ class PoolScanner(plugins.PluginInterface):
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.PluginRequirement(
-                name="handles", plugin=handles.Handles, version=(3, 0, 0)
+            requirements.VersionRequirement(
+                name="handles", component=handles.Handles, version=(3, 0, 0)
             ),
         ]
 
