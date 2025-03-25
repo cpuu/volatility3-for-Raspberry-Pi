@@ -7,7 +7,7 @@ All code submissions will be vetted automatically through tests from both and th
 Code Linter: Ruff
 Code Formatter: Black
 
-In additiom, there are some coding practices that we employ to prevent specific failure cases and ensure consistency across the codebase.  These are documented below along with the rationale for the decision.
+In addition, there are some coding practices that we employ to prevent specific failure cases and ensure consistency across the codebase.  These are documented below along with the rationale for the decision.
 
 This is heavily based upon https://google.github.io/styleguide/pyguide.html with minor modifications for volatility use.
 
