@@ -187,10 +187,10 @@ class ProcessGhosting(interfaces.plugins.PluginInterface):
                 yield 0, (
                     pid,
                     process_name,
+                    format_hints.Hex(base_address),
                     format_hints.Hex(file_object_address),
                     delete_pending or renderers.NotApplicableValue(),
                     delete_on_close or renderers.NotApplicableValue(),
-                    format_hints.Hex(base_address),
                     path,
                 )
 
@@ -201,10 +201,10 @@ class ProcessGhosting(interfaces.plugins.PluginInterface):
             [
                 ("PID", int),
                 ("Process", str),
+                ("Base", format_hints.Hex),
                 ("FILE_OBJECT", format_hints.Hex),
                 ("DeletePending", int),
                 ("DeleteOnClose", int),
-                ("Base", format_hints.Hex),
                 ("Path", str),
             ],
             self._generator(
