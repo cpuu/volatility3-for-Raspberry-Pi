@@ -89,8 +89,8 @@ class DeviceTree(interfaces.plugins.PluginInterface):
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.PluginRequirement(
-                name="driverscan", plugin=driverscan.DriverScan, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="driverscan", component=driverscan.DriverScan, version=(2, 0, 0)
             ),
         ]
 

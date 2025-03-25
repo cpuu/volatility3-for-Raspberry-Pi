@@ -60,7 +60,13 @@ class Volshell(interfaces.plugins.PluginInterface):
                     description="File to load and execute at start",
                     default=None,
                     optional=True,
-                )
+                ),
+                requirements.BooleanRequirement(
+                    name="script-only",
+                    description="Exit volshell after the script specified in --script completes",
+                    default=False,
+                    optional=True,
+                ),
             ]
         return reqs + [
             requirements.TranslationLayerRequirement(
@@ -134,6 +140,9 @@ class Volshell(interfaces.plugins.PluginInterface):
         # rely on the default having been set
         if self.config.get("script", None) is not None:
             self.run_script(location=self.config["script"])
+
+            if self.config.get("script-only"):
+                exit()
 
         if has_ipython:
             self.__console()
@@ -310,23 +319,25 @@ class Volshell(interfaces.plugins.PluginInterface):
         self._display_data(offset, remaining_data)
 
     def display_quadwords(
-        self, offset, count=DEFAULT_NUM_DISPLAY_BYTES, layer_name=None
+        self, offset, count=DEFAULT_NUM_DISPLAY_BYTES, layer_name=None, byteorder="@"
     ):
         """Displays quad-word values (8 bytes) and corresponding ASCII characters"""
         remaining_data = self._read_data(offset, count=count, layer_name=layer_name)
-        self._display_data(offset, remaining_data, format_string="Q")
+        self._display_data(offset, remaining_data, format_string=f"{byteorder}Q")
 
     def display_doublewords(
-        self, offset, count=DEFAULT_NUM_DISPLAY_BYTES, layer_name=None
+        self, offset, count=DEFAULT_NUM_DISPLAY_BYTES, layer_name=None, byteorder="@"
     ):
         """Displays double-word values (4 bytes) and corresponding ASCII characters"""
         remaining_data = self._read_data(offset, count=count, layer_name=layer_name)
-        self._display_data(offset, remaining_data, format_string="I")
+        self._display_data(offset, remaining_data, format_string=f"{byteorder}I")
 
-    def display_words(self, offset, count=DEFAULT_NUM_DISPLAY_BYTES, layer_name=None):
+    def display_words(
+        self, offset, count=DEFAULT_NUM_DISPLAY_BYTES, layer_name=None, byteorder="@"
+    ):
         """Displays word values (2 bytes) and corresponding ASCII characters"""
         remaining_data = self._read_data(offset, count=count, layer_name=layer_name)
-        self._display_data(offset, remaining_data, format_string="H")
+        self._display_data(offset, remaining_data, format_string=f"{byteorder}H")
 
     def regex_scan(self, pattern, count=DEFAULT_NUM_DISPLAY_BYTES, layer_name=None):
         """Scans for regex pattern in layer using RegExScanner."""

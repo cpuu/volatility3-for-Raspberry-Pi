@@ -45,8 +45,8 @@ class PsCallStack(plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="Kallsyms", component=kallsyms.Kallsyms, version=(1, 0, 0)
             ),
-            requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(4, 0, 0)
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(4, 0, 0)
             ),
             requirements.ListRequirement(
                 name="pid",

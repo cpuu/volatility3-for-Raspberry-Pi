@@ -31,8 +31,8 @@ class SvcList(svcscan.SvcScan):
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
         # Since we're calling the plugin, make sure we have the plugin's requirements
         return [
-            requirements.PluginRequirement(
-                name="svcscan", plugin=svcscan.SvcScan, version=(4, 0, 0)
+            requirements.VersionRequirement(
+                name="svcscan", component=svcscan.SvcScan, version=(4, 0, 0)
             ),
             requirements.ModuleRequirement(
                 name="kernel",

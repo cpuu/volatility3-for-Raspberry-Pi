@@ -463,11 +463,11 @@ class Sockstat(plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="SockHandlers", component=SockHandlers, version=(4, 0, 0)
             ),
-            requirements.PluginRequirement(
-                name="lsof", plugin=lsof.Lsof, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="lsof", component=lsof.Lsof, version=(2, 0, 0)
             ),
-            requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(4, 0, 0)
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(4, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="linuxutils", component=linux.LinuxUtilities, version=(2, 0, 0)

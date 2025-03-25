@@ -30,8 +30,8 @@ class Volshell(generic.Volshell):
             requirements.ModuleRequirement(
                 name="kernel", description="Linux kernel module"
             ),
-            requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(4, 0, 0)
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(4, 0, 0)
             ),
             requirements.IntRequirement(
                 name="pid", description="Process ID", optional=True

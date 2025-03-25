@@ -44,8 +44,8 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 description="Linux kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.PluginRequirement(
-                name="elfs", plugin=elfs.Elfs, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="elfs", component=elfs.Elfs, version=(2, 0, 0)
             ),
             requirements.ListRequirement(
                 name="pid",

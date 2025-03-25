@@ -60,8 +60,8 @@ class HiveList(interfaces.plugins.PluginInterface):
                 optional=True,
                 default=None,
             ),
-            requirements.PluginRequirement(
-                name="hivescan", plugin=hivescan.HiveScan, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="hivescan", component=hivescan.HiveScan, version=(2, 0, 0)
             ),
             requirements.BooleanRequirement(
                 name="dump",

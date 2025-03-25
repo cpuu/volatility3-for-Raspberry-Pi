@@ -24,11 +24,11 @@ class Certificates(interfaces.plugins.PluginInterface):
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="hivelist", component=hivelist.HiveList, version=(2, 0, 0)
             ),
-            requirements.PluginRequirement(
-                name="printkey", plugin=printkey.PrintKey, version=(1, 0, 0)
+            requirements.VersionRequirement(
+                name="printkey", component=printkey.PrintKey, version=(1, 0, 0)
             ),
             requirements.BooleanRequirement(
                 name="dump",

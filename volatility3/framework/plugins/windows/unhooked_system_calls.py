@@ -97,8 +97,8 @@ class unhooked_system_calls(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
-            requirements.PluginRequirement(
-                name="pe_symbols", plugin=pe_symbols.PESymbols, version=(3, 0, 0)
+            requirements.VersionRequirement(
+                name="pe_symbols", component=pe_symbols.PESymbols, version=(3, 0, 0)
             ),
         ]
 
