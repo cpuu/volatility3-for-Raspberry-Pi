@@ -642,7 +642,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
             symbol_resolver: method in a layer to resolve the symbols
 
         Returns:
-            Tuple[str, int, str, int]: the index and value of the found symbol in the wanted list, and the name and address of resolved symbol
+            Tuple[str, str, int]: the symbol identifier (key) of the found symbol in the wanted list, and the name and address of resolved symbol
         """
         if (
             wanted_names_identifier not in wanted_symbols
@@ -673,9 +673,9 @@ class PESymbols(interfaces.plugins.PluginInterface):
                     if symbol_value:
                         # yield out deleteion key, deletion index, symbol name, symbol address
                         if symbol_key == wanted_names_identifier:
-                            yield symbol_key, wanted_value, symbol_value  # type: ignore
+                            yield symbol_key, wanted_value, symbol_value
                         else:
-                            yield symbol_key, symbol_value, wanted_value  # type: ignore
+                            yield symbol_key, symbol_value, wanted_value
 
                 for value in all_wanted:
                     vollog.debug(
