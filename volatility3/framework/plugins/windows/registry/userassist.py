@@ -59,6 +59,11 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
             requirements.VersionRequirement(
                 name="hivelist", component=hivelist.HiveList, version=(2, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
+            ),
         ]
 
     def parse_userassist_data(self, reg_val):

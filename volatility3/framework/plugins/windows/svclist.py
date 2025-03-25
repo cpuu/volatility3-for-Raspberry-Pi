@@ -34,6 +34,9 @@ class SvcList(svcscan.SvcScan):
             requirements.VersionRequirement(
                 name="svcscan", component=svcscan.SvcScan, version=(4, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
+            ),
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Windows kernel",

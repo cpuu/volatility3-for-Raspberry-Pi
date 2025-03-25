@@ -40,6 +40,11 @@ class NetStat(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 name="modules", component=modules.Modules, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
                 name="pdbutil", component=pdbutil.PDBUtility, version=(1, 0, 0)
             ),
             requirements.VersionRequirement(

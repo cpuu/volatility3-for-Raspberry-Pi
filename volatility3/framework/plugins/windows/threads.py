@@ -34,6 +34,9 @@ class Threads(thrdscan.ThrdScan):
             requirements.VersionRequirement(
                 name="thrdscan", component=thrdscan.ThrdScan, version=(2, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
+            ),
         ]
 
     @classmethod

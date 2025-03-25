@@ -36,6 +36,14 @@ class ThrdScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface)
             requirements.VersionRequirement(
                 name="poolscanner", component=poolscanner.PoolScanner, version=(3, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="pe_symbols", component=pe_symbols.PESymbols, version=(3, 0, 0)
+            ),
+            requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
+            ),
         ]
 
     @classmethod

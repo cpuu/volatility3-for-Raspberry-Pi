@@ -124,6 +124,11 @@ class Lsof(plugins.PluginInterface, timeliner.TimeLinerInterface):
                 name="pslist", component=pslist.PsList, version=(4, 0, 0)
             ),
             requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
                 name="linuxutils", component=linux.LinuxUtilities, version=(2, 0, 0)
             ),
             requirements.ListRequirement(
