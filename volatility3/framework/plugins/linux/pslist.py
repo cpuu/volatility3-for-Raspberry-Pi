@@ -53,6 +53,11 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 element_type=int,
                 optional=True,
             ),
+            requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
+            ),
             requirements.BooleanRequirement(
                 name="threads",
                 description="Include user threads",

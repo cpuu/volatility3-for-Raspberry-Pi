@@ -234,6 +234,11 @@ class Amcache(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             requirements.VersionRequirement(
                 name="hivelist", component=hivelist.HiveList, version=(2, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
+            ),
         ]
 
     def generate_timeline(

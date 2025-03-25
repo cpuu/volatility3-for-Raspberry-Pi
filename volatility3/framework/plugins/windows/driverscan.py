@@ -27,6 +27,9 @@ class DriverScan(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="poolscanner", component=poolscanner.PoolScanner, version=(3, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="modules", component=modules.Modules, version=(3, 0, 0)
+            ),
         ]
 
     @classmethod

@@ -37,6 +37,11 @@ class DllList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
                 name="psscan", component=psscan.PsScan, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(

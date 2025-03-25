@@ -33,6 +33,14 @@ class UnloadedModules(interfaces.plugins.PluginInterface, timeliner.TimeLinerInt
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
+            requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="modules", component=modules.Modules, version=(3, 0, 0)
+            ),
         ]
 
     @classmethod

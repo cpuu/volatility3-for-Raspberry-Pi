@@ -28,6 +28,11 @@ class SymlinkScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfa
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
                 name="poolscanner", component=poolscanner.PoolScanner, version=(3, 0, 0)
             ),
         ]

@@ -129,6 +129,11 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
             requirements.VersionRequirement(
                 name="mountinfo", component=mountinfo.MountInfo, version=(1, 2, 0)
             ),
+            requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
+            ),
             requirements.ListRequirement(
                 name="type",
                 description="List of space-separated file type filters i.e. --type REG DIR",

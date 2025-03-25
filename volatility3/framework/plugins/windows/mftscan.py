@@ -33,7 +33,15 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
                 name="yarascanner", component=yarascan.YaraScanner, version=(2, 1, 0)
+            ),
+            requirements.VersionRequirement(
+                name="yarascan", component=yarascan.YaraScan, version=(2, 0, 0)
             ),
         ]
 
