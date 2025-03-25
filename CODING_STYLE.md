@@ -66,7 +66,7 @@ Shared functionality
 --------------------
 
 Within a plugin, there may be functions that are useful to other plugins.  These are created as `classmethod`s so that the plugin can be depended upon by other plugins in their requirements section, without needing to instantiate a whole copy of the plugin.  It is not a staticmethod, because the caller may wish to determine information about the class the method is defined in, and this is not easily accessible for staticmethods.
-A classmethod usually takes a `context` for its first method (and if it requires one, a configuration string for it second).  All other parameters should generally be basic types (such as strings, numbers, etc) so that future work requiring paralellization does not have complex types to have to keep in sync.  In particular, the idea was to ensure only one context was used per method (and each object brings its own context with it, meaning the function signature should not include objects to avoid discrepancies).
+A classmethod usually takes a `context` for its first method (and if it requires one, a configuration string for it second).  All other parameters should generally be basic types (such as strings, numbers, etc) so that future work requiring parallelization does not have complex types to have to keep in sync.  In particular, the idea was to ensure only one context was used per method (and each object brings its own context with it, meaning the function signature should not include objects to avoid discrepancies).
 
 Comprehensions
 --------------
