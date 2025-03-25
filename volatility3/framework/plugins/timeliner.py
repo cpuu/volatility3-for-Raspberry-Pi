@@ -25,9 +25,13 @@ class TimeLinerType(enum.IntEnum):
     CHANGED = 4
 
 
-class TimeLinerInterface(metaclass=abc.ABCMeta):
+class TimeLinerInterface(
+    interfaces.configuration.VersionableInterface, metaclass=abc.ABCMeta
+):
     """Interface defining methods that timeliner will use to generate a body
     file."""
+
+    _version = (1, 0, 0)
 
     @abc.abstractmethod
     def generate_timeline(
