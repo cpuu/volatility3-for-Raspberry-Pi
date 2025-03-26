@@ -250,9 +250,10 @@ class TestWindowsThrdscan:
             "windows.thrdscan.ThrdScan", image, volatility, python
         )
         assert rc == 0
-        assert out.find(b"\t4\t8") != -1
-        assert out.find(b"\t4\t12") != -1
-        assert out.find(b"\t4\t16") != -1
+        assert out.count(b"\n") > 700
+        assert out.find(b"\t1812\t2768\t0x7c810856") != -1
+        assert out.find(b"\t840\t2964\t0x7c810856") != -1
+        assert out.find(b"\t2536\t2552\t0x7c810856") != -1
 
 
 class TestWindowsPrivileges:
