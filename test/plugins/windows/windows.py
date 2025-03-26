@@ -1411,3 +1411,4 @@ class TestWindowsVirtMap:
         )
         for expected_row in expected_rows:
             assert test_volatility.match_output_row(expected_row, json_out)
+
