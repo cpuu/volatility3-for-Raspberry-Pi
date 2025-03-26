@@ -2,7 +2,6 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 import logging
-import warnings
 from volatility3.framework import interfaces, deprecation
 from volatility3.plugins.windows.registry import amcache
 
@@ -13,7 +12,8 @@ class Amcache(
     interfaces.plugins.PluginInterface,
     deprecation.PluginRenameClass,
     replacement_class=amcache.Amcache,
-    removal_date="2025-09-25"):
+    removal_date="2025-09-25",
+):
     """Extract information on executed applications from the AmCache (deprecated)."""
 
     _required_framework_version = (2, 0, 0)

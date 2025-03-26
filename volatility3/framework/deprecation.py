@@ -89,6 +89,7 @@ def deprecated_method(
 
     return decorator
 
+
 def renamed_class(deprecated_class_name: str, message: str, removal_date: str):
     """A decorator for marking classes as being renamed and removed in the future.
        Callers to this function should explicitly update to use the other plugins instead.
