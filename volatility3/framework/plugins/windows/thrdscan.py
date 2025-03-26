@@ -110,18 +110,18 @@ class ThrdScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface)
             vollog.debug(f"Thread invalid address {ethread.vol.offset:#x}")
             return None
 
-        if vads_cache is not None:
+        # don't look for VADs in kernel threads, just let them get reported with empty paths
+        if (
+            owner_proc_pid != 4
+            and owner_proc.InheritedFromUniqueProcessId != 4
+            and vads_cache is not None
+        ):
             vads = pe_symbols.PESymbols.get_vads_for_process_cache(
                 vads_cache, owner_proc
             )
-            # no vads = terminated/smeared, pid 4 = kernel = don't check VADs
-            if (
-                owner_proc_pid != 4
-                and owner_proc.InheritedFromUniqueProcessId != 4
-                and (not vads or len(vads) < 5)
-            ):
+            if not vads or len(vads) < 5:
                 vollog.debug(
-                    f"No vads for process at {owner_proc.vol.offset:#x}. Skipping thread at {ethread.vol.offset:#x}"
+                    f"Not enough vads for process at {owner_proc.vol.offset:#x}. Skipping thread at {ethread.vol.offset:#x}"
                 )
                 return None
 
