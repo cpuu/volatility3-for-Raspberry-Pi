@@ -6,86 +6,21 @@ from typing import List, Set, Tuple, Iterable
 from volatility3.framework.symbols.linux.utilities import (
     modules as linux_utilities_modules,
 )
-from volatility3.framework import renderers, interfaces, exceptions, deprecation
+from volatility3.framework import interfaces, exceptions, deprecation
 from volatility3.framework.constants import architectures
-from volatility3.framework.renderers import format_hints
 from volatility3.framework.configuration import requirements
-from volatility3.plugins.linux import lsmod
+from volatility3.framework.symbols.linux import extensions
+from volatility3.framework.interfaces import plugins
 
 vollog = logging.getLogger(__name__)
 
 
-class Hidden_modules(interfaces.plugins.PluginInterface):
+class Hidden_modules(plugins.PluginInterface):
     """Carves memory to find hidden kernel modules"""
 
     _required_framework_version = (2, 10, 0)
-    _version = (2, 0, 0)
+    _version = (3, 0, 0)
 
-    @classmethod
-    def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
-        return [
-            requirements.ModuleRequirement(
-                name="kernel",
-                description="Linux kernel",
-                architectures=architectures.LINUX_ARCHS,
-            ),
-            requirements.PluginRequirement(
-                name="lsmod", plugin=lsmod.Lsmod, version=(2, 0, 0)
-            ),
-            requirements.VersionRequirement(
-                name="linux_utilities_modules",
-                component=linux_utilities_modules.Modules,
-                version=(2, 0, 0),
-            ),
-        ]
-
-    @staticmethod
-    @deprecation.deprecated_method(
-        replacement=linux_utilities_modules.Modules.get_modules_memory_boundaries,
-        removal_date="2025-09-25",
-        replacement_version=(2, 0, 0),
-    )
-    def get_modules_memory_boundaries(
-        context: interfaces.context.ContextInterface,
-        vmlinux_module_name: str,
-    ) -> Tuple[int, int]:
-        return linux_utilities_modules.Modules.get_modules_memory_boundaries(
-            context, vmlinux_module_name
-        )
-
-    @deprecation.deprecated_method(
-        replacement=linux_utilities_modules.Modules.get_module_address_alignment,
-        removal_date="2025-09-25",
-        replacement_version=(2, 0, 0),
-    )
-    @classmethod
-    def _get_module_address_alignment(
-        cls,
-        context: interfaces.context.ContextInterface,
-        vmlinux_module_name: str,
-    ) -> int:
-        """Obtain the module memory address alignment.
-
-        struct module is aligned to the L1 cache line, which is typically 64 bytes for most
-        common i386/AMD64/ARM64 configurations. In some cases, it can be 128 bytes, but this
-        will still work.
-
-        Args:
-            context: The context to retrieve required elements (layers, symbol tables) from
-            vmlinux_module_name: The name of the kernel module on which to operate
-
-        Returns:
-            The struct module alignment
-        """
-        return linux_utilities_modules.get_module_address_alignment(
-            context, vmlinux_module_name
-        )
-
-    @deprecation.deprecated_method(
-        replacement=linux_utilities_modules.Modules.get_hidden_modules,
-        removal_date="2025-09-25",
-        replacement_version=(2, 0, 0),
-    )
     @classmethod
     def get_hidden_modules(
         cls,
@@ -120,11 +55,77 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
             vmlinux_module_name, known_module_addresses, modules_memory_boundaries
         )
 
+    run = linux_utilities_modules.ModuleDisplayPlugin.run
+    _generator = linux_utilities_modules.ModuleDisplayPlugin.generator
+    implementation = linux_utilities_modules.Modules.list_modules
+
+    @classmethod
+    def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
+        return [
+            requirements.ModuleRequirement(
+                name="kernel",
+                description="Linux kernel",
+                architectures=architectures.LINUX_ARCHS,
+            ),
+            requirements.VersionRequirement(
+                name="linux_utilities_modules_module_display_plugin",
+                component=linux_utilities_modules.ModuleDisplayPlugin,
+                version=(1, 0, 0),
+            ),
+        ]
+
+    @staticmethod
+    @deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.get_modules_memory_boundaries,
+        removal_date="2025-09-25",
+        replacement_version=(3, 0, 0),
+    )
+    def get_modules_memory_boundaries(
+        context: interfaces.context.ContextInterface,
+        vmlinux_module_name: str,
+    ) -> Tuple[int, int]:
+        return linux_utilities_modules.Modules.get_modules_memory_boundaries(
+            context, vmlinux_module_name
+        )
+
+    @deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.get_module_address_alignment,
+        removal_date="2025-09-25",
+        replacement_version=(3, 0, 0),
+    )
+    @classmethod
+    def _get_module_address_alignment(
+        cls,
+        context: interfaces.context.ContextInterface,
+        vmlinux_module_name: str,
+    ) -> int:
+        """Obtain the module memory address alignment.
+
+        struct module is aligned to the L1 cache line, which is typically 64 bytes for most
+        common i386/AMD64/ARM64 configurations. In some cases, it can be 128 bytes, but this
+        will still work.
+
+        Args:
+            context: The context to retrieve required elements (layers, symbol tables) from
+            vmlinux_module_name: The name of the kernel module on which to operate
+
+        Returns:
+            The struct module alignment
+        """
+        return linux_utilities_modules.get_module_address_alignment(
+            context, vmlinux_module_name
+        )
+
+    @deprecation.deprecated_method(
+        replacement=linux_utilities_modules.Modules.get_hidden_modules,
+        removal_date="2025-09-25",
+        replacement_version=(3, 0, 0),
+    )
     @staticmethod
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.validate_alignment_patterns,
         removal_date="2025-09-25",
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
     )
     def _validate_alignment_patterns(
         addresses: Iterable[int],
@@ -163,42 +164,35 @@ class Hidden_modules(interfaces.plugins.PluginInterface):
 
         known_module_addresses = {
             vmlinux_layer.canonicalize(module.vol.offset)
-            for module in lsmod.Lsmod.list_modules(context, vmlinux_module_name)
+            for module in linux_utilities_modules.Modules.list_modules(
+                context, vmlinux_module_name
+            )
         }
         return known_module_addresses
 
-    def _generator(self):
-        vmlinux_module_name = self.config["kernel"]
-        known_module_addresses = self.get_lsmod_module_addresses(
-            self.context, vmlinux_module_name
-        )
-        modules_memory_boundaries = (
-            linux_utilities_modules.Modules.get_modules_memory_boundaries(
-                self.context, vmlinux_module_name
-            )
-        )
-
-        for module in linux_utilities_modules.Modules.get_hidden_modules(
-            self.context,
-            vmlinux_module_name,
-            known_module_addresses,
-            modules_memory_boundaries,
-        ):
-            module_addr = module.vol.offset
-            module_name = module.get_name() or renderers.NotAvailableValue()
-            fields = (format_hints.Hex(module_addr), module_name)
-            yield (0, fields)
-
-    def run(self):
-        if self.context.symbol_space.verify_table_versions(
+    @classmethod
+    def find_hidden_modules(
+        cls, context, vmlinux_module_name: str
+    ) -> extensions.module:
+        if context.symbol_space.verify_table_versions(
             "dwarf2json", lambda version, _: (not version) or version < (0, 8, 0)
         ):
             raise exceptions.SymbolSpaceError(
                 "Invalid symbol table, please ensure the ISF table produced by dwarf2json was created with version 0.8.0 or later"
             )
 
-        headers = [
-            ("Address", format_hints.Hex),
-            ("Name", str),
-        ]
-        return renderers.TreeGrid(headers, self._generator())
+        known_module_addresses = cls.get_lsmod_module_addresses(
+            context, vmlinux_module_name
+        )
+        modules_memory_boundaries = (
+            linux_utilities_modules.Modules.get_modules_memory_boundaries(
+                context, vmlinux_module_name
+            )
+        )
+
+        yield from linux_utilities_modules.Modules.get_hidden_modules(
+            context,
+            vmlinux_module_name,
+            known_module_addresses,
+            modules_memory_boundaries,
+        )

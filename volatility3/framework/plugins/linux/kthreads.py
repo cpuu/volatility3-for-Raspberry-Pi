@@ -5,14 +5,14 @@ import logging
 from typing import List
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
-from volatility3.framework import constants, exceptions, interfaces, renderers
+from volatility3.framework import exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import plugins
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols import linux
 from volatility3.framework.constants import architectures
 from volatility3.framework.objects import utility
-from volatility3.plugins.linux import pslist, lsmod
+from volatility3.plugins.linux import pslist
 
 vollog = logging.getLogger(__name__)
 
@@ -34,35 +34,36 @@ class Kthreads(plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
                 component=linux_utilities_modules.Modules,
-                version=(2, 0, 0),
+                version=(3, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="linux_utilities_module_gatherers",
+                component=linux_utilities_modules.ModuleGatherers,
+                version=(1, 0, 0),
             ),
             requirements.VersionRequirement(
                 name="linuxutils", component=linux.LinuxUtilities, version=(2, 1, 0)
             ),
-            requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(4, 0, 0)
-            ),
-            requirements.PluginRequirement(
-                name="lsmod", plugin=lsmod.Lsmod, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(4, 0, 0)
             ),
         ]
 
     def _generator(self):
         vmlinux = self.context.modules[self.config["kernel"]]
 
-        modules = lsmod.Lsmod.list_modules(self.context, vmlinux.name)
-        handlers = linux.LinuxUtilities.generate_kernel_handler_info(
-            self.context, vmlinux.name, modules
-        )
-
-        kthread_type = vmlinux.get_type(
-            vmlinux.symbol_table_name + constants.BANG + "kthread"
-        )
+        kthread_type = vmlinux.get_type("kthread")
 
         if not kthread_type.has_member("threadfn"):
             raise exceptions.VolatilityException(
                 "Unsupported kthread implementation. This plugin only works with kernels >= 5.8"
             )
+
+        known_modules = linux_utilities_modules.Modules.run_modules_scanners(
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
+            caller_wanted_gatherers=linux_utilities_modules.ModuleGatherers.all_gatherers_identifier,
+        )
 
         for task in pslist.PsList.list_tasks(
             self.context, vmlinux.name, include_threads=True
@@ -86,9 +87,7 @@ class Kthreads(plugins.PluginInterface):
             if not (threadfn and threadfn.is_readable()):
                 continue
 
-            task_name = utility.array_to_string(task.comm)
-
-            thread_name = task_name
+            thread_name = utility.array_to_string(task.comm)
 
             # kernels >= 5.17 in d6986ce24fc00b0638bd29efe8fb7ba7619ed2aa full_name was added to kthread
             if kthread.has_member("full_name"):
@@ -101,18 +100,23 @@ class Kthreads(plugins.PluginInterface):
                         f"full_name pointer for thread at {kthread.vol.offset:#x} is paged out."
                     )
 
-            module_name, symbol_name = (
-                linux_utilities_modules.Modules.lookup_module_address(
-                    self.context, vmlinux.name, handlers, threadfn
+            module_info, symbol_name = (
+                linux_utilities_modules.Modules.module_lookup_by_address(
+                    self.context, vmlinux.name, known_modules, threadfn
                 )
             )
+
+            if module_info:
+                module_name = module_info.name
+            else:
+                module_name = renderers.NotAvailableValue()
 
             fields = [
                 task.pid,
                 thread_name,
                 format_hints.Hex(threadfn),
                 module_name,
-                symbol_name,
+                symbol_name or renderers.NotAvailableValue(),
             ]
             yield 0, fields
 

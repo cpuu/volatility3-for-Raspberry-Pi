@@ -34,7 +34,22 @@ spot modules presence and taints."""
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
                 component=linux_utilities_modules.Modules,
-                version=(2, 0, 0),
+                version=(3, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="linux_utilities_module_gatherer_lsmod",
+                component=linux_utilities_modules.ModuleGathererLsmod,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="linux_utilities_module_gatherer_sysfs",
+                component=linux_utilities_modules.ModuleGathererSysFs,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="linux_utilities_module_gatherer_scanner",
+                component=linux_utilities_modules.ModuleGathererScanner,
+                version=(1, 0, 0),
             ),
             requirements.VersionRequirement(
                 name="linux-tainting", component=tainting.Tainting, version=(1, 0, 0)
@@ -50,7 +65,7 @@ spot modules presence and taints."""
     @classmethod
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.flatten_run_modules_results,
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
         removal_date="2025-09-25",
     )
     def flatten_run_modules_results(
@@ -73,7 +88,7 @@ spot modules presence and taints."""
     @classmethod
     @deprecation.deprecated_method(
         replacement=linux_utilities_modules.Modules.run_modules_scanners,
-        replacement_version=(2, 0, 0),
+        replacement_version=(3, 0, 0),
         removal_date="2025-09-25",
     )
     def run_modules_scanners(
@@ -89,35 +104,42 @@ spot modules presence and taints."""
         )
 
     def _generator(self):
-        kernel_name = self.config["kernel"]
+        kernel = self.context.modules[self.config["kernel"]]
 
-        kernel = self.context.modules[kernel_name]
+        wanted_gatherers = [
+            linux_utilities_modules.ModuleGathererLsmod,
+            linux_utilities_modules.ModuleGathererSysFs,
+            linux_utilities_modules.ModuleGathererScanner,
+        ]
 
         run_results = linux_utilities_modules.Modules.run_modules_scanners(
-            self.context, kernel_name, flatten=False
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
+            caller_wanted_gatherers=wanted_gatherers,
+            flatten=False,
         )
 
         aggregated_modules = {}
         # We want to be explicit on the plugins results we are interested in
-        for plugin_name in ["lsmod", "check_modules", "hidden_modules"]:
+        for gatherer in wanted_gatherers:
             # Iterate over each recovered module
-            for mod_info in run_results[plugin_name]:
+            for mod_info in run_results[gatherer.name]:
                 # Use offsets as unique keys, whether a module
                 # appears in many plugin runs or not
                 if aggregated_modules.get(mod_info.offset, None) is not None:
                     # Append the plugin to the list of originating plugins
-                    aggregated_modules[mod_info.offset].append(plugin_name)
+                    aggregated_modules[mod_info.offset].append(gatherer.name)
                 else:
-                    aggregated_modules[mod_info.offset] = [plugin_name]
+                    aggregated_modules[mod_info.offset] = [gatherer.name]
 
-        for module_offset, originating_plugins in aggregated_modules.items():
-            # Tainting parsing capabilities applied to the module
+        for module_offset, gatherers in aggregated_modules.items():
             module = kernel.object("module", offset=module_offset, absolute=True)
 
+            # Tainting parsing capabilities applied to the module
             if self.config.get("plain_taints"):
                 taints = tainting.Tainting.get_taints_as_plain_string(
                     self.context,
-                    kernel_name,
+                    self.config["kernel"],
                     module.taints,
                     True,
                 )
@@ -125,7 +147,7 @@ spot modules presence and taints."""
                 taints = ",".join(
                     tainting.Tainting.get_taints_parsed(
                         self.context,
-                        kernel_name,
+                        self.config["kernel"],
                         module.taints,
                         True,
                     )
@@ -136,9 +158,9 @@ spot modules presence and taints."""
                 (
                     module.get_name() or NotAvailableValue(),
                     format_hints.Hex(module_offset),
-                    "lsmod" in originating_plugins,
-                    "check_modules" in originating_plugins,
-                    "hidden_modules" in originating_plugins,
+                    linux_utilities_modules.ModuleGathererLsmod.name in gatherers,
+                    linux_utilities_modules.ModuleGathererSysFs.name in gatherers,
+                    linux_utilities_modules.ModuleGathererScanner.name in gatherers,
                     taints or NotAvailableValue(),
                 ),
             )
@@ -149,7 +171,7 @@ spot modules presence and taints."""
             ("Address", format_hints.Hex),
             ("In procfs", bool),
             ("In sysfs", bool),
-            ("Hidden", bool),
+            ("In scan", bool),
             ("Taints", str),
         ]
 

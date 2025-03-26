@@ -22,9 +22,8 @@ from volatility3.framework.interfaces.objects import ObjectInterface
 from volatility3.framework.layers import intel
 from volatility3.framework.objects import utility
 from volatility3.framework.renderers import conversion
-from volatility3.framework.symbols import generic
+from volatility3.framework.symbols import generic, windows
 from volatility3.framework.symbols.windows.extensions import pool
-from volatility3.framework.symbols import windows
 
 vollog = logging.getLogger(__name__)
 
@@ -1221,19 +1220,6 @@ class KTIMER(objects.StructType):
             return "Yes"
         return "-"
 
-    def get_raw_dpc(self):
-        """Returns the encoded DPC since it may not look like a pointer after encoding"""
-        symbol_table_name = self.get_symbol_table_name()
-        pointer_type = self._context.symbol_space.get_type(
-            symbol_table_name + constants.BANG + "pointer"
-        )
-
-        return self._context.object(
-            object_type=pointer_type,
-            layer_name=self.vol.layer_name,
-            offset=self.Dpc.vol.offset,
-        )
-
     def valid_type(self):
         return self.Header.Type in self.VALID_TYPES
 
@@ -1268,7 +1254,7 @@ class KTIMER(objects.StructType):
             )
 
             low_byte = (wait_never) & 0xFF
-            entry = utility.rol(self.get_raw_dpc() ^ wait_never, low_byte)
+            entry = utility.rol(self.Dpc.get_raw_value() ^ wait_never, low_byte)
             swap_xor = self._context.layers[self.vol.native_layer_name].canonicalize(
                 self.vol.offset
             )

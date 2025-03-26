@@ -64,8 +64,13 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
+            ),
+            requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
             ),
             requirements.VersionRequirement(
                 name="vadinfo", component=vadinfo.VadInfo, version=(2, 0, 0)

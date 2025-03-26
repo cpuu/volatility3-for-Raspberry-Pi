@@ -17,8 +17,8 @@ class Volshell(generic.Volshell):
     def get_requirements(cls):
         return [
             requirements.ModuleRequirement(name="kernel", description="Windows kernel"),
-            requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.IntRequirement(
                 name="pid", description="Process ID", optional=True

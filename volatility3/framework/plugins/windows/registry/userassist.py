@@ -56,8 +56,13 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
             requirements.IntRequirement(
                 name="offset", description="Hive Offset", default=None, optional=True
             ),
-            requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="hivelist", component=hivelist.HiveList, version=(2, 0, 0)
+            ),
+            requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
             ),
         ]
 

@@ -53,9 +53,9 @@ to be able to run properly.  Any that are defined as optional need not necessari
                     description = "Process IDs to include (all other processes are excluded)",
                     optional = True
                 ),
-                requirements.PluginRequirement(
+                requirements.VersionRequirement(
                     name = 'pslist',
-                    plugin = pslist.PsList,
+                    component = pslist.PsList,
                     version = (2, 0, 0)
                 ),
             ]

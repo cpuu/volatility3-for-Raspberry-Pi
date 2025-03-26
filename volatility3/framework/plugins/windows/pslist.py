@@ -41,6 +41,11 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 default=cls.PHYSICAL_DEFAULT,
                 optional=True,
             ),
+            requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
+            ),
             requirements.ListRequirement(
                 name="pid",
                 element_type=int,

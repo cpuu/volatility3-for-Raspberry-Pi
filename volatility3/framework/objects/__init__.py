@@ -402,13 +402,35 @@ class Pointer(Integer):
         pointer should be recast.  The "pointer" must always live within
         the space (even if the data provided is invalid).
         """
+        mask = context.layers[object_info.native_layer_name].address_mask
+        new = (
+            cls._get_raw_value(
+                context, data_format, object_info.layer_name, object_info.offset
+            )
+            & mask
+        )
+        return new
+
+    @classmethod
+    def _get_raw_value(
+        cls,
+        context: interfaces.context.ContextInterface,
+        data_format: DataFormatInfo,
+        layer_name: str,
+        offset: int,
+    ) -> int:
         length, endian, signed = data_format
         if signed:
             raise ValueError("Pointers cannot have signed values")
-        mask = context.layers[object_info.native_layer_name].address_mask
-        data = context.layers.read(object_info.layer_name, object_info.offset, length)
+        data = context.layers.read(layer_name, offset, length)
         value = int.from_bytes(data, byteorder=endian, signed=signed)
-        return value & mask
+        return value
+
+    def get_raw_value(self) -> int:
+        raw = self._get_raw_value(
+            self._context, self.vol.data_format, self.vol.layer_name, self.vol.offset
+        )
+        return raw
 
     def dereference(
         self, layer_name: Optional[str] = None

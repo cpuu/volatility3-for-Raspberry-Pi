@@ -45,8 +45,8 @@ class PsCallStack(plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="Kallsyms", component=kallsyms.Kallsyms, version=(1, 0, 0)
             ),
-            requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(4, 0, 0)
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(4, 0, 0)
             ),
             requirements.ListRequirement(
                 name="pid",
@@ -118,9 +118,15 @@ class PsCallStack(plugins.PluginInterface):
         current_sp = rsp_start
         idx = 0
         while current_sp < task_top_of_stack:
-            stack_value_bytes = task_layer.read(current_sp, pointer_size)
+            try:
+                stack_value_bytes = task_layer.read(current_sp, pointer_size)
+            except exceptions.InvalidAddressException:
+                break
             stack_value = int.from_bytes(stack_value_bytes, byteorder=byte_order)
-
+            if not stack_value:
+                idx += 1
+                current_sp += pointer_size
+                continue
             kassymbol = kas.lookup_address(stack_value)
             sp_address = current_sp & vmlinux_layer.address_mask
             stack_value &= vmlinux_layer.address_mask

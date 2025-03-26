@@ -172,8 +172,11 @@ class Check_syscall(plugins.PluginInterface):
                 count=tblsz,
             )
 
-            for i, call_addr in enumerate(table):
-                if not call_addr:
+            for i in range(len(table)):
+                try:
+                    call_addr = table[i]
+                except exceptions.InvalidAddressException:
+                    vollog.debug(f"Failed to get system call table entry at index {i}")
                     continue
 
                 symbols = list(vmlinux.get_symbols_by_absolute_location(call_addr))
