@@ -19,7 +19,7 @@ class Hidden_modules(plugins.PluginInterface):
     """Carves memory to find hidden kernel modules"""
 
     _required_framework_version = (2, 10, 0)
-    _version = (3, 0, 0)
+    _version = (3, 0, 1)
 
     @classmethod
     def get_hidden_modules(
@@ -71,6 +71,12 @@ class Hidden_modules(plugins.PluginInterface):
                 name="linux_utilities_modules_module_display_plugin",
                 component=linux_utilities_modules.ModuleDisplayPlugin,
                 version=(1, 0, 0),
+            ),
+            requirements.BooleanRequirement(
+                name="dump",
+                description="Extract listed modules",
+                default=False,
+                optional=True,
             ),
         ]
 

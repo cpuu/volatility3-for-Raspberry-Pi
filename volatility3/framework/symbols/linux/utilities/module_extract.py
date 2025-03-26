@@ -782,7 +782,7 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
             hasattr(module.sect_attrs, "nsections")
         except exceptions.InvalidAddressException:
             vollog.debug(f"module at offset {module.vol.offset:#x} is paged out.")
-            return
+            return None
 
         # Gather sections
         updated_sections, strtab_index, symtab_index = cls._parse_sections(
