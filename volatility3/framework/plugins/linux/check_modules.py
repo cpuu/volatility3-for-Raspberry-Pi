@@ -18,7 +18,7 @@ vollog = logging.getLogger(__name__)
 class Check_modules(plugins.PluginInterface):
     """Compares module list to sysfs info, if available"""
 
-    _version = (3, 0, 0)
+    _version = (3, 0, 1)
     _required_framework_version = (2, 0, 0)
 
     @classmethod
@@ -55,6 +55,12 @@ class Check_modules(plugins.PluginInterface):
                 name="linux_utilities_modules_module_display_plugin",
                 component=linux_utilities_modules.ModuleDisplayPlugin,
                 version=(1, 0, 0),
+            ),
+            requirements.BooleanRequirement(
+                name="dump",
+                description="Extract listed modules",
+                default=False,
+                optional=True,
             ),
         ]
 
