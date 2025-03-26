@@ -121,7 +121,7 @@ class PluginRenameClass:
         deprecated_class_name = f"{cls.__module__}.{cls.__qualname__}"
         super().__init_subclass__(**kwargs)
         for attr, value in replacement_class.__dict__.items():
-            if isinstance(value, classmethod):
+            if isinstance(value, classmethod) and attr != "get_requirements":
                 setattr(
                     cls,
                     attr,
@@ -134,5 +134,6 @@ class PluginRenameClass:
                     ),
                 )
             else:
-                setattr(cls, attr, value)
+                if not attr.startswith("__"):
+                    setattr(cls, attr, value)
         return super(replacement_class).__init_subclass__(**kwargs)
