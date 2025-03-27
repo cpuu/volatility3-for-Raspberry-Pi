@@ -944,6 +944,12 @@ class ModuleDisplayPlugin(interfaces.configuration.VersionableInterface):
             requirements.VersionRequirement(
                 name="linux-tainting", component=tainting.Tainting, version=(1, 0, 0)
             ),
+            requirements.BooleanRequirement(
+                name="dump",
+                description="Extract listed modules",
+                default=False,
+                optional=True,
+            ),
         ]
 
     def generator(self):

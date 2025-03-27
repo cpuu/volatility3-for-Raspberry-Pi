@@ -31,7 +31,7 @@ class ModuleExtract(interfaces.plugins.PluginInterface):
             ),
             requirements.IntRequirement(
                 name="base",
-                description="Base address to reconstruct an ELF file",
+                description="Base virtual address to reconstruct an ELF file",
                 optional=False,
             ),
         ]

@@ -27,28 +27,12 @@ class Lsmod(plugins.PluginInterface):
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
         return [
-            requirements.ModuleRequirement(
-                name="kernel",
-                description="Linux kernel",
-                architectures=["Intel32", "Intel64"],
-            ),
-            requirements.VersionRequirement(
-                name="linux_utilities_modules",
-                component=linux_utilities_modules.Modules,
-                version=(3, 0, 0),
-            ),
             requirements.VersionRequirement(
                 name="linux_utilities_modules_module_display_plugin",
                 component=linux_utilities_modules.ModuleDisplayPlugin,
                 version=(1, 0, 0),
             ),
-            requirements.BooleanRequirement(
-                name="dump",
-                description="Extract listed modules",
-                default=False,
-                optional=True,
-            ),
-        ]
+        ] + linux_utilities_modules.ModuleDisplayPlugin.get_requirements()
 
     @classmethod
     @deprecation.deprecated_method(

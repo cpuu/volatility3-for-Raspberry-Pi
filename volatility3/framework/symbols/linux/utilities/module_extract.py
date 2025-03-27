@@ -28,7 +28,7 @@ vollog = logging.getLogger(__name__)
 # that can be analyzed with static analysis tools
 # First, the .strtab points somewhere random and is kept off the module structure, not with the other sections
 # Second, all of the symbols (.symtab) have mangled members that we must patch for anything to make sense
-# Third, the section name string stable (.shstrtab) is not an allocated section, meaning its not in memory
+# Third, the section name string table (.shstrtab) is not an allocated section, meaning its not in memory
 # Not having the .shstrtab makes analysis impossible-to-difficult for static analysis tools. To work around this,
 # we create the .shstrtab based on the sections in memory and then glue it in as the final section
 
@@ -185,7 +185,7 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
         cls,
         context: interfaces.context.ContextInterface,
         vmlinux_name: str,
-        original_sections,
+        original_sections: Dict[int, str],
         section_sizes: Dict[int, int],
         sym_type_name: str,
         st_fmt: str,
@@ -347,7 +347,7 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
         # All others can be read with padding
 
         # get the addresses in sorted order, can index into `original_sections` for names
-        sorted_addresses = sorted(original_sections)
+        sorted_addresses = sorted(original_sections.keys())
 
         # We need to track where .symtab is for symbol name offsets
         symtab_address = None
@@ -438,78 +438,46 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
         return updated_sections, strtab_index, symtab_index
 
     @classmethod
-    def _make_elf_header_32(
-        cls, sect_hdr_offset: int, num_sections: int
+    def _make_elf_header(
+        cls, bits: int, sect_hdr_offset: int, num_sections: int
     ) -> Optional[bytes]:
         """
-        Creates a 32 bit ELF header for the file based on recovered values
+        Creates a `bits` bit ELF header for the file based on recovered values
         Called last as it needs information computed from the sections
 
         Spec: https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html
         """
-        e_ident = b"\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-        e_type = b"\x01\x00"  # relocateble
-        e_machine = b"\x03\x00"  # EM_X86_86
-        e_version = b"\x01\x00\x00\x00"
-        e_entry = b"\x00" * 4  # The .init sections are freed after module load
-        e_phoff = b"\x00" * 4
-        e_shoff = struct.pack("<I", sect_hdr_offset)
-        e_flags = b"\x00\x00\x00\x00"
-        e_ehsize = b"\x34\x00"  # 52 - size of ELF Header
-        e_phentsize = b"\x00\x00"
-        e_phnum = b"\x00\x00"
-        e_shentsize = b"\x28\x00"
-        e_shnum = struct.pack("<H", num_sections + 1)
-        e_shstrndx = struct.pack("<H", num_sections)
-
-        header = (
-            e_ident
-            + e_type
-            + e_machine
-            + e_version
-            + e_entry
-            + e_phoff
-            + e_shoff
-            + e_flags
-            + e_ehsize
-            + e_phentsize
-            + e_phnum
-            + e_shentsize
-            + e_shnum
-            + e_shstrndx
-        )
-
-        # should never happen as we make the header ourselves
-        if len(header) != 52:
-            vollog.error(
-                f"_get_header_32 created a header of {len(header)} bytes. Cannot proceed"
+        if bits == 32:
+            fmt = "<I"
+            e_ident = (
+                b"\x7f\x45\x4c\x46\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00"
             )
-            return None
+            e_machine_int = 3  # EM_X86_86
+            e_ehsize_int = 52
+            e_shentsize_int = 40
+            header_size = 52
+        else:
+            fmt = "<Q"
+            e_ident = (
+                b"\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+            )
+            e_machine = 0x3E  # EM_X86_64
+            e_ehsize = 64
+            e_shentsize = 52
 
-        return header
-
-    @classmethod
-    def _make_elf_header_64(
-        cls, sect_hdr_offset: int, num_sections: int
-    ) -> Optional[bytes]:
-        """
-        Creates a 64 bit ELF header for the file based on recovered values
-        Called last as it needs information computed from the sections
-
-        Spec: https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html
-        """
-        e_ident = b"\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-        e_type = b"\x01\x00"  # relocateble
-        e_machine = b"\x3e\x00"  # EM_X86_64
-        e_version = b"\x01\x00\x00\x00"
-        e_entry = b"\x00" * 8  # The .init sections are freed after module load
-        e_phoff = b"\x00" * 8
-        e_shoff = struct.pack("<Q", sect_hdr_offset)
+        e_type = struct.pack("<H", 1)  # relocateble
+        e_machine = struct.pack("<H", e_machine_int)
+        e_version = struct.pack("<I", 1)
+        e_entry = b"\x00" * int(
+            bits / 8
+        )  # The .init sections are freed after module load
+        e_phoff = b"\x00" * int(bits / 8)  # No program headers
+        e_shoff = struct.pack(fmt, sect_hdr_offset)
         e_flags = b"\x00\x00\x00\x00"
-        e_ehsize = b"\x40\x00"  # 64 / size of ELF Header
+        e_ehsize = struct.pack("<H", e_ehsize_int)
         e_phentsize = b"\x00\x00"
         e_phnum = b"\x00\x00"
-        e_shentsize = b"\x40\x00"  # 64
+        e_shentsize = struct.pack("<H", e_shentsize_int)
         e_shnum = struct.pack("<H", num_sections + 1)
         e_shstrndx = struct.pack("<H", num_sections)
 
@@ -531,9 +499,9 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
         )
 
         # should never happen as we make the header ourselves
-        if len(header) != 64:
+        if len(header) != header_size:
             vollog.error(
-                f"_get_header_64 created a header of {len(header)} bytes. Cannot proceed"
+                f"Making Elf header for arch {bits} created a header of {len(header)} bytes. Cannot proceed"
             )
             return None
 
@@ -645,8 +613,9 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
         return 0
 
     @classmethod
-    def _make_section_header_32(
+    def _make_section_header(
         cls,
+        bits: int,
         name_index: int,
         name: str,
         address: int,
@@ -656,27 +625,34 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
         symtab_index: int,
     ) -> Optional[bytes]:
         """
-        Creates a section header (Elf32_Shdr) for the given section
+        Creates a section header (Elf32_Shdr or Elf64_Shdr) for the given section
         """
+        if bits == 32:
+            fmt = "<I"
+            sect_size = 40
+        else:
+            fmt = "<Q"
+            sect_size = 64
+
         sect_header_type_int = cls._calc_sect_type(name)
 
         flags = cls._calc_sect_flags(name)
 
         link = cls._calc_link(name, strtab_index, symtab_index, sect_header_type_int)
 
-        entsize = cls._calc_entsize(name, sect_header_type_int, 32)
+        entsize = cls._calc_entsize(name, sect_header_type_int, bits)
 
         try:
             sh_name = struct.pack("<I", name_index)
             sh_type = struct.pack("<I", sect_header_type_int)
-            sh_flags = struct.pack("<I", flags)
-            sh_addr = struct.pack("<I", address)
-            sh_offset = struct.pack("<I", file_offset)
-            sh_size = struct.pack("<I", size)
+            sh_flags = struct.pack(fmt, flags)
+            sh_addr = struct.pack(fmt, address)
+            sh_offset = struct.pack(fmt, file_offset)
+            sh_size = struct.pack(fmt, size)
             sh_link = struct.pack("<I", link)
             sh_info = b"\x00" * 4
-            sh_addralign = b"\x01\x00\x00\x00"
-            sh_entsize = struct.pack("<I", entsize)
+            sh_addralign = struct.pack(fmt, 1)
+            sh_entsize = struct.pack(fmt, entsize)
 
         # catch overflows of offset/address/size
         except struct.error:
@@ -699,72 +675,9 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
         )
 
         # This should never happen regardless of smear or other issues in the data. We build the structure to spec.
-        if len(data) != 40:
+        if len(data) != sect_size:
             vollog.error(
-                f"Size of section data is {len(data)} expected 40 for section {name} at address {address:#x}"
-            )
-            return None
-
-        return data
-
-    @classmethod
-    def _make_section_header_64(
-        cls,
-        name_index: int,
-        name: str,
-        address: int,
-        size: int,
-        file_offset: int,
-        strtab_index: int,
-        symtab_index: int,
-    ) -> Optional[bytes]:
-        """
-        Creates a section header (Elf64_Shdr) for the given section
-        """
-        sect_header_type_int = cls._calc_sect_type(name)
-
-        flags = cls._calc_sect_flags(name)
-
-        link = cls._calc_link(name, strtab_index, symtab_index, sect_header_type_int)
-
-        entsize = cls._calc_entsize(name, sect_header_type_int, 64)
-
-        try:
-            sh_name = struct.pack("<I", name_index)
-            sh_type = struct.pack("<I", sect_header_type_int)
-            sh_flags = struct.pack("<Q", flags)
-            sh_addr = struct.pack("<Q", address)
-            sh_offset = struct.pack("<Q", file_offset)
-            sh_size = struct.pack("<Q", size)
-            sh_link = struct.pack("<I", link)
-            sh_info = b"\x00" * 4
-            sh_addralign = b"\x01\x00\x00\x00\x00\x00\x00\x00"
-            sh_entsize = struct.pack("<Q", entsize)
-
-        # catch overflows of offset/address/size
-        except struct.error:
-            vollog.debug(
-                f"Unable to build section header for section {name} at address {address:#x}"
-            )
-            return None
-
-        data = (
-            sh_name
-            + sh_type
-            + sh_flags
-            + sh_addr
-            + sh_offset
-            + sh_size
-            + sh_link
-            + sh_info
-            + sh_addralign
-            + sh_entsize
-        )
-
-        # This should never happen regardless of smear or other issues in the data. We build the structure to spec.
-        if len(data) != 64:
-            vollog.error(
-                f"Size of section data is {len(data)} expected 64 for section {name} at address {address:#x}"
+                f"Size of section data is {len(data)} expected {sect_size} for section {name} at address {address:#x}"
             )
             return None
 
@@ -793,15 +706,13 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
 
         # Figure out header sizes
         if symbols.symbol_table_is_64bit(context, kernel.symbol_table_name):
-            make_elf_header = cls._make_elf_header_64
-            make_section_header = cls._make_section_header_64
             header_type = "Elf64_Ehdr"
             section_type = "Elf64_Shdr"
+            bits = 64
         else:
-            make_elf_header = cls._make_elf_header_32
-            make_section_header = cls._make_section_header_32
             header_type = "Elf32_Ehdr"
             section_type = "Elf32_Shdr"
+            bits = 32
 
         header_type_size = kernel.get_type(header_type).size
         section_type_size = kernel.get_type(section_type).size
@@ -830,7 +741,8 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
             updated_sections
         ):
             # Make the section header
-            header_bytes = make_section_header(
+            header_bytes = cls._make_section_header(
+                bits,
                 name_index,
                 name,
                 address,
@@ -862,7 +774,8 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
         shstrtab_data += b".shstrtab\x00"
 
         # create our .shstrtab section so sections have names
-        sections_headers += make_section_header(
+        sections_headers += cls._make_section_header(
+            bits,
             name_index,
             ".shstrtab",
             0,
@@ -876,7 +789,8 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
 
         num_sections = len(updated_sections) + 1
 
-        header = make_elf_header(
+        header = cls._make_elf_header(
+            bits,
             header_type_size + len(sections_data),
             num_sections,
         )
