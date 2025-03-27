@@ -240,8 +240,11 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
             st_other = struct.pack("B", sym.st_other)
             st_size = struct.pack(st_fmt, sym.st_size)
 
-            # The order as in the ELF specification
-            sym_data = st_name + st_info + st_other + st_shndx + st_value + st_size
+            # The order as in the ELF specification. The order is not the same between 32 and 64 bit symbols
+            if st_fmt == "<I":
+                sym_data = st_name + st_value + st_size + st_info + st_other + st_shndx
+            else:
+                sym_data = st_name + st_info + st_other + st_shndx + st_value + st_size
 
             # This should never happen regardless of smear or other issues in the data. We build the structure to spec.
             if len(sym_data) != sym_type.size:
