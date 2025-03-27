@@ -30,7 +30,7 @@ class Volshell(generic.Volshell):
                 component=generic.Volshell,
                 version=(1, 0, 0),
             ),
-        ]
+        ] + super().get_requirements()
 
     def change_task(self, pid=None):
         """Change the current process and layer, based on a process ID"""
