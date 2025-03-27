@@ -31,8 +31,11 @@ class Threads(thrdscan.ThrdScan):
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.PluginRequirement(
-                name="thrdscan", plugin=thrdscan.ThrdScan, version=(1, 1, 0)
+            requirements.VersionRequirement(
+                name="thrdscan", component=thrdscan.ThrdScan, version=(2, 0, 0)
+            ),
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
         ]
 

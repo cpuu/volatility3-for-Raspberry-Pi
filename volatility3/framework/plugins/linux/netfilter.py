@@ -13,12 +13,11 @@ from volatility3.framework import (
     interfaces,
     renderers,
     exceptions,
+    deprecation,
 )
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.configuration import requirements
-from volatility3.framework.symbols import linux
 from volatility3.framework.symbols.linux import network
-from volatility3.plugins.linux import lsmod
 
 vollog = logging.getLogger(__name__)
 
@@ -82,22 +81,18 @@ class AbstractNetfilter(ABC):
         self.ptr_size = self.vmlinux.get_type("pointer").size
         self.list_head_size = self.vmlinux.get_type("list_head").size
 
-        lsmod_required_version = Netfilter._required_lsmod_version
-        lsmod_current_version = lsmod.Lsmod.version
+        linuxutils_modulegatherers_required_version = (
+            Netfilter._required_linuxutils_gatherers_version
+        )
+        linuxutils_modulegatherers_current_version = (
+            linux_utilities_modules.ModuleGatherers.version
+        )
         if not requirements.VersionRequirement.matches_required(
-            lsmod_required_version, lsmod_current_version
+            linuxutils_modulegatherers_required_version,
+            linuxutils_modulegatherers_current_version,
         ):
             raise exceptions.PluginRequirementException(
-                f"linux.lsmod.Lsmod version not suitable: required {lsmod_required_version} found {lsmod_current_version}"
-            )
-
-        linuxutils_required_version = Netfilter._required_linuxutils_version
-        linuxutils_current_version = linux.LinuxUtilities.version
-        if not requirements.VersionRequirement.matches_required(
-            linuxutils_required_version, linuxutils_current_version
-        ):
-            raise exceptions.PluginRequirementException(
-                f"linux.LinuxUtilities version not suitable: required {linuxutils_required_version} found {linuxutils_current_version}"
+                f"linux_utilities_modules.ModuleGatherer version not suitable: required {linuxutils_modulegatherers_required_version} found {linuxutils_modulegatherers_current_version}"
             )
 
         linux_net_required_version = Netfilter._required_linuxnet_version
@@ -123,12 +118,13 @@ class AbstractNetfilter(ABC):
                 f"linux_utilities_modules.Modules version not suitable: required {linux_utilities_modules_required_version} found {linux_utilities_modules_current_version}"
             )
 
-        symbol_table = self._context.symbol_space[self.vmlinux.symbol_table_name]
+        symbol_table = context.symbol_space[self.vmlinux.symbol_table_name]
         network.NetSymbols.apply(symbol_table)
 
-        modules = lsmod.Lsmod.list_modules(context, kernel_module_name)
-        self.handlers = linux.LinuxUtilities.generate_kernel_handler_info(
-            context, kernel_module_name, modules
+        self.handlers = linux_utilities_modules.Modules.run_modules_scanners(
+            context=context,
+            kernel_module_name=kernel_module_name,
+            caller_wanted_gatherers=linux_utilities_modules.ModuleGatherers.all_gatherers_identifier,
         )
 
     @classmethod
@@ -217,10 +213,17 @@ class AbstractNetfilter(ABC):
 
                         priority = int(hook_ops.priority)
                         hook_ops_hook = hook_ops.hook
-                        module_name = self.get_module_name_for_address(hook_ops_hook)
-                        hooked = module_name is None
+                        module_info, symbol_name = (
+                            linux_utilities_modules.Modules.module_lookup_by_address(
+                                self._context,
+                                self.vmlinux.name,
+                                self.handlers,
+                                hook_ops_hook,
+                            )
+                        )
+                        hooked = module_info is None
 
-                        yield netns, proto_name, hook_name, priority, hook_ops_hook, module_name, hooked
+                        yield netns, proto_name, hook_name, priority, hook_ops_hook, module_info, symbol_name, hooked
 
     @classmethod
     @abstractmethod
@@ -300,6 +303,10 @@ class AbstractNetfilter(ABC):
         # in other parts of the kernel source code.
         return ("IPV4", "ARP", "BRIDGE", "IPV6", "DECNET")
 
+    @deprecation.method_being_removed(
+        removal_date="2025-09-25",
+        message="Callers to this method should adapt `linux_utilities_modules.Modules.run_module_scanners`",
+    )
     def get_module_name_for_address(self, addr) -> str:
         """Helper to obtain the module and symbol name in the format needed for the
         output of this plugin.
@@ -724,11 +731,10 @@ class Netfilter(interfaces.plugins.PluginInterface):
 
     _required_framework_version = (2, 22, 0)
 
-    _version = (1, 1, 1)
+    _version = (2, 0, 0)
 
-    _required_linux_utilities_modules_version = (2, 0, 0)
-    _required_linuxutils_version = (2, 1, 0)
-    _required_lsmod_version = (2, 0, 0)
+    _required_linux_utilities_modules_version = (3, 0, 0)
+    _required_linuxutils_gatherers_version = (1, 0, 0)
     _required_linuxnet_version = (1, 0, 0)
 
     @classmethod
@@ -740,17 +746,9 @@ class Netfilter(interfaces.plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="linux_utilities_modules",
-                component=linux_utilities_modules.Modules,
-                version=cls._required_linux_utilities_modules_version,
-            ),
-            requirements.PluginRequirement(
-                name="lsmod", plugin=lsmod.Lsmod, version=cls._required_lsmod_version
-            ),
-            requirements.VersionRequirement(
-                name="linuxutils",
-                component=linux.LinuxUtilities,
-                version=cls._required_linuxutils_version,
+                name="linux_utilities_module_gatherers",
+                component=linux_utilities_modules.ModuleGatherers,
+                version=cls._required_linuxutils_gatherers_version,
             ),
             requirements.VersionRequirement(
                 name="linuxnet",
@@ -766,16 +764,24 @@ class Netfilter(interfaces.plugins.PluginInterface):
             hook_name,
             priority,
             hook_func,
-            module_name,
+            module_info,
+            symbol_name,
             hooked,
         ) = fields
+
+        if module_info:
+            module_name = module_info.name
+        else:
+            module_name = renderers.NotAvailableValue()
+
         return (
             netns,
             proto_name,
             hook_name,
             priority,
             format_hints.Hex(hook_func),
-            module_name or renderers.NotAvailableValue(),
+            module_name,
+            symbol_name or renderers.NotAvailableValue(),
             str(hooked),
         )
 
@@ -794,6 +800,7 @@ class Netfilter(interfaces.plugins.PluginInterface):
             ("Priority", int),
             ("Handler", format_hints.Hex),
             ("Module", str),
+            ("Symbol", str),
             ("Is Hooked", str),
         ]
         return renderers.TreeGrid(headers, self._generator())

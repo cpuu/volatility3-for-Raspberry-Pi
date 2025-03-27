@@ -44,14 +44,19 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 description="Linux kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.PluginRequirement(
-                name="elfs", plugin=elfs.Elfs, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="elfs", component=elfs.Elfs, version=(2, 0, 0)
             ),
             requirements.ListRequirement(
                 name="pid",
                 description="Filter on specific process IDs",
                 element_type=int,
                 optional=True,
+            ),
+            requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
             ),
             requirements.BooleanRequirement(
                 name="threads",

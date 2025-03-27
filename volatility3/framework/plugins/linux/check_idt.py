@@ -10,7 +10,6 @@ from volatility3.framework import interfaces, renderers, symbols
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols import linux
-from volatility3.plugins.linux import lsmod
 
 vollog = logging.getLogger(__name__)
 
@@ -34,13 +33,15 @@ class Check_idt(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
                 component=linux_utilities_modules.Modules,
-                version=(2, 0, 0),
+                version=(3, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="linux_utilities_module_gatherers",
+                component=linux_utilities_modules.ModuleGatherers,
+                version=(1, 0, 0),
             ),
             requirements.VersionRequirement(
                 name="linuxutils", component=linux.LinuxUtilities, version=(2, 0, 0)
-            ),
-            requirements.PluginRequirement(
-                name="lsmod", plugin=lsmod.Lsmod, version=(2, 0, 0)
             ),
         ]
 
@@ -82,10 +83,10 @@ class Check_idt(interfaces.plugins.PluginInterface):
 
         vmlinux = self.context.modules[self.config["kernel"]]
 
-        modules = lsmod.Lsmod.list_modules(self.context, vmlinux.name)
-
-        handlers = linux.LinuxUtilities.generate_kernel_handler_info(
-            self.context, vmlinux.name, modules
+        known_modules = linux_utilities_modules.Modules.run_modules_scanners(
+            context=self.context,
+            kernel_module_name=self.config["kernel"],
+            caller_wanted_gatherers=linux_utilities_modules.ModuleGatherers.all_gatherers_identifier,
         )
 
         idt_table_size = 256
@@ -134,11 +135,16 @@ class Check_idt(interfaces.plugins.PluginInterface):
                 module_name = renderers.NotAvailableValue()
                 symbol_name = renderers.NotAvailableValue()
             else:
-                module_name, symbol_name = (
-                    linux_utilities_modules.Modules.lookup_module_address(
-                        self.context, vmlinux.name, handlers, idt_addr
+                module_info, symbol_name = (
+                    linux_utilities_modules.Modules.module_lookup_by_address(
+                        self.context, vmlinux.name, known_modules, idt_addr
                     )
                 )
+
+                if module_info:
+                    module_name = module_info.name
+                else:
+                    module_name = renderers.NotAvailableValue()
 
             yield (
                 0,
@@ -146,7 +152,7 @@ class Check_idt(interfaces.plugins.PluginInterface):
                     format_hints.Hex(i),
                     format_hints.Hex(idt_addr),
                     module_name,
-                    symbol_name,
+                    symbol_name or renderers.NotAvailableValue(),
                 ],
             )
 

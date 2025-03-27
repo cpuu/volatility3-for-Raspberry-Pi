@@ -31,9 +31,9 @@ class Desktops(interfaces.plugins.PluginInterface):
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.PluginRequirement(
+            requirements.VersionRequirement(
                 name="windowstations",
-                plugin=windowstations.WindowStations,
+                component=windowstations.WindowStations,
                 version=(1, 0, 0),
             ),
         ]

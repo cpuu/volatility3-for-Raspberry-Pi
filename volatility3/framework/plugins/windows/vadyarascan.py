@@ -29,14 +29,14 @@ class VadYaraScan(interfaces.plugins.PluginInterface):
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(3, 0, 0)
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="yarascanner", component=yarascan.YaraScanner, version=(2, 0, 0)
             ),
-            requirements.PluginRequirement(
-                name="yarascan", plugin=yarascan.YaraScan, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="yarascan", component=yarascan.YaraScan, version=(2, 0, 0)
             ),
             requirements.ListRequirement(
                 name="pid",

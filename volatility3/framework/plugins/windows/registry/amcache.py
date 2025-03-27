@@ -231,8 +231,13 @@ class Amcache(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.PluginRequirement(
-                name="hivelist", plugin=hivelist.HiveList, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="hivelist", component=hivelist.HiveList, version=(2, 0, 0)
+            ),
+            requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
             ),
         ]
 
@@ -432,7 +437,6 @@ class Amcache(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         wanted_values = [key.value for key in val_enum]
 
         for file_key in inv_app_file_key.get_subkeys():
-
             vollog.debug(
                 f"Parsing Win10 InventoryApplicationFile key {file_key.get_name()}"
             )
@@ -600,7 +604,10 @@ class Amcache(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         try:
             files = sorted(
                 list(
-                    self.parse_inventory_app_file_key(amcache.get_key("Root\\InventoryApplicationFile")),  # type: ignore
+                    self.parse_inventory_app_file_key(
+                        amcache.get_key("Root\\InventoryApplicationFile")
+                    ),
+                    # type: ignore
                 ),
                 key=_entry_sort_key,
             )
