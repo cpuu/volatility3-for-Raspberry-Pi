@@ -41,6 +41,11 @@ class PsScan(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="pslist", component=pslist.PsList, version=(4, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="multi_string_scanner",
+                component=scanners.MultiStringScanner,
+                version=(1, 0, 0),
+            ),
         ]
 
     def _generator(self):

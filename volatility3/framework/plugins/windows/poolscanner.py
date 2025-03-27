@@ -55,6 +55,8 @@ class PoolConstraint:
 
 
 class PoolHeaderScanner(interfaces.layers.ScannerInterface):
+    _version = (1, 0, 0)
+
     def __init__(
         self,
         module: interfaces.context.ModuleInterface,
@@ -141,6 +143,11 @@ class PoolScanner(plugins.PluginInterface):
             ),
             requirements.VersionRequirement(
                 name="handles", component=handles.Handles, version=(3, 0, 0)
+            ),
+            requirements.VersionRequirement(
+                name="pool_header_scanner",
+                component=PoolHeaderScanner,
+                version=(1, 0, 0),
             ),
         ]
 

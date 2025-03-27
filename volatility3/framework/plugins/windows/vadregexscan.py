@@ -41,6 +41,11 @@ class VadRegExScan(plugins.PluginInterface):
                 element_type=int,
                 optional=True,
             ),
+            requirements.VersionRequirement(
+                name="regex_scanner",
+                component=scanners.RegExScanner,
+                version=(1, 0, 0),
+            ),
             requirements.StringRequirement(
                 name="pattern", description="RegEx pattern", optional=False
             ),

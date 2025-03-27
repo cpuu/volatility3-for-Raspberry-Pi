@@ -37,6 +37,11 @@ class MBRScan(interfaces.plugins.PluginInterface):
                 default=False,
                 optional=True,
             ),
+            requirements.VersionRequirement(
+                name="multi_string_scanner",
+                component=scanners.MultiStringScanner,
+                version=(1, 0, 0),
+            ),
         ]
 
     @classmethod

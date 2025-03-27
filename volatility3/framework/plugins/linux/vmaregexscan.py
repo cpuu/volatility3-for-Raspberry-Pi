@@ -46,6 +46,11 @@ class VmaRegExScan(plugins.PluginInterface):
             requirements.StringRequirement(
                 name="pattern", description="RegEx pattern", optional=False
             ),
+            requirements.VersionRequirement(
+                name="regex_scanner",
+                component=scanners.RegExScanner,
+                version=(1, 0, 0),
+            ),
             requirements.IntRequirement(
                 name="maxsize",
                 description="Maximum size in bytes for displayed context",

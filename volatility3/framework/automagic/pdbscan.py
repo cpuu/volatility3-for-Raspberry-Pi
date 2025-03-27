@@ -17,7 +17,7 @@ from volatility3.framework import constants, exceptions, interfaces, layers
 from volatility3.framework.configuration import requirements
 from volatility3.framework.layers import intel, scanners
 from volatility3.framework.symbols import native
-from volatility3.framework.symbols.windows.pdbutil import PDBUtility
+from volatility3.framework.symbols.windows import pdbutil
 
 if __name__ == "__main__":
     import sys
@@ -49,6 +49,21 @@ class KernelPDBScanner(interfaces.automagic.AutomagicInterface):
     priority = 30
     max_pdb_size = 0x400000
     exclusion_list = ["linux", "mac"]
+
+    @classmethod
+    def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
+        return [
+            requirements.VersionRequirement(
+                name="pdb_utility",
+                component=pdbutil.PDBUtility,
+                version=(1, 0, 1),
+            ),
+            requirements.VersionRequirement(
+                name="bytes_scanner",
+                component=scanners.BytesScanner,
+                version=(1, 0, 0),
+            ),
+        ]
 
     def find_virtual_layers_from_req(
         self,
@@ -120,7 +135,7 @@ class KernelPDBScanner(interfaces.automagic.AutomagicInterface):
                 ):
                     raise TypeError("PDB name or GUID not a string value")
 
-                PDBUtility.load_windows_symbol_table(
+                pdbutil.PDBUtility.load_windows_symbol_table(
                     context=context,
                     guid=kernel["GUID"],
                     age=kernel["age"],
@@ -259,7 +274,7 @@ class KernelPDBScanner(interfaces.automagic.AutomagicInterface):
             bytes(name + ".pdb", "utf-8")
             for name in constants.windows.KERNEL_MODULE_NAMES
         ]
-        kernels = PDBUtility.pdbname_scan(
+        kernels = pdbutil.PDBUtility.pdbname_scan(
             ctx=context,
             layer_name=layer_to_scan,
             start=start_scan_address,
@@ -362,7 +377,7 @@ class KernelPDBScanner(interfaces.automagic.AutomagicInterface):
         with contextlib.suppress(exceptions.InvalidAddressException):
             if vlayer.read(address, 0x2) == b"MZ":
                 res = list(
-                    PDBUtility.pdbname_scan(
+                    pdbutil.PDBUtility.pdbname_scan(
                         ctx=context,
                         layer_name=vlayer.name,
                         page_size=vlayer.page_size,

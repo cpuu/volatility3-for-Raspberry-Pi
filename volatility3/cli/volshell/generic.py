@@ -38,6 +38,8 @@ class Volshell(interfaces.plugins.PluginInterface):
 
     _required_framework_version = (2, 0, 0)
 
+    _version = (1, 0, 0)
+
     DEFAULT_NUM_DISPLAY_BYTES = 128
 
     def __init__(self, *args, **kwargs):
@@ -60,6 +62,11 @@ class Volshell(interfaces.plugins.PluginInterface):
                     description="File to load and execute at start",
                     default=None,
                     optional=True,
+                ),
+                requirements.VersionRequirement(
+                    name="regex_scanner",
+                    component=scanners.RegExScanner,
+                    version=(1, 0, 0),
                 ),
                 requirements.BooleanRequirement(
                     name="script-only",
