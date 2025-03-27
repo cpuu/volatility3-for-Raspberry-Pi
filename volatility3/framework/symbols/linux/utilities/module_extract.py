@@ -461,9 +461,10 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
             e_ident = (
                 b"\x7f\x45\x4c\x46\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00"
             )
-            e_machine = 0x3E  # EM_X86_64
-            e_ehsize = 64
-            e_shentsize = 52
+            e_machine_int = 0x3E  # EM_X86_64
+            e_ehsize_int = 64
+            e_shentsize_int = 52
+            header_size = 64
 
         e_type = struct.pack("<H", 1)  # relocateble
         e_machine = struct.pack("<H", e_machine_int)
