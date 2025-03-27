@@ -136,4 +136,4 @@ class PluginRenameClass:
             else:
                 if not attr.startswith("__"):
                     setattr(cls, attr, value)
-        return super(replacement_class).__init_subclass__(**kwargs)
+        return super(PluginRenameClass).__init_subclass__(**kwargs)
