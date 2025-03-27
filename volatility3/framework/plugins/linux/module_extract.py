@@ -4,6 +4,7 @@
 import logging
 from typing import List
 
+from volatility3 import framework
 import volatility3.framework.symbols.linux.utilities.module_extract as linux_utilities_module_extract
 from volatility3.framework import interfaces, renderers
 from volatility3.framework.configuration import requirements
@@ -16,9 +17,10 @@ vollog = logging.getLogger(__name__)
 class ModuleExtract(interfaces.plugins.PluginInterface):
     """Recreates an ELF file from a specific address in the kernel"""
 
+    _version = (1, 0, 0)
     _required_framework_version = (2, 0, 0)
 
-    _version = (1, 0, 0)
+    framework.require_interface_version(*_required_framework_version)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
