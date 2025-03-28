@@ -30,6 +30,8 @@ from volatility3.framework.objects import utility
 from volatility3.framework.symbols.linux import extensions
 from volatility3.framework.symbols.linux.utilities import tainting
 
+import volatility3.framework.symbols.linux.utilities.module_extract as linux_utilities_module_extract
+
 vollog = logging.getLogger(__name__)
 
 
@@ -921,7 +923,7 @@ class ModuleDisplayPlugin(interfaces.configuration.VersionableInterface):
     The constructor of the plugin must call super() with the `implementation` set
     """
 
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
     _required_framework_version = (2, 0, 0)
 
     framework.require_interface_version(*_required_framework_version)
@@ -941,6 +943,12 @@ class ModuleDisplayPlugin(interfaces.configuration.VersionableInterface):
             ),
             requirements.VersionRequirement(
                 name="linux-tainting", component=tainting.Tainting, version=(1, 0, 0)
+            ),
+            requirements.BooleanRequirement(
+                name="dump",
+                description="Extract listed modules",
+                default=False,
+                optional=True,
             ),
         ]
 
@@ -974,12 +982,32 @@ class ModuleDisplayPlugin(interfaces.configuration.VersionableInterface):
 
             parameters = ", ".join([f"{key}={value}" for key, value in parameters_iter])
 
+            file_name = renderers.NotApplicableValue()
+
+            if self.config["dump"]:
+                elf_data = linux_utilities_module_extract.ModuleExtract.extract_module(
+                    self.context, self.config["kernel"], module
+                )
+                if not elf_data:
+                    vollog.warning(
+                        f"Unable to reconstruct the ELF for module struct at {module.vol.offset:#x}"
+                    )
+                    file_name = renderers.NotAvailableValue()
+                else:
+                    file_name = self.open.sanitize_filename(
+                        f"kernel_module.{name}.{module.vol.offset:#x}.elf"
+                    )
+
+                    with self.open(file_name) as file_handle:
+                        file_handle.write(elf_data)
+
             yield 0, (
                 format_hints.Hex(module.vol.offset),
                 name,
                 format_hints.Hex(code_size),
                 taints,
                 parameters,
+                file_name,
             )
 
     def run(self):
@@ -990,6 +1018,7 @@ class ModuleDisplayPlugin(interfaces.configuration.VersionableInterface):
                 ("Code Size", format_hints.Hex),
                 ("Taints", str),
                 ("Load Arguments", str),
+                ("File Output", str),
             ],
             self._generator(),
         )

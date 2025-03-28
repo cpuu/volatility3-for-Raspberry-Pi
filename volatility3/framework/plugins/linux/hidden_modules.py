@@ -7,7 +7,6 @@ from volatility3.framework.symbols.linux.utilities import (
     modules as linux_utilities_modules,
 )
 from volatility3.framework import interfaces, exceptions, deprecation
-from volatility3.framework.constants import architectures
 from volatility3.framework.configuration import requirements
 from volatility3.framework.symbols.linux import extensions
 from volatility3.framework.interfaces import plugins
@@ -19,7 +18,7 @@ class Hidden_modules(plugins.PluginInterface):
     """Carves memory to find hidden kernel modules"""
 
     _required_framework_version = (2, 10, 0)
-    _version = (3, 0, 0)
+    _version = (3, 0, 1)
 
     @classmethod
     def get_hidden_modules(
@@ -62,17 +61,12 @@ class Hidden_modules(plugins.PluginInterface):
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
         return [
-            requirements.ModuleRequirement(
-                name="kernel",
-                description="Linux kernel",
-                architectures=architectures.LINUX_ARCHS,
-            ),
             requirements.VersionRequirement(
                 name="linux_utilities_modules_module_display_plugin",
                 component=linux_utilities_modules.ModuleDisplayPlugin,
                 version=(1, 0, 0),
             ),
-        ]
+        ] + linux_utilities_modules.ModuleDisplayPlugin.get_requirements()
 
     @staticmethod
     @deprecation.deprecated_method(

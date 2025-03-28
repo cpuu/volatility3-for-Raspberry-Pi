@@ -52,6 +52,8 @@ class LinuxKernelIntermedSymbols(intermed.IntermediateSymbolTable):
         self.set_type_class("idr", extensions.IDR)
         self.set_type_class("address_space", extensions.address_space)
         self.set_type_class("page", extensions.page)
+        self.set_type_class("module_sect_attr", extensions.module_sect_attr)
+
         # Might not exist in the current symbols
         self.optional_set_type_class("module", extensions.module)
         self.optional_set_type_class("bpf_prog", extensions.bpf_prog)
@@ -79,6 +81,7 @@ class LinuxKernelIntermedSymbols(intermed.IntermediateSymbolTable):
         self.set_type_class("sock", extensions.network.sock)
         self.set_type_class("inet_sock", extensions.network.inet_sock)
         self.set_type_class("unix_sock", extensions.network.unix_sock)
+
         # Might not exist in older kernels or the current symbols
         self.optional_set_type_class("netlink_sock", extensions.network.netlink_sock)
         self.optional_set_type_class("vsock_sock", extensions.network.vsock_sock)

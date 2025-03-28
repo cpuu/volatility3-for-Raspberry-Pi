@@ -18,7 +18,7 @@ class Lsmod(plugins.PluginInterface):
     """Lists loaded kernel modules."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (3, 0, 0)
+    _version = (3, 0, 1)
 
     run = linux_utilities_modules.ModuleDisplayPlugin.run
     _generator = linux_utilities_modules.ModuleDisplayPlugin.generator
@@ -27,22 +27,12 @@ class Lsmod(plugins.PluginInterface):
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
         return [
-            requirements.ModuleRequirement(
-                name="kernel",
-                description="Linux kernel",
-                architectures=["Intel32", "Intel64"],
-            ),
-            requirements.VersionRequirement(
-                name="linux_utilities_modules",
-                component=linux_utilities_modules.Modules,
-                version=(3, 0, 0),
-            ),
             requirements.VersionRequirement(
                 name="linux_utilities_modules_module_display_plugin",
                 component=linux_utilities_modules.ModuleDisplayPlugin,
                 version=(1, 0, 0),
             ),
-        ]
+        ] + linux_utilities_modules.ModuleDisplayPlugin.get_requirements()
 
     @classmethod
     @deprecation.deprecated_method(

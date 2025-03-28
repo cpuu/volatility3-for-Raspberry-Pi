@@ -3121,3 +3121,47 @@ class kernel_symbol(objects.StructType):
             return self._do_get_namespace()
         except exceptions.InvalidAddressException:
             return None
+
+
+class module_sect_attr(objects.StructType):
+    def get_name(self) -> Optional[str]:
+        """
+        Performs careful extraction of the section name
+        The `name` member has changed type and meaning over time
+        It also was present even in cases with `mattr` present, which
+        holds the name the kernel uses
+        """
+        if hasattr(self, "battr"):
+            try:
+                return utility.pointer_to_string(self.battr.attr.name, count=32)
+            except exceptions.InvalidAddressException:
+                # if battr is present then its name attribute needs to be valid
+                vollog.debug(f"Invalid battr name for section at {self.vol.offset:#x}")
+                return None
+
+        elif self.name.vol.type_name == "array":
+            try:
+                return utility.array_to_string(self.name, count=32)
+            except exceptions.InvalidAddressException:
+                # specifically do not return here to give `mattr` a chance
+                vollog.debug(f"Invalid direct name for section at {self.vol.offset:#x}")
+
+        elif self.name.vol.type_name == "pointer":
+            try:
+                return utility.pointer_to_string(self.name, count=32)
+            except exceptions.InvalidAddressException:
+                # specifically do not return here to give `mattr` a chance
+                vollog.debug(
+                    f"Invalid pointer name for section at {self.vol.offset:#x}"
+                )
+
+        # if everything else failed...
+        if hasattr(self, "mattr"):
+            try:
+                return utility.pointer_to_string(self.mattr.attr.name, count=32)
+            except exceptions.InvalidAddressException:
+                vollog.debug(
+                    f"Unresolvable name for for section at {self.vol.offset:#x}"
+                )
+
+        return None

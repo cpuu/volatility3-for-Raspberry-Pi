@@ -484,3 +484,28 @@ Documentation :
     - taint_flag kernel struct
     - taint_flags kernel constant
 """
+
+## ELF related constants
+
+# Elf Symbol Bindings
+STB_LOCAL = 0
+STB_GLOBAL = 1
+
+# Elf Symbol Types
+STT_NOTYPE = 0
+STT_OBJECT = 1
+STT_FUNC = 2
+STT_SECTION = 3
+
+# Elf Section Types
+SHT_NULL = 0
+SHT_PROGBITS = 1
+SHT_SYMTAB = 2
+SHT_STRTAB = 3
+SHT_RELA = 4
+SHT_NOTE = 7
+
+# Elf Section Attributes
+SHF_WRITE = 1
+SHF_ALLOC = 2
+SHF_EXECINSTR = 4
