@@ -489,9 +489,12 @@ class Volshell(interfaces.plugins.PluginInterface):
                 member_type_name = self._get_type_name_with_pointer(
                     member_type
                 )  # special case for pointers to show what they point to
+
+                # find the longest typename
                 longest_typename = max(len(member_type_name), longest_typename)
-                if longest_typename > MAX_TYPENAME_DISPLAY_LENGTH:
-                    longest_typename = MAX_TYPENAME_DISPLAY_LENGTH
+
+                # if the typename is very long then limit it to MAX_TYPENAME_DISPLAY_LENGTH
+                longest_typename = min(longest_typename, MAX_TYPENAME_DISPLAY_LENGTH)
 
             for member in sorted(
                 volobject.vol.members, key=lambda x: (volobject.vol.members[x][0], x)
