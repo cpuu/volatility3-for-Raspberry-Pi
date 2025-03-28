@@ -77,7 +77,7 @@ class CodeViolation(metaclass=abc.ABCMeta):
         self.node = node
 
     def __str__(self):
-        return f"Code violation in module {self.module.__name__}: line {self.node.lineno}, col {self.node.col_offset}"
+        return f"Issue in module {self.module.__name__}: line {self.node.lineno}, col {self.node.col_offset}"
 
 
 class UnrequiredVersionableUsage(CodeViolation):
@@ -345,7 +345,7 @@ def perform_review():
 
     if found:
         print(
-            f"Found {found} coding standards violations"
+            f"Found {found} issues"
         )
         sys.exit(1)
 
