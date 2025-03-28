@@ -111,6 +111,7 @@ def is_versionable(var):
             issubclass(var, interfaces.configuration.VersionableInterface)
             and var is not interfaces.configuration.VersionableInterface
             and not inspect.isabstract(var)
+            and not (hasattr(var, "hidden") and getattr(var, "hidden") is True)
         )
     except TypeError:
         return False
