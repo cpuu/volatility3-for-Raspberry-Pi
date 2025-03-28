@@ -630,7 +630,7 @@ class Volshell(interfaces.plugins.PluginInterface):
                     if value is None:
                         return "N/A"
                     else:
-                        return value
+                        return repr(value)
 
         except exceptions.InvalidAddressException:
             # if value causes an InvalidAddressException like BaseAbsentValue then display N/A
