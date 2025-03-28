@@ -341,7 +341,7 @@ def perform_review():
     found = 0
     for mod, usage in report_missing_requirements():
         found += 1
-        print(f"Violation in module {mod} (line {usage.node.lineno}): {str(usage)}")
+        print(str(usage))
 
     if found:
         print(
