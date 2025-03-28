@@ -18,7 +18,7 @@ class ModuleExtract(interfaces.plugins.PluginInterface):
     """Recreates an ELF file from a specific address in the kernel"""
 
     _version = (1, 0, 0)
-    _required_framework_version = (2, 0, 0)
+    _required_framework_version = (2, 25, 0)
 
     framework.require_interface_version(*_required_framework_version)
 
