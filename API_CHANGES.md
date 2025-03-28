@@ -68,7 +68,7 @@ No significant changes (part of the 2.16.0 PR which took time in development)
 
 2.13.0
 ======
-Linux `task` objectr extension addition of `getppid`
+Linux `task` object extension addition of `getppid`
 
 2.12.0
 ======
