@@ -38,6 +38,8 @@ class Volshell(interfaces.plugins.PluginInterface):
 
     _required_framework_version = (2, 0, 0)
 
+    _version = (1, 0, 0)
+
     DEFAULT_NUM_DISPLAY_BYTES = 128
 
     def __init__(self, *args, **kwargs):
@@ -52,9 +54,18 @@ class Volshell(interfaces.plugins.PluginInterface):
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
-        reqs: List[interfaces.configuration.RequirementInterface] = []
+        reqs: List[interfaces.configuration.RequirementInterface] = [
+            requirements.VersionRequirement(
+                name="regex_scanner",
+                component=scanners.RegExScanner,
+                version=(1, 0, 0),
+            ),
+        ]
         if cls == Volshell:
-            reqs = [
+            reqs += [
+                requirements.TranslationLayerRequirement(
+                    name="primary", description="Memory layer for the kernel"
+                ),
                 requirements.URIRequirement(
                     name="script",
                     description="File to load and execute at start",
@@ -68,11 +79,8 @@ class Volshell(interfaces.plugins.PluginInterface):
                     optional=True,
                 ),
             ]
-        return reqs + [
-            requirements.TranslationLayerRequirement(
-                name="primary", description="Memory layer for the kernel"
-            ),
-        ]
+
+        return reqs
 
     def run(
         self, additional_locals: Dict[str, Any] = {}

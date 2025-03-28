@@ -47,6 +47,11 @@ class Check_modules(plugins.PluginInterface):
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
         return [
             requirements.VersionRequirement(
+                name="modules",
+                component=linux_utilities_modules.Modules,
+                version=(3, 0, 1),
+            ),
+            requirements.VersionRequirement(
                 name="linux_utilities_modules_module_display_plugin",
                 component=linux_utilities_modules.ModuleDisplayPlugin,
                 version=(1, 0, 0),

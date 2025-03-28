@@ -1,0 +1,25 @@
+name: Check Volatility3 Version Requirements
+on: [push, pull_request]
+jobs:
+
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        python-version: ["3.8"]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install .[test]
+
+    - name: Testing...
+      run: |
+        # Verify completeness of ConfigurableInterface requirements
+        python ./test/check_configurable_requirements.py

@@ -40,6 +40,16 @@ class Bash(plugins.PluginInterface, timeliner.TimeLinerInterface):
                 component=timeliner.TimeLinerInterface,
                 version=(1, 0, 0),
             ),
+            requirements.VersionRequirement(
+                name="multi_string_scanner",
+                component=scanners.MultiStringScanner,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="bytes_scanner",
+                component=scanners.BytesScanner,
+                version=(1, 0, 0),
+            ),
             requirements.ListRequirement(
                 name="pid",
                 element_type=int,

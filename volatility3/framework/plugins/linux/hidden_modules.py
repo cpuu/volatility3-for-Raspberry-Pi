@@ -93,6 +93,11 @@ class Hidden_modules(plugins.PluginInterface):
                 component=linux_utilities_modules.ModuleDisplayPlugin,
                 version=(1, 0, 0),
             ),
+            requirements.VersionRequirement(
+                name="linux_utilities_modules",
+                component=linux_utilities_modules.Modules,
+                version=(3, 0, 1),
+            ),
         ] + linux_utilities_modules.ModuleDisplayPlugin.get_requirements()
 
     @staticmethod

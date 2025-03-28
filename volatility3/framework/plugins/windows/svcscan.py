@@ -56,6 +56,11 @@ class SvcScan(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="hivelist", component=hivelist.HiveList, version=(2, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="bytes_scanner",
+                component=scanners.BytesScanner,
+                version=(1, 0, 0),
+            ),
         ]
 
     @classmethod

@@ -36,7 +36,12 @@ class Volshell(generic.Volshell):
             requirements.IntRequirement(
                 name="pid", description="Process ID", optional=True
             ),
-        ]
+            requirements.VersionRequirement(
+                name="generic_volshell",
+                component=generic.Volshell,
+                version=(1, 0, 0),
+            ),
+        ] + super().get_requirements()
 
     def change_task(self, pid=None):
         """Change the current process and layer, based on a process ID"""
