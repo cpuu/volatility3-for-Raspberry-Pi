@@ -502,11 +502,10 @@ class Volshell(interfaces.plugins.PluginInterface):
                 member_type_name = self._get_type_name_with_pointer(
                     member_type
                 )  # special case for pointers to show what they point to
-                if len(member_type_name) > MAX_TYPENAME_DISPLAY_LENGTH:
-                    member_type_name = (
-                        f"{member_type_name[:MAX_TYPENAME_DISPLAY_LENGTH - 3]}..."
-                    )
                 len_typename = len(member_type_name)
+                if len(member_type_name) > MAX_TYPENAME_DISPLAY_LENGTH:
+                    len_typename = MAX_TYPENAME_DISPLAY_LENGTH
+                    member_type_name = f"{member_type_name[:len_typename - 3]}..."
                 if isinstance(volobject, interfaces.objects.ObjectInterface):
                     # We're an instance, so also display the data
                     try:
