@@ -1,9 +1,9 @@
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.linux.extensions import network
-from volatility3.framework.interfaces.configuration import VersionableInterface
+from volatility3.framework.interfaces import configuration
 
 
-class NetSymbols(VersionableInterface):
+class NetSymbols(configuration.VersionableInterface):
     _version = (1, 0, 0)
 
     @classmethod

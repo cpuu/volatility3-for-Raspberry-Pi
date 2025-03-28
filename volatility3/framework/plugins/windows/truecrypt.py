@@ -3,20 +3,15 @@
 #
 
 import logging
+from typing import Generator, Iterable, List, Tuple
 
-from typing import Iterable, Generator, List, Tuple
-
-from volatility3.framework import constants, interfaces, renderers
+from volatility3.framework import constants, interfaces, objects, renderers
 from volatility3.framework.configuration import requirements
-from volatility3.framework.interfaces.configuration import RequirementInterface
-from volatility3.framework.interfaces.objects import ObjectInterface
-from volatility3.framework.objects import Bytes, DataFormatInfo, Integer, StructType
-from volatility3.framework.objects.templates import ObjectTemplate
+from volatility3.framework.interfaces import configuration
 from volatility3.framework.objects.utility import array_to_string
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.windows.extensions import pe
-
 from volatility3.plugins.windows import modules
 
 vollog = logging.getLogger(__name__)
@@ -29,7 +24,7 @@ class Passphrase(interfaces.plugins.PluginInterface):
     _required_framework_version = (2, 5, 2)
 
     @classmethod
-    def get_requirements(cls) -> List[RequirementInterface]:
+    def get_requirements(cls) -> List[configuration.RequirementInterface]:
         return [
             requirements.ModuleRequirement(
                 "kernel",
@@ -67,7 +62,7 @@ class Passphrase(interfaces.plugins.PluginInterface):
             layer_name,
             module_base,
         )
-        data_section: StructType = next(
+        data_section: objects.StructType = next(
             sec
             for sec in dos_header.get_nt_header().get_sections()
             if array_to_string(sec.Name) == ".data"
@@ -76,11 +71,11 @@ class Passphrase(interfaces.plugins.PluginInterface):
         size: int = data_section.Misc.VirtualSize
         # Looking at `Length` in TrueCrypt/Common/Password.h::Password struct
         DWORD_SIZE_BYTES: int = 4
-        format = DataFormatInfo(
+        format = objects.DataFormatInfo(
             length=DWORD_SIZE_BYTES, byteorder="little", signed=True
         )
-        int32 = ObjectTemplate(
-            Integer, pe_table_name + constants.BANG + "int", data_format=format
+        int32 = objects.templates.ObjectTemplate(
+            objects.Integer, pe_table_name + constants.BANG + "int", data_format=format
         )
         count, not_aligned = divmod(size, DWORD_SIZE_BYTES)
         if not_aligned:
@@ -99,7 +94,7 @@ class Passphrase(interfaces.plugins.PluginInterface):
             if not min_length <= length <= 64:
                 continue
             offset = length.vol["offset"] + DWORD_SIZE_BYTES
-            passphrase: Bytes = self.context.object(
+            passphrase: objects.Bytes = self.context.object(
                 pe_table_name + constants.BANG + "bytes",
                 layer_name,
                 offset,
@@ -111,7 +106,7 @@ class Passphrase(interfaces.plugins.PluginInterface):
                 continue
             # TrueCrypt/Common/Password.h::Password struct is padded with
             # 3 zero bytes to keep 64-byte alignment.
-            buf: Bytes = self.context.object(
+            buf: objects.Bytes = self.context.object(
                 pe_table_name + constants.BANG + "bytes",
                 layer_name,
                 offset + length + 1,  # +1 for '\0'-terminated password string
@@ -124,8 +119,8 @@ class Passphrase(interfaces.plugins.PluginInterface):
 
     def _generator(self):
         kernel = self.context.modules[self.config["kernel"]]
-        mods: Iterable[ObjectInterface] = modules.Modules.list_modules(
-            self.context, self.config["kernel"]
+        mods: Iterable[interfaces.objects.ObjectInterface] = (
+            modules.Modules.list_modules(self.context, self.config["kernel"])
         )
         try:
             truecrypt_module_base = next(

@@ -37,7 +37,8 @@ from typing import (
     Set,
 )
 
-from volatility3 import classproperty, framework
+import volatility3
+from volatility3 import framework
 from volatility3.framework import constants, interfaces
 
 CONFIG_SEPARATOR = "."
@@ -805,7 +806,7 @@ class VersionableInterface:
         framework.require_interface_version(*self._required_framework_version)
         super().__init__(*args, **kwargs)
 
-    @classproperty
+    @volatility3.classproperty
     def version(cls) -> Tuple[int, int, int]:
         """The version of the current interface (classmethods available on the component).
 

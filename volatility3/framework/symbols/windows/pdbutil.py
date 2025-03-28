@@ -16,7 +16,6 @@ from volatility3 import symbols
 from volatility3.framework import constants, contexts, exceptions, interfaces
 from volatility3.framework.automagic import symbol_cache
 from volatility3.framework.configuration import requirements
-from volatility3.framework.configuration.requirements import SymbolTableRequirement
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.windows import pdbconv
 
@@ -140,7 +139,7 @@ class PDBUtility(interfaces.configuration.VersionableInterface):
         requirement_name = interfaces.configuration.path_head(config_path)
 
         # Construct the appropriate symbol table
-        requirement = SymbolTableRequirement(
+        requirement = requirements.SymbolTableRequirement(
             name=requirement_name, description="PDBUtility generated symbol table"
         )
         requirement.construct(context, parent_config_path)

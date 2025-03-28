@@ -10,9 +10,8 @@ from Crypto.Cipher import ARC4, DES, AES
 
 from volatility3.framework import interfaces, renderers, exceptions
 from volatility3.framework.configuration import requirements
-from volatility3.framework.exceptions import InvalidAddressException
 
-from volatility3.framework.layers import registry
+from volatility3.framework.layers import registry as registry_layers
 from volatility3.framework.symbols.windows import versions
 from volatility3.plugins.windows.registry import hashdump, hivelist
 from volatility3.framework.renderers import format_hints
@@ -65,7 +64,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
 
     @classmethod
     def get_lsa_key(
-        cls, sechive: registry.RegistryHive, bootkey: bytes, vista_or_later: bool
+        cls, sechive: registry_layers.RegistryHive, bootkey: bytes, vista_or_later: bool
     ) -> Optional[bytes]:
         if not bootkey:
             return None
@@ -109,7 +108,7 @@ class Lsadump(interfaces.plugins.PluginInterface):
     @classmethod
     def get_secret_by_name(
         cls,
-        sechive: registry.RegistryHive,
+        sechive: registry_layers.RegistryHive,
         name: str,
         lsakey: bytes,
         is_vista_or_later: bool,
@@ -123,8 +122,8 @@ class Lsadump(interfaces.plugins.PluginInterface):
             try:
                 enc_secret_value = next(enc_secret_key.get_values(), None)
             except (
-                InvalidAddressException,
-                registry.RegistryException,
+                exceptions.InvalidAddressException,
+                registry_layers.RegistryException,
             ):
                 enc_secret_value = None
 
@@ -171,7 +170,9 @@ class Lsadump(interfaces.plugins.PluginInterface):
         return decrypted_data[8 : 8 + dec_data_len]
 
     def _generator(
-        self, syshive: registry.RegistryHive, sechive: registry.RegistryHive
+        self,
+        syshive: registry_layers.RegistryHive,
+        sechive: registry_layers.RegistryHive,
     ):
         kernel = self.context.modules[self.config["kernel"]]
 
@@ -206,8 +207,8 @@ class Lsadump(interfaces.plugins.PluginInterface):
                 enc_secret_value = next(sec_val_key.get_values(), None)
             except (
                 StopIteration,
-                InvalidAddressException,
-                registry.RegistryException,
+                exceptions.InvalidAddressException,
+                registry_layers.RegistryException,
             ):
                 enc_secret_value = None
 
@@ -229,8 +230,8 @@ class Lsadump(interfaces.plugins.PluginInterface):
             try:
                 key_name = key.get_name()
             except (
-                InvalidAddressException,
-                registry.RegistryException,
+                exceptions.InvalidAddressException,
+                registry_layers.RegistryException,
             ):
                 key_name = renderers.UnreadableValue()
 

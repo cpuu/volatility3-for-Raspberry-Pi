@@ -5,8 +5,8 @@
 import logging
 from typing import Callable, Tuple, List, Dict
 
-from volatility3.framework import interfaces, exceptions, constants, objects
-from volatility3.framework.renderers import TreeGrid, NotAvailableValue, format_hints
+from volatility3.framework import interfaces, exceptions, constants, objects, renderers
+from volatility3.framework.renderers import format_hints
 from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import plugins
 from volatility3.framework.objects import utility
@@ -44,7 +44,7 @@ class SockHandlers(interfaces.configuration.VersionableInterface):
         try:
             netns_id = task.nsproxy.net_ns.get_inode()
         except AttributeError:
-            netns_id = NotAvailableValue()
+            netns_id = renderers.NotAvailableValue()
 
         self._netdevices = self._build_network_devices_map(netns_id)
 
@@ -79,7 +79,7 @@ class SockHandlers(interfaces.configuration.VersionableInterface):
             )
             for net_dev in net.dev_base_head.to_list(net_device_symname, "dev_list"):
                 if (
-                    isinstance(netns_id, NotAvailableValue)
+                    isinstance(netns_id, renderers.NotAvailableValue)
                     or net.get_inode() != netns_id
                 ):
                     continue
@@ -263,7 +263,7 @@ class SockHandlers(interfaces.configuration.VersionableInterface):
             # Kernel >= 3.7.10
             src_port = netlink_sock.get_portid()
         except AttributeError:
-            src_port = NotAvailableValue()
+            src_port = renderers.NotAvailableValue()
 
         dst_addr = f"group:0x{netlink_sock.dst_group:08x}"
         module = netlink_sock.module
@@ -273,7 +273,7 @@ class SockHandlers(interfaces.configuration.VersionableInterface):
         try:
             dst_port = netlink_sock.get_dst_portid()
         except AttributeError:
-            dst_port = NotAvailableValue()
+            dst_port = renderers.NotAvailableValue()
 
         state = netlink_sock.get_state()
 
@@ -571,7 +571,7 @@ class Sockstat(plugins.PluginInterface):
             try:
                 netns_id = net.get_inode()
             except AttributeError:
-                netns_id = NotAvailableValue()
+                netns_id = renderers.NotAvailableValue()
 
             yield task, netns_id, fd_num, family, sock_type, protocol, sock_fields
 
@@ -586,10 +586,11 @@ class Sockstat(plugins.PluginInterface):
             `sock_stat` and `protocol` formatted.
         """
         sock_stat = [
-            NotAvailableValue() if field is None else str(field) for field in sock_stat
+            renderers.NotAvailableValue() if field is None else str(field)
+            for field in sock_stat
         ]
         if protocol is None:
-            protocol = NotAvailableValue()
+            protocol = renderers.NotAvailableValue()
 
         return tuple(sock_stat), protocol
 
@@ -641,7 +642,7 @@ class Sockstat(plugins.PluginInterface):
             socket_filter_str = (
                 ",".join(f"{k}={v}" for k, v in extended.items())
                 if extended
-                else NotAvailableValue()
+                else renderers.NotAvailableValue()
             )
 
             task_comm = utility.array_to_string(task.comm)
@@ -685,6 +686,6 @@ class Sockstat(plugins.PluginInterface):
             ("Filter", str),
         ]
 
-        return TreeGrid(
+        return renderers.TreeGrid(
             tree_grid_args, self._generator(pids, netns_id, kernel_module_name)
         )

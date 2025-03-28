@@ -6,9 +6,9 @@ from typing import List, Dict, Iterator
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 
-from volatility3.framework import interfaces, deprecation
+from volatility3.framework import interfaces, deprecation, renderers
 from volatility3.framework.configuration import requirements
-from volatility3.framework.renderers import format_hints, TreeGrid, NotAvailableValue
+from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols.linux import extensions
 from volatility3.framework.constants import architectures
 from volatility3.framework.symbols.linux.utilities import tainting
@@ -156,12 +156,12 @@ spot modules presence and taints."""
             yield (
                 0,
                 (
-                    module.get_name() or NotAvailableValue(),
+                    module.get_name() or renderers.NotAvailableValue(),
                     format_hints.Hex(module_offset),
                     linux_utilities_modules.ModuleGathererLsmod.name in gatherers,
                     linux_utilities_modules.ModuleGathererSysFs.name in gatherers,
                     linux_utilities_modules.ModuleGathererScanner.name in gatherers,
-                    taints or NotAvailableValue(),
+                    taints or renderers.NotAvailableValue(),
                 ),
             )
 
@@ -175,7 +175,7 @@ spot modules presence and taints."""
             ("Taints", str),
         ]
 
-        return TreeGrid(
+        return renderers.TreeGrid(
             columns,
             self._generator(),
         )

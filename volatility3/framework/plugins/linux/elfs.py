@@ -14,7 +14,7 @@ from volatility3.framework.objects import utility
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.linux.extensions import elf
-from volatility3.framework.constants.linux import ELF_MAX_EXTRACTION_SIZE
+from volatility3.framework.constants import linux as linux_constants
 from volatility3.plugins.linux import pslist
 
 
@@ -116,7 +116,7 @@ class Elfs(plugins.PluginInterface):
             real_size = end - start
 
             # Check if ELF has a legitimate size
-            if real_size < 0 or real_size > ELF_MAX_EXTRACTION_SIZE:
+            if real_size < 0 or real_size > linux_constants.ELF_MAX_EXTRACTION_SIZE:
                 raise ValueError(f"The claimed size of the ELF is invalid: {real_size}")
 
             sections[start] = real_size

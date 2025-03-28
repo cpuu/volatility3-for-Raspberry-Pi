@@ -4,10 +4,10 @@ import string
 from itertools import chain
 from typing import Dict, Iterable, List
 
-from volatility3.framework import constants, exceptions
+from volatility3.framework import constants, exceptions, renderers
 from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import plugins
-from volatility3.framework.renderers import TreeGrid, format_hints
+from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols.windows import extensions
 from volatility3.plugins.windows import (
     handles,
@@ -231,7 +231,7 @@ We recommend using -r pretty if you are looking at this plugin's output in a ter
         offset_type = "(Physical)" if self.config["physical-offsets"] else "(Virtual)"
         offset_str = "Offset" + offset_type
 
-        return TreeGrid(
+        return renderers.TreeGrid(
             [
                 (offset_str, format_hints.Hex),
                 ("Name", str),

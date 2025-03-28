@@ -9,7 +9,7 @@ import math
 import struct
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-from volatility3 import classproperty
+import volatility3
 from volatility3.framework import exceptions, interfaces, constants
 from volatility3.framework.configuration import requirements
 from volatility3.framework.layers import linear
@@ -75,13 +75,13 @@ class Intel(linear.LinearlyMappedLayer):
         # These can vary depending on the type of space
         self._index_shift = math.ceil(math.log2(struct.calcsize(self._entry_format)))
 
-    @classproperty
+    @volatility3.classproperty
     @functools.lru_cache
     def page_shift(cls) -> int:
         """Page shift for the intel memory layers."""
         return cls._page_size_in_bits
 
-    @classproperty
+    @volatility3.classproperty
     @functools.lru_cache
     def page_size(cls) -> int:
         """Page size for the intel memory layers.
@@ -90,30 +90,30 @@ class Intel(linear.LinearlyMappedLayer):
         """
         return 1 << cls._page_size_in_bits
 
-    @classproperty
+    @volatility3.classproperty
     @functools.lru_cache
     def page_mask(cls) -> int:
         """Page mask for the intel memory layers."""
         return ~(cls.page_size - 1)
 
-    @classproperty
+    @volatility3.classproperty
     @functools.lru_cache
     def bits_per_register(cls) -> int:
         """Returns the bits_per_register to determine the range of an
         IntelTranslationLayer."""
         return cls._bits_per_register
 
-    @classproperty
+    @volatility3.classproperty
     @functools.lru_cache
     def minimum_address(cls) -> int:
         return 0
 
-    @classproperty
+    @volatility3.classproperty
     @functools.lru_cache
     def maximum_address(cls) -> int:
         return (1 << cls._maxvirtaddr) - 1
 
-    @classproperty
+    @volatility3.classproperty
     def structure(cls) -> List[Tuple[str, int, bool]]:
         return cls._structure
 

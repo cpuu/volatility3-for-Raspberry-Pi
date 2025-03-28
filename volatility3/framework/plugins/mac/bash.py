@@ -12,7 +12,7 @@ from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import plugins
 from volatility3.framework.layers import scanners
 from volatility3.framework.objects import utility
-from volatility3.framework.symbols.linux.bash import BashIntermedSymbols
+from volatility3.framework.symbols.linux import bash
 from volatility3.plugins import timeliner
 from volatility3.plugins.mac import pslist
 
@@ -68,7 +68,7 @@ class Bash(plugins.PluginInterface, timeliner.TimeLinerInterface):
             pack_format = "Q"
             bash_json_file = "bash64"
 
-        bash_table_name = BashIntermedSymbols.create(
+        bash_table_name = bash.BashIntermedSymbols.create(
             self.context, self.config_path, "linux", bash_json_file
         )
 

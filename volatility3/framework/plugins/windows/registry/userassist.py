@@ -12,11 +12,8 @@ from typing import Any, Generator, List, Tuple
 
 from volatility3.framework import constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
-from volatility3.framework.layers.physical import BufferDataLayer
-from volatility3.framework.layers.registry import (
-    RegistryHive,
-    RegistryException,
-)
+from volatility3.framework.layers import physical
+from volatility3.framework.layers import registry as registry_layers
 from volatility3.framework.renderers import conversion, format_hints
 from volatility3.framework.symbols import intermed
 from volatility3.plugins.windows.registry import hivelist
@@ -94,7 +91,7 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
             return item
 
         userassist_layer_name = self.context.layers.free_layer_name("userassist_buffer")
-        buffer = BufferDataLayer(
+        buffer = physical.BufferDataLayer(
             self.context, self._config_path, userassist_layer_name, userassist_data
         )
         self.context.add_layer(buffer)
@@ -158,7 +155,7 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
         ).has_member("CookiePad")
 
     def list_userassist(
-        self, hive: RegistryHive
+        self, hive: registry_layers.RegistryHive
     ) -> Generator[Tuple[int, Tuple], None, None]:
         """Generate userassist data for a registry hive."""
 
@@ -180,7 +177,7 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
                 "software\\microsoft\\windows\\currentversion\\explorer\\userassist",
                 return_list=True,
             )
-        except RegistryException as e:
+        except registry_layers.RegistryException as e:
             vollog.warning(
                 f"Error accessing UserAssist key in {hive_name} at {hive.hive_offset:#x}: {e}"
             )
@@ -250,7 +247,7 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
                         subkey_name = subkey.get_name()
                     except (
                         exceptions.InvalidAddressException,
-                        RegistryException,
+                        registry_layers.RegistryException,
                     ):
                         subkey_name = renderers.UnreadableValue()
 
@@ -279,7 +276,7 @@ class UserAssist(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterfac
                         value_name = value.get_name()
                     except (
                         exceptions.InvalidAddressException,
-                        RegistryException,
+                        registry_layers.RegistryException,
                     ):
                         value_name = renderers.UnreadableValue()
 
