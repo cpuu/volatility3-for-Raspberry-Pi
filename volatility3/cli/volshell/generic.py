@@ -399,7 +399,7 @@ class Volshell(interfaces.plugins.PluginInterface):
         a pointer otherwise it returns just the normal type name."""
         pointer_marker = "*" * depth
         try:
-            if member_type.vol.object_class == objects.Pointer:
+            if isinstance(member_type, objects.Pointer):
                 sub_member_type = member_type.vol.subtype
                 # follow at most MAX_DEREFERENCE_COUNT pointers. A guard against, hopefully unlikely, infinite loops
                 if depth < MAX_DEREFERENCE_COUNT:
