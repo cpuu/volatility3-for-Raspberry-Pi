@@ -404,8 +404,6 @@ class Volshell(interfaces.plugins.PluginInterface):
                 # follow at most MAX_DEREFERENCE_COUNT pointers. A guard against, hopefully unlikely, infinite loops
                 if depth < MAX_DEREFERENCE_COUNT:
                     return self._get_type_name_with_pointer(sub_member_type, depth + 1)
-                else:
-                    return member_type_name
         except AttributeError:
             pass  # not all objects get a `object_class`, and those that don't are not pointers.
         finally:
