@@ -450,7 +450,7 @@ class Volshell(interfaces.plugins.PluginInterface):
                 if isinstance(volobject, interfaces.objects.ObjectInterface):
                     # We're an instance, so also display the data
                     try:
-                        value = self._display_value(getattr(volobject, member))
+                        value = self._display_value(volobject.member(member))
                     except exceptions.InvalidAddressException:
                         value = self._display_value(renderers.NotAvailableValue())
 
