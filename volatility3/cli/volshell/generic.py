@@ -547,7 +547,7 @@ class Volshell(interfaces.plugins.PluginInterface):
         ],
         include_value: bool = True,
     ) -> str:
-        # build the display_type_string based on the aviable information
+        # build the display_type_string based on the available information
 
         if hasattr(volobject.vol, "size"):
             # the most common type to display, this shows their full size, e.g.:
