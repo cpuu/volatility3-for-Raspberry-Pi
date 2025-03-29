@@ -130,7 +130,7 @@ class Context(interfaces.context.ContextInterface):
             object_info=interfaces.objects.ObjectInformation(
                 layer_name=layer_name,
                 offset=offset,
-                native_layer_name=native_layer_name,
+                native_layer_name=native_layer_name or layer_name,
                 size=object_template.size,
             ),
         )
