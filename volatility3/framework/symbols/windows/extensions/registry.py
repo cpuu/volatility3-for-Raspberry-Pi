@@ -191,7 +191,7 @@ class CM_KEY_NODE(objects.StructType):
             yield from self._get_subkeys_recursive(hive, subkey_node)
 
     def _get_subkeys_recursive(
-        self, hive: registry.RegistryHive, node: interfaces.objects.ObjectInterface
+        self, hive: "registry.RegistryHive", node: interfaces.objects.ObjectInterface
     ) -> Iterator["CM_KEY_NODE"]:
         """Recursively descend a node returning subkeys."""
         # The keylist appears to include 4 bytes of key name after each value
