@@ -10,7 +10,6 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple, Type
 from volatility3.framework import constants, exceptions, interfaces
 from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import configuration, objects
-from volatility3.framework.interfaces.configuration import RequirementInterface
 
 
 class SymbolInterface:
@@ -347,7 +346,7 @@ class SymbolTableInterface(
         return config
 
     @classmethod
-    def get_requirements(cls) -> List[RequirementInterface]:
+    def get_requirements(cls) -> List[configuration.RequirementInterface]:
         return super().get_requirements() + [
             requirements.IntRequirement(
                 name="symbol_mask",

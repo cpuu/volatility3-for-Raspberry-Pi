@@ -1,4 +1,4 @@
-name: Check Volatility3 Version Requirements
+name: Volatility3 Code Analysis
 on: [push, pull_request]
 jobs:
 
@@ -21,5 +21,4 @@ jobs:
 
     - name: Testing...
       run: |
-        # Verify completeness of ConfigurableInterface requirements
-        python ./test/check_configurable_requirements.py
+        python ./test/volatility3_code_analysis.py

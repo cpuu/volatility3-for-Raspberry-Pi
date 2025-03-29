@@ -11,7 +11,6 @@ size of the invalid page.
 from typing import Callable, Dict, Optional, Tuple
 
 from volatility3.framework import interfaces
-from volatility3.framework.interfaces.configuration import VersionableInterface
 
 
 class VolatilityException(Exception):
@@ -143,7 +142,7 @@ class VersionMismatchException(VolatilityException):
     def __init__(
         self,
         source_component: Callable,
-        target_component: VersionableInterface,
+        target_component: interfaces.configuration.VersionableInterface,
         target_version: Tuple[int, int, int],
         failure_reason: str = None,
         *args,
@@ -151,7 +150,7 @@ class VersionMismatchException(VolatilityException):
         """
         Args:
             source_component: The component that required the target component
-            target_component: The component that is required. Must inherit from VersionableInterface
+            target_component: The component that is required. Must inherit from interfaces.configuration.VersionableInterface
             target_version: The version of the target component that was required, and ultimately was not satisfied
             failure_reason: A detailed failure reason to enhance debugging and bug tracking
         """

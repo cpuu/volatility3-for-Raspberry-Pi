@@ -1216,7 +1216,7 @@ class ScheduledTasks(interfaces.plugins.PluginInterface, timeliner.TimeLinerInte
 
     @classmethod
     def _get_task_keys(
-        cls, software_hive: reg_extensions.RegistryHive
+        cls, software_hive: registry.RegistryHive
     ) -> Tuple[
         Optional[reg_extensions.CM_KEY_NODE], Optional[reg_extensions.CM_KEY_NODE]
     ]:

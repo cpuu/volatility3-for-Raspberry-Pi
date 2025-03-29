@@ -11,8 +11,7 @@ from Crypto.Cipher import AES, ARC4, DES
 
 from volatility3.framework import interfaces, renderers, exceptions, constants
 from volatility3.framework.configuration import requirements
-from volatility3.framework.exceptions import InvalidAddressException
-from volatility3.framework.layers import registry as registrylayer
+from volatility3.framework.layers import registry as registry_layer
 from volatility3.framework.symbols.windows.extensions import registry
 from volatility3.plugins.windows.registry import hivelist
 
@@ -329,13 +328,13 @@ class Hashdump(interfaces.plugins.PluginInterface):
 
     @classmethod
     def get_hive_key(
-        cls, hive: registry.RegistryHive, key: str
+        cls, hive: registry_layer.RegistryHive, key: str
     ) -> Optional["registry.CM_KEY_NODE"]:
         result = None
         try:
             if hive:
                 result = hive.get_key(key)
-        except (KeyError, registrylayer.RegistryException):
+        except (KeyError, registry_layer.RegistryException):
             vollog.info(
                 f"Unable to load the required registry key {hive.get_name()}\\{key} from this memory image"
             )
@@ -343,7 +342,7 @@ class Hashdump(interfaces.plugins.PluginInterface):
 
     @classmethod
     def get_user_keys(
-        cls, samhive: registry.RegistryHive
+        cls, samhive: registry_layer.RegistryHive
     ) -> List[interfaces.objects.ObjectInterface]:
         user_key_path = "SAM\\Domains\\Account\\Users"
 
@@ -354,7 +353,7 @@ class Hashdump(interfaces.plugins.PluginInterface):
         return [k for k in user_key.get_subkeys() if k.Name != "Names"]
 
     @classmethod
-    def get_bootkey(cls, syshive: registry.RegistryHive) -> Optional[bytes]:
+    def get_bootkey(cls, syshive: registry_layer.RegistryHive) -> Optional[bytes]:
         """
         Returns the scrambled bootkey necesary to decrypt hashes
         """
@@ -382,8 +381,8 @@ class Hashdump(interfaces.plugins.PluginInterface):
                     return None
                 bootkey += class_data.decode("utf-16-le")
             except (
-                InvalidAddressException,
-                registrylayer.RegistryException,
+                exceptions.InvalidAddressException,
+                registry_layer.RegistryException,
             ) as excp:
                 vollog.log(
                     constants.LOGLEVEL_VVV, f"Unable to read Lsa key {lk}: {excp}"
@@ -398,7 +397,7 @@ class Hashdump(interfaces.plugins.PluginInterface):
 
     @classmethod
     def get_hbootkey(
-        cls, samhive: registry.RegistryHive, bootkey: bytes
+        cls, samhive: registry_layer.RegistryHive, bootkey: bytes
     ) -> Optional[bytes]:
         sam_account_path = "SAM\\Domains\\Account"
 
@@ -456,7 +455,10 @@ class Hashdump(interfaces.plugins.PluginInterface):
 
     @classmethod
     def get_user_hashes(
-        cls, user: registry.CM_KEY_NODE, samhive: registry.RegistryHive, hbootkey: bytes
+        cls,
+        user: registry.CM_KEY_NODE,
+        samhive: registry_layer.RegistryHive,
+        hbootkey: bytes,
     ) -> Optional[Tuple[bytes, bytes]]:
         ## Will sometimes find extra user with rid = NAMES, returns empty strings right now
         try:
@@ -470,7 +472,7 @@ class Hashdump(interfaces.plugins.PluginInterface):
                     sam_data = samhive.read(v.Data + 4, v.DataLength)
                 except (
                     exceptions.InvalidAddressException,
-                    registrylayer.RegistryException,
+                    registry_layer.RegistryException,
                 ):
                     return None
 
@@ -570,7 +572,7 @@ class Hashdump(interfaces.plugins.PluginInterface):
 
     @classmethod
     def get_user_name(
-        cls, user: registry.CM_KEY_NODE, samhive: registry.RegistryHive
+        cls, user: registry.CM_KEY_NODE, samhive: registry_layer.RegistryHive
     ) -> Optional[bytes]:
         value = None
         for v in user.get_values():
@@ -593,7 +595,7 @@ class Hashdump(interfaces.plugins.PluginInterface):
 
     # replaces the dump_hashes method in vol2
     def _generator(
-        self, syshive: registry.RegistryHive, samhive: registry.RegistryHive
+        self, syshive: registry_layer.RegistryHive, samhive: registry_layer.RegistryHive
     ):
         if syshive is None:
             vollog.debug("SYSTEM address is None: No system hive found")

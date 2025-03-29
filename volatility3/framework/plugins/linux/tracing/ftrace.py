@@ -10,9 +10,9 @@ from enum import Enum
 from dataclasses import dataclass
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
-from volatility3.framework import constants, exceptions, interfaces
+from volatility3.framework import constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
-from volatility3.framework.renderers import format_hints, TreeGrid, NotAvailableValue
+from volatility3.framework.renderers import format_hints
 from volatility3.framework.constants import architectures
 
 vollog = logging.getLogger(__name__)
@@ -239,14 +239,14 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
             ):
                 formatted_results = (
                     format_hints.Hex(ftrace_ops_parsed.ftrace_ops_offset),
-                    ftrace_ops_parsed.callback_symbol or NotAvailableValue(),
+                    ftrace_ops_parsed.callback_symbol or renderers.NotAvailableValue(),
                     format_hints.Hex(ftrace_ops_parsed.callback_address),
-                    ftrace_ops_parsed.hooked_symbols or NotAvailableValue(),
-                    ftrace_ops_parsed.module_name or NotAvailableValue(),
+                    ftrace_ops_parsed.hooked_symbols or renderers.NotAvailableValue(),
+                    ftrace_ops_parsed.module_name or renderers.NotAvailableValue(),
                     (
                         format_hints.Hex(ftrace_ops_parsed.module_address)
                         if ftrace_ops_parsed.module_address is not None
-                        else NotAvailableValue()
+                        else renderers.NotAvailableValue()
                     ),
                 )
                 if self.config["show_ftrace_flags"]:
@@ -266,7 +266,7 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
         if self.config.get("show_ftrace_flags"):
             columns.append(("Flags", str))
 
-        return TreeGrid(
+        return renderers.TreeGrid(
             columns,
             self._generator(),
         )

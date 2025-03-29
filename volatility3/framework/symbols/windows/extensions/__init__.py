@@ -18,7 +18,6 @@ from volatility3.framework import (
     renderers,
     symbols,
 )
-from volatility3.framework.interfaces.objects import ObjectInterface
 from volatility3.framework.layers import intel
 from volatility3.framework.objects import utility
 from volatility3.framework.renderers import conversion
@@ -413,7 +412,9 @@ class DEVICE_OBJECT(objects.StructType, pool.ExecutiveObject):
         header = self.get_object_header()
         return header.NameInfo.Name.String  # type: ignore
 
-    def get_attached_devices(self) -> Generator[ObjectInterface, None, None]:
+    def get_attached_devices(
+        self,
+    ) -> Generator[interfaces.objects.ObjectInterface, None, None]:
         """Enumerate the attached device's objects"""
         seen = set()
 
@@ -443,7 +444,7 @@ class DRIVER_OBJECT(objects.StructType, pool.ExecutiveObject):
         header = self.get_object_header()
         return header.NameInfo.Name.String  # type: ignore
 
-    def get_devices(self) -> Generator[ObjectInterface, None, None]:
+    def get_devices(self) -> Generator[interfaces.objects.ObjectInterface, None, None]:
         """Enumerate the driver's device objects"""
         seen = set()
 
