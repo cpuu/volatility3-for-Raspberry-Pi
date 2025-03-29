@@ -8,7 +8,7 @@ import collections
 import collections.abc
 import contextlib
 import logging
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, List, Mapping, Optional
 
 from volatility3.framework import constants, interfaces
 
@@ -127,8 +127,11 @@ class ObjectInterface(metaclass=abc.ABCMeta):
         mask = context.layers[object_info.layer_name].address_mask
         normalized_offset = object_info.offset & mask
 
+        vol = kwargs
         vol_info_dict = {"type_name": type_name, "offset": normalized_offset}
-        self._vol = collections.ChainMap({}, vol_info_dict, object_info, kwargs)
+        vol.update(object_info)
+        vol.update(vol_info_dict)
+        self._vol = collections.ChainMap({}, vol)
         self._context = context
 
     def __getattr__(self, attr: str) -> Any:
@@ -309,10 +312,9 @@ class Template:
         """Stores the keyword arguments for later object creation."""
         # Allow the updating of template arguments whilst still in template form
         super().__init__()
-        empty_dict: Dict[str, Any] = {}
-        self._vol = collections.ChainMap(
-            empty_dict, arguments, {"type_name": type_name}
-        )
+        vol = {"type_name": type_name}
+        vol.update(arguments)
+        self._vol = collections.ChainMap({}, vol)
 
     @property
     def vol(self) -> ReadOnlyMapping:
