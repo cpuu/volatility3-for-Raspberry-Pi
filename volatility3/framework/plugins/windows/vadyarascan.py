@@ -17,8 +17,8 @@ vollog = logging.getLogger(__name__)
 class VadYaraScan(interfaces.plugins.PluginInterface):
     """Scans all the Virtual Address Descriptor memory maps using yara."""
 
-    _required_framework_version = (2, 4, 0)
-    _version = (1, 1, 2)
+    _required_framework_version = (2, 22, 0)
+    _version = (1, 1, 3)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -93,12 +93,18 @@ class VadYaraScan(interfaces.plugins.PluginInterface):
                 for offset, rule_name, name, value in scanner(
                     layer.read(start, size, pad=True), start
                 ):
+                    layer_data = renderers.LayerData(
+                        context=self.context,
+                        offset=offset,
+                        layer_name=layer.name,
+                        length=len(value),
+                    )
                     yield 0, (
                         format_hints.Hex(offset),
                         task.UniqueProcessId,
                         rule_name,
                         name,
-                        value,
+                        layer_data,
                     )
 
     @classmethod
@@ -126,7 +132,7 @@ class VadYaraScan(interfaces.plugins.PluginInterface):
                 ("PID", int),
                 ("Rule", str),
                 ("Component", str),
-                ("Value", bytes),
+                ("Value", renderers.LayerData),
             ],
             self._generator(),
         )

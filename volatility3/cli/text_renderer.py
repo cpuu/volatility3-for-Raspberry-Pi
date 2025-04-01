@@ -9,10 +9,11 @@ import random
 import string
 import sys
 from functools import wraps
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union
 from volatility3.cli import text_filter
 
 from volatility3.framework import exceptions, interfaces, renderers
+from volatility3.framework.interfaces.renderers import BaseAbsentValue
 from volatility3.framework.renderers import format_hints
 
 vollog = logging.getLogger(__name__)
@@ -80,7 +81,10 @@ def multitypedata_as_text(value: format_hints.MultiTypeData) -> str:
     return hex_bytes_as_text(value)
 
 
-def optional(func: Callable) -> Callable:
+T = TypeVar("T")
+
+
+def optional(func: Callable[[Union[BaseAbsentValue, T]], str]) -> Callable[[T], str]:
     @wraps(func)
     def wrapped(x: Any) -> str:
         if isinstance(x, interfaces.renderers.BaseAbsentValue):
@@ -110,7 +114,7 @@ def quoted_optional(func: Callable) -> Callable:
     return wrapped
 
 
-def display_disassembly(disasm: interfaces.renderers.Disassembly) -> str:
+def display_disassembly(disasm: renderers.Disassembly) -> str:
     """Renders a disassembly renderer type into string format.
 
     Args:
@@ -137,8 +141,103 @@ def display_disassembly(disasm: interfaces.renderers.Disassembly) -> str:
     return QuickTextRenderer._type_renderers[bytes](disasm.data)
 
 
+class CLITypeRenderer(interfaces.renderers.TypeRendererInterface):
+    def __init__(self, func):
+        super().__init__(func=optional(func))
+
+
+class LayerDataRenderer(CLITypeRenderer):
+    """Renders a LayerData object into data/bytes"""
+
+    def __init__(self):
+        self.context_byte_len = 0
+        self.width = 16
+        self.display_offset = False
+        self.display_hex = True
+        self.display_ascii = True
+
+        def render(data: Union[renderers.LayerData, BaseAbsentValue]):
+            if isinstance(data, BaseAbsentValue):
+                # FIXME: Do something cleverer here
+                return ""
+
+            context_byte_len = self.context_byte_len if not data.no_surrounding else 0
+
+            layer = data.context.layers[data.layer_name]
+            # Map of the holes
+            error_bytes = set()
+            start_offset = data.offset - context_byte_len
+            end_offset = data.offset + data.length + context_byte_len
+            if isinstance(layer, interfaces.layers.TranslationLayerInterface):
+                error_bytes = set()
+                mapping = iter(layer.mapping(start_offset, end_offset, True))
+                current_map = next(mapping)
+                for i in range(start_offset, end_offset):
+                    # Run through the bytes, check if they're present
+                    offset, sublength, _, _, _ = current_map
+                    if i < offset:
+                        error_bytes.add(i - start_offset)
+                    if i > offset + sublength:
+                        try:
+                            current_map = next(mapping)
+                        except StopIteration:
+                            pass
+                        offset, sublength, _, _, _ = current_map
+                    if i > offset + sublength:
+                        error_bytes.add(i - start_offset)
+
+            # Padded data
+            specific_data = data.context.layers[data.layer_name].read(
+                start_offset,
+                end_offset - start_offset,
+                True,
+            )
+
+            printables = ""
+            output = "\n"
+            for count, byte in enumerate(specific_data):
+                if count not in error_bytes:
+                    output += f"{byte:02x} "
+                    char = chr(byte)
+                    printables += char if 0x20 <= byte <= 0x7E else "."
+                else:
+                    output += "__ "
+                    printables += "."
+                if count % self.width == self.width - 1:
+                    output += printables
+                    if count < len(specific_data) - 1:
+                        output += "\n"
+                    printables = ""
+
+            # Handle leftovers when the length is not mutiple of width
+            if printables:
+                padding = self.width - len(printables)
+                output += "   " * padding
+                output += printables
+                output += " " * padding
+
+            return output
+
+        render_func = render
+        return super().__init__(render_func)
+
+
 class CLIRenderer(interfaces.renderers.Renderer):
     """Class to add specific requirements for CLI renderers."""
+
+    _type_renderers = {
+        format_hints.Bin: CLITypeRenderer(lambda x: f"0b{x:b}"),
+        format_hints.Hex: CLITypeRenderer(lambda x: f"0x{x:x}"),
+        format_hints.HexBytes: CLITypeRenderer(hex_bytes_as_text),
+        format_hints.MultiTypeData: CLITypeRenderer(multitypedata_as_text),
+        renderers.Disassembly: CLITypeRenderer(display_disassembly),
+        bytes: CLITypeRenderer(lambda x: " ".join(f"{b:02x}" for b in x)),
+        renderers.LayerData: LayerDataRenderer(),
+        datetime.datetime: CLITypeRenderer(
+            lambda x: x.strftime("%Y-%m-%d %H:%M:%S.%f %Z")
+        ),
+        "default": CLITypeRenderer(lambda x: f"{x}"),
+    }
 
     name = "unnamed"
     structured_output = False
@@ -170,21 +269,11 @@ class CLIRenderer(interfaces.renderers.Renderer):
 
 
 class QuickTextRenderer(CLIRenderer):
-    _type_renderers = {
-        format_hints.Bin: optional(lambda x: f"0b{x:b}"),
-        format_hints.Hex: optional(lambda x: f"0x{x:x}"),
-        format_hints.HexBytes: optional(hex_bytes_as_text),
-        format_hints.MultiTypeData: quoted_optional(multitypedata_as_text),
-        interfaces.renderers.Disassembly: optional(display_disassembly),
-        bytes: optional(lambda x: " ".join(f"{b:02x}" for b in x)),
-        datetime.datetime: optional(lambda x: x.strftime("%Y-%m-%d %H:%M:%S.%f %Z")),
-        "default": optional(lambda x: f"{x}"),
-    }
 
     name = "quick"
 
     def get_render_options(self):
-        pass
+        return []
 
     def render(self, grid: interfaces.renderers.TreeGrid) -> None:
         """Renders each column immediately to stdout.
@@ -242,7 +331,7 @@ class NoneRenderer(CLIRenderer):
     name = "none"
 
     def get_render_options(self):
-        pass
+        return []
 
     def render(self, grid: interfaces.renderers.TreeGrid) -> None:
         if not grid.populated:
@@ -250,22 +339,12 @@ class NoneRenderer(CLIRenderer):
 
 
 class CSVRenderer(CLIRenderer):
-    _type_renderers = {
-        format_hints.Bin: optional(lambda x: f"0b{x:b}"),
-        format_hints.Hex: optional(lambda x: f"0x{x:x}"),
-        format_hints.HexBytes: optional(hex_bytes_as_text),
-        format_hints.MultiTypeData: optional(multitypedata_as_text),
-        interfaces.renderers.Disassembly: optional(display_disassembly),
-        bytes: optional(lambda x: " ".join(f"{b:02x}" for b in x)),
-        datetime.datetime: optional(lambda x: x.strftime("%Y-%m-%d %H:%M:%S.%f %Z")),
-        "default": optional(lambda x: f"{x}"),
-    }
 
     name = "csv"
     structured_output = True
 
     def get_render_options(self):
-        pass
+        return []
 
     def render(self, grid: interfaces.renderers.TreeGrid) -> None:
         """Renders each row immediately to stdout.
@@ -316,12 +395,10 @@ class CSVRenderer(CLIRenderer):
 
 
 class PrettyTextRenderer(CLIRenderer):
-    _type_renderers = QuickTextRenderer._type_renderers
-
     name = "pretty"
 
     def get_render_options(self):
-        pass
+        return []
 
     def render(self, grid: interfaces.renderers.TreeGrid) -> None:
         """Renders each column immediately to stdout.
@@ -380,7 +457,7 @@ class PrettyTextRenderer(CLIRenderer):
             accumulator.append((node.path_depth, line))
             return accumulator
 
-        final_output: List[Tuple[int, Dict[interfaces.renderers.Column, bytes]]] = []
+        final_output: List[Tuple[int, Dict[interfaces.renderers.Column, str]]] = []
         if not grid.populated:
             grid.populate(visitor, final_output)
         else:
@@ -417,9 +494,7 @@ class PrettyTextRenderer(CLIRenderer):
                 if column in ignore_columns:
                     del line[column]
                 else:
-                    line[column] = line[column] + (
-                        [""] * (nums_line - len(line[column]))
-                    )
+                    line[column] = line[column] + ("" * (nums_line - len(line[column])))
             for index in range(nums_line):
                 if index == 0:
                     outfd.write(
@@ -448,7 +523,7 @@ class PrettyTextRenderer(CLIRenderer):
 class JsonRenderer(CLIRenderer):
     _type_renderers = {
         format_hints.HexBytes: quoted_optional(hex_bytes_as_text),
-        interfaces.renderers.Disassembly: quoted_optional(display_disassembly),
+        renderers.Disassembly: quoted_optional(display_disassembly),
         format_hints.MultiTypeData: quoted_optional(multitypedata_as_text),
         bytes: optional(lambda x: " ".join(f"{b:02x}" for b in x)),
         datetime.datetime: lambda x: (
@@ -463,7 +538,7 @@ class JsonRenderer(CLIRenderer):
     structured_output = True
 
     def get_render_options(self) -> List[interfaces.renderers.RenderOption]:
-        pass
+        return []
 
     def output_result(self, outfd, result):
         """Outputs the JSON data to a file in a particular format"""
