@@ -9,7 +9,7 @@ import random
 import string
 import sys
 from functools import wraps
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypeVar, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, TypeVar, Union
 from volatility3.cli import text_filter
 
 from volatility3.framework import exceptions, interfaces, renderers
@@ -194,7 +194,7 @@ class LayerDataRenderer(CLITypeRenderer):
         render_func = render
         return super().__init__(render_func)
 
-    def render_bytes(self, data: renderers.LayerData) -> tuple[bytes, set[int]]:
+    def render_bytes(self, data: renderers.LayerData) -> Tuple[bytes, Set[int]]:
         """Renders a valid LayerData into bytes (with context bytes)"""
         context_byte_len = self.context_byte_len if not data.no_surrounding else 0
 
