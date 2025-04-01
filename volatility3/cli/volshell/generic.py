@@ -605,9 +605,7 @@ class Volshell(interfaces.plugins.PluginInterface):
                 # volobject branch
                 if isinstance(
                     value,
-                    Union[
-                        interfaces.objects.ObjectInterface, interfaces.objects.Template
-                    ],
+                    (interfaces.objects.ObjectInterface, interfaces.objects.Template),
                 ):
                     if isinstance(value, objects.Pointer):
                         # show pointers in hex to match output for struct addrs
