@@ -156,7 +156,7 @@ class Check_afinfo(plugins.PluginInterface):
             "udp_seq_ops",
             "arp_seq_ops",
             "unix_seq_ops",
-            "udp6_seq_ops" "raw6_seq_ops",
+            "udp6_seq_ops", "raw6_seq_ops",
             "tcp_seq_ops",
             "tcp4_seq_ops",
             "tcp6_seq_ops",
