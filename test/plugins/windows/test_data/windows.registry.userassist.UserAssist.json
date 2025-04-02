@@ -9,7 +9,7 @@
         "Last Write Time": "2025-03-06T17:57:09+00:00",
         "Name": null,
         "Path": "ntuser.dat\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{F4E57C4B-2036-45F0-A9AB-443BCFE33D9F}\\Count",
-        "Raw Data": "",
+        "Raw Data": "N/A",
         "Time Focused": null,
         "Type": "Key",
         "__children": [
@@ -23,7 +23,7 @@
                 "Last Write Time": "2025-03-06T17:57:09+00:00",
                 "Name": "%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\Accessories\\Paint.lnk",
                 "Path": "ntuser.dat\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{F4E57C4B-2036-45F0-A9AB-443BCFE33D9F}\\Count",
-                "Raw Data": "\"\n00 00 00 00 07 00 00 00 00 00 00 00 07 00 00 00 ................\n00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ................\n00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ................\n00 00 80 bf 00 00 80 bf ff ff ff ff 90 86 6b 31 ..............k1\nfd 8d db 01 00 00 00 00                         ........        \"",
+                "Raw Data": "00 00 00 00 07 00 00 00 00 00 00 00 07 00 00 00 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ff ff ff ff 90 86 6b 31 fd 8d db 01 00 00 00 00",
                 "Time Focused": "0:00:00.507000",
                 "Type": "Value",
                 "__children": []
@@ -38,7 +38,7 @@
                 "Last Write Time": "2025-03-06T17:57:09+00:00",
                 "Name": "%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\Administrative Tools\\Registry Editor.lnk",
                 "Path": "ntuser.dat\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{F4E57C4B-2036-45F0-A9AB-443BCFE33D9F}\\Count",
-                "Raw Data": "\"\n00 00 00 00 01 00 00 00 00 00 00 00 01 00 00 00 ................\n00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ................\n00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ................\n00 00 80 bf 00 00 80 bf ff ff ff ff f0 82 cf ca ................\n95 8e db 01 00 00 00 00                         ........        \"",
+                "Raw Data": "00 00 00 00 01 00 00 00 00 00 00 00 01 00 00 00 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ff ff ff ff f0 82 cf ca 95 8e db 01 00 00 00 00",
                 "Time Focused": "0:00:00.501000",
                 "Type": "Value",
                 "__children": []
@@ -53,7 +53,7 @@
                 "Last Write Time": "2025-03-06T17:57:09+00:00",
                 "Name": "%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Windows PowerShell\\Windows PowerShell.lnk",
                 "Path": "ntuser.dat\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{F4E57C4B-2036-45F0-A9AB-443BCFE33D9F}\\Count",
-                "Raw Data": "\"\n00 00 00 00 04 00 00 00 00 00 00 00 04 00 00 00 ................\n00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ................\n00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ................\n00 00 80 bf 00 00 80 bf ff ff ff ff 10 67 cf 4d .............g.M\nbe 8e db 01 00 00 00 00                         ........        \"",
+                "Raw Data": "00 00 00 00 04 00 00 00 00 00 00 00 04 00 00 00 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ff ff ff ff 10 67 cf 4d be 8e db 01 00 00 00 00",
                 "Time Focused": "0:00:00.504000",
                 "Type": "Value",
                 "__children": []
@@ -68,7 +68,7 @@
                 "Last Write Time": "2025-03-06T17:57:09+00:00",
                 "Name": "%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\System Tools\\Command Prompt.lnk",
                 "Path": "ntuser.dat\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{F4E57C4B-2036-45F0-A9AB-443BCFE33D9F}\\Count",
-                "Raw Data": "\"\n00 00 00 00 01 00 00 00 00 00 00 00 01 00 00 00 ................\n00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ................\n00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ................\n00 00 80 bf 00 00 80 bf ff ff ff ff d0 99 66 6c ..............fl\nc0 8e db 01 00 00 00 00                         ........        \"",
+                "Raw Data": "00 00 00 00 01 00 00 00 00 00 00 00 01 00 00 00 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ff ff ff ff d0 99 66 6c c0 8e db 01 00 00 00 00",
                 "Time Focused": "0:00:00.501000",
                 "Type": "Value",
                 "__children": []
@@ -83,7 +83,7 @@
                 "Last Write Time": "2025-03-06T17:57:09+00:00",
                 "Name": "%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\Accessories\\Notepad.lnk",
                 "Path": "ntuser.dat\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{F4E57C4B-2036-45F0-A9AB-443BCFE33D9F}\\Count",
-                "Raw Data": "\"\n00 00 00 00 01 00 00 00 00 00 00 00 01 00 00 00 ................\n00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ................\n00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ................\n00 00 80 bf 00 00 80 bf ff ff ff ff 00 62 ba 89 .............b..\nc0 8e db 01 00 00 00 00                         ........        \"",
+                "Raw Data": "00 00 00 00 01 00 00 00 00 00 00 00 01 00 00 00 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ff ff ff ff 00 62 ba 89 c0 8e db 01 00 00 00 00",
                 "Time Focused": "0:00:00.501000",
                 "Type": "Value",
                 "__children": []
@@ -98,7 +98,7 @@
                 "Last Write Time": "2025-03-06T17:57:09+00:00",
                 "Name": "%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\Administrative Tools\\Task Scheduler.lnk",
                 "Path": "ntuser.dat\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{F4E57C4B-2036-45F0-A9AB-443BCFE33D9F}\\Count",
-                "Raw Data": "\"\n00 00 00 00 02 00 00 00 00 00 00 00 02 00 00 00 ................\n00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ................\n00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ................\n00 00 80 bf 00 00 80 bf ff ff ff ff b0 24 49 23 .............$I#\nc1 8e db 01 00 00 00 00                         ........        \"",
+                "Raw Data": "00 00 00 00 02 00 00 00 00 00 00 00 02 00 00 00 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ff ff ff ff b0 24 49 23 c1 8e db 01 00 00 00 00",
                 "Time Focused": "0:00:00.502000",
                 "Type": "Value",
                 "__children": []
@@ -113,7 +113,7 @@
                 "Last Write Time": "2025-03-06T17:57:09+00:00",
                 "Name": "%ALLUSERSPROFILE%\\Microsoft\\Windows\\Start Menu\\Programs\\Microsoft Edge.lnk",
                 "Path": "ntuser.dat\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\UserAssist\\{F4E57C4B-2036-45F0-A9AB-443BCFE33D9F}\\Count",
-                "Raw Data": "\"\n00 00 00 00 01 00 00 00 00 00 00 00 01 00 00 00 ................\n00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ................\n00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ................\n00 00 80 bf 00 00 80 bf ff ff ff ff 60 3d 89 2e ............`=..\nc1 8e db 01 00 00 00 00                         ........        \"",
+                "Raw Data": "00 00 00 00 01 00 00 00 00 00 00 00 01 00 00 00 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf 00 00 80 bf ff ff ff ff 60 3d 89 2e c1 8e db 01 00 00 00 00",
                 "Time Focused": "0:00:00.501000",
                 "Type": "Value",
                 "__children": []
