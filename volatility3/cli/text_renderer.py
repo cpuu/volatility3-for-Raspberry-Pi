@@ -228,10 +228,6 @@ class LayerDataRenderer(CLITypeRenderer):
             True,
         )
 
-        import pdb
-
-        pdb.set_trace()
-
         return specific_data, error_bytes
 
 
