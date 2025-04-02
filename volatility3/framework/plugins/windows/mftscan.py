@@ -4,8 +4,14 @@
 import contextlib
 import datetime
 import logging
+from typing import (
+    Callable,
+    Iterator,
+    Optional,
+    Tuple,
+    DefaultDict,
+)
 
-from typing import Generator, Iterable, Dict, Tuple, Callable
 
 from volatility3.framework import constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
@@ -15,6 +21,22 @@ from volatility3.framework.symbols.windows.extensions import mft
 from volatility3.plugins import timeliner, yarascan
 
 vollog = logging.getLogger(__name__)
+
+
+class MFTRecord:
+    # TODO: Change to dataclass with (slots=True) if/when we move minimum
+    # Python version up to 3.10
+    __slots__ = ["record_name", "data_count", "offset"]
+
+    def __init__(
+        self,
+        record_name: Optional[str] = None,
+        data_count: int = 0,
+        offset: Optional[int] = None,
+    ):
+        self.record_name = record_name
+        self.data_count = data_count
+        self.offset = offset
 
 
 class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
@@ -53,14 +75,14 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         primary_layer_name: str,
         attr_callback: Callable[
             [
-                Dict[int, Tuple[str, int, int]],
-                interfaces.objects.ObjectInterface,
-                interfaces.objects.ObjectInterface,
+                DefaultDict[str, MFTRecord],
+                mft.MFTEntry,
+                mft.MFTAttribute,
                 str,
             ],
-            Generator,
+            Iterator[Tuple],
         ],
-    ) -> interfaces.objects.ObjectInterface:
+    ) -> Iterator[Tuple]:
         try:
             primary = context.layers[primary_layer_name]
         except KeyError:
@@ -70,14 +92,14 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             return
 
         try:
-            phys_layer = primary.config["memory_layer"]
+            memory_layer_name = primary.config["memory_layer"]
         except KeyError:
             vollog.error(
                 "Unable to obtain memory layer from primary layer. Please file a bug on GitHub about this issue."
             )
             return
 
-        layer = context.layers[phys_layer]
+        layer = context.layers[memory_layer_name]
 
         # Yara Rule to scan for MFT Header Signatures
         rules = yarascan.YaraScan.process_yara_options(
@@ -98,23 +120,24 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         )
 
         # get each of the individual Field Sets
-        mft_object = symbol_table + constants.BANG + "MFT_ENTRY"
-        attribute_object = symbol_table + constants.BANG + "ATTRIBUTE"
+        mft_object_typ_name = symbol_table + constants.BANG + "MFT_ENTRY"
+        attribute_object_typ_name = symbol_table + constants.BANG + "ATTRIBUTE"
 
-        record_map = {}
+        record_map: DefaultDict[str, MFTRecord] = DefaultDict(MFTRecord)
 
         # Scan the layer for Raw MFT records and parse the fields
         for offset, _rule_name, _name, _value in layer.scan(
             context=context, scanner=yarascan.YaraScanner(rules=rules)
         ):
             with contextlib.suppress(exceptions.InvalidAddressException):
-                mft_record = context.object(
-                    mft_object, offset=offset, layer_name=layer.name
+                mft_record: mft.MFTEntry = context.object(
+                    mft_object_typ_name, offset=offset, layer_name=layer.name
                 )
+
                 # We will update this on each pass in the next loop and use it as the new offset.
                 attr_base_offset = mft_record.FirstAttrOffset
-                attr = context.object(
-                    attribute_object,
+                attr: mft.MFTAttribute = context.object(
+                    attribute_object_typ_name,
                     offset=offset + attr_base_offset,
                     layer_name=layer.name,
                 )
@@ -131,8 +154,8 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                     # Update the base offset to point to the next attribute
                     attr_base_offset += attr.Attr_Header.Length
                     # Get the next attribute
-                    attr = context.object(
-                        attribute_object,
+                    attr: mft.MFTAttribute = context.object(
+                        attribute_object_typ_name,
                         offset=offset + attr_base_offset,
                         layer_name=layer.name,
                     )
@@ -140,9 +163,9 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
     @classmethod
     def parse_mft_records(
         cls,
-        record_map: Dict[int, Tuple[str, int, int]],
-        mft_record: interfaces.objects.ObjectInterface,
-        attr: interfaces.objects.ObjectInterface,
+        record_map: DefaultDict[str, MFTRecord],
+        mft_record: mft.MFTEntry,
+        attr: mft.MFTAttribute,
         symbol_table_name: str,
     ):
         # MFT Flags determine the file type or dir
@@ -160,7 +183,7 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             attr_data = attr.Attr_Data.cast(si_object)
             yield 0, (
                 format_hints.Hex(attr_data.vol.offset),
-                mft_record.get_signature(),
+                str(mft_record.get_signature()),
                 mft_record.RecordNumber,
                 mft_record.LinkCount,
                 mft_flag,
@@ -178,7 +201,7 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             fn_object = symbol_table_name + constants.BANG + "FILE_NAME_ENTRY"
 
             attr_data = attr.Attr_Data.cast(fn_object)
-            file_name = attr_data.get_full_name()
+            file_name = str(attr_data.get_full_name())
 
             # If we don't have a valid enum, coerce to hex so we can keep the record
             try:
@@ -188,7 +211,7 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
             yield 1, (
                 format_hints.Hex(attr_data.vol.offset),
-                mft_record.get_signature(),
+                str(mft_record.get_signature()),
                 mft_record.RecordNumber,
                 mft_record.LinkCount,
                 mft_flag,
@@ -204,11 +227,11 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
     @classmethod
     def parse_data_record(
         cls,
-        mft_record: interfaces.objects.ObjectInterface,
-        attr: interfaces.objects.ObjectInterface,
-        record_map: Dict[int, Tuple[str, int, int]],
+        mft_record: mft.MFTEntry,
+        attr: mft.MFTAttribute,
+        record_map: DefaultDict[str, MFTRecord],
         return_first_record: bool,
-    ) -> Generator[Iterable, None, None]:
+    ) -> Iterator[Tuple]:
         """
         Returns the parsed data from a MFT record
         """
@@ -227,7 +250,12 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         else:
             # past the first $DATA record, attempt to get the ADS name
             # NotAvailableValue = > 1st Data, but name was not parsable
-            ads_name = attr.get_resident_filename() or renderers.NotAvailableValue()
+            ads_name_obj = attr.get_resident_filename()
+            ads_name = (
+                str(ads_name_obj)
+                if ads_name_obj is not None
+                else renderers.NotAvailableValue()
+            )
 
         content = attr.get_resident_filecontent()
         if content:
@@ -236,11 +264,12 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             content = renderers.NotAvailableValue()
 
         yield (
-            format_hints.Hex(record_map[mft_record.vol.offset][2]),
-            mft_record.get_signature(),
+            format_hints.Hex(record_map[mft_record.vol.offset].offset),
+            str(mft_record.get_signature()),
             mft_record.RecordNumber,
             attr.Attr_Header.AttrType.lookup(),
-            record_map[mft_record.vol.offset][0],
+            record_map[mft_record.vol.offset].record_name
+            or renderers.NotAvailableValue(),
             ads_name,
             content,
         )
@@ -248,41 +277,40 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
     @classmethod
     def parse_data_records(
         cls,
-        record_map: Dict[int, Tuple[str, int, int]],
-        mft_record: interfaces.objects.ObjectInterface,
-        attr: interfaces.objects.ObjectInterface,
+        record_map: DefaultDict[str, MFTRecord],
+        mft_record: mft.MFTEntry,
+        attr: mft.MFTAttribute,
         symbol_table_name: str,
         return_first_record: bool,
-    ) -> Generator[Iterable, None, None]:
+    ) -> Iterator[Tuple]:
         """
         Parses DATA records while maintaining the FILE_NAME association
         from previous parsing of the record
         Suports returning the first/main $DATA as well as however many
         ADS records a file might have
         """
-        if mft_record.vol.offset not in record_map:
-            # file name, DATA count, offset
-            record_map[mft_record.vol.offset] = [renderers.NotAvailableValue(), 0, None]
+        rec = record_map[mft_record.vol.offset]
+
         if attr.Attr_Header.AttrType.lookup() == "FILE_NAME":
-            fn_object = symbol_table_name + constants.BANG + "FILE_NAME_ENTRY"
-            attr_data = attr.Attr_Data.cast(fn_object)
-            rec_name = attr_data.get_full_name()
-            record_map[mft_record.vol.offset][0] = rec_name
+            fn_object_typename = symbol_table_name + constants.BANG + "FILE_NAME_ENTRY"
+            attr_data = attr.Attr_Data.cast(fn_object_typename)
+            name_obj = attr_data.get_full_name()
+            rec.record_name = str(name_obj) if name_obj is not None else None
         elif attr.Attr_Header.AttrType.lookup() == "DATA":
             # first data
-            record_map[mft_record.vol.offset][2] = attr.Attr_Data.vol.offset
+            rec.offset = attr.Attr_Data.vol.offset
 
             display_data = False
 
             # first DATA attribute of this record
-            if record_map[mft_record.vol.offset][1] == 0:
+            if rec.data_count == 0:
                 if return_first_record:
                     display_data = True
 
-                record_map[mft_record.vol.offset][1] = 1
+                rec.data_count = 1
 
             # at the second DATA attribute of this record
-            elif record_map[mft_record.vol.offset][1] == 1 and not return_first_record:
+            elif rec.data_count == 1 and not return_first_record:
                 display_data = True
 
             if display_data:
@@ -357,7 +385,7 @@ class ADS(interfaces.plugins.PluginInterface):
     @classmethod
     def parse_ads_data_records(
         cls,
-        record_map: Dict[int, Tuple[str, int, int]],
+        record_map: DefaultDict[str, MFTRecord],
         mft_record: interfaces.objects.ObjectInterface,
         attr: interfaces.objects.ObjectInterface,
         symbol_table_name: str,
@@ -427,11 +455,11 @@ class ResidentData(interfaces.plugins.PluginInterface):
     @classmethod
     def parse_first_data_records(
         cls,
-        record_map: Dict[int, Tuple[str, int, int]],
-        mft_record: interfaces.objects.ObjectInterface,
-        attr: interfaces.objects.ObjectInterface,
+        record_map: DefaultDict[str, MFTRecord],
+        mft_record: mft.MFTEntry,
+        attr: mft.MFTAttribute,
         symbol_table_name: str,
-    ):
+    ) -> Iterator[Tuple]:
         return MFTScan.parse_data_records(
             record_map, mft_record, attr, symbol_table_name, True
         )
