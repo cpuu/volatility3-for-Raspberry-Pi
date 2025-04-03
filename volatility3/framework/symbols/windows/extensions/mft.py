@@ -22,7 +22,7 @@ class MFTEntry(objects.StructType):
         super().__init__(context, type_name, object_info, size, members)
 
         self._symbol_table_name = kwargs.get("symbol_table_name")
-        self._attr_generator = self._attributes()
+        self._attrs_loaded = False
         self._attrs: List[MFTAttribute] = []
 
     @property
@@ -37,27 +37,24 @@ class MFTEntry(objects.StructType):
         signature = self.Signature.cast("string", max_length=4, encoding="latin-1")
         return signature
 
-    def filename(self, symbol_table_name: str) -> Optional[objects.String]:
-        try:
-            fname_attr = next(
-                attr
-                for attr in self.attributes()
-                if attr.Attr_Header.AttrType.lookup() == "FILE_NAME"
-            )
-        except StopIteration:
-            return None
-
-        fn_object = symbol_table_name + constants.BANG + "FILE_NAME_ENTRY"
-        attr_data = fname_attr.Attr_Data.cast(fn_object)
-
-        return attr_data.get_full_name()
-
+    @property
     def attributes(self) -> Iterator["MFTAttribute"]:
+        """
+        Lazily evaluate and yield attributes, caching them in an internal list
+        for re-retrieval.
+        """
+        if not self._attrs_loaded:
+            self._attrs = list(self._attributes())
+            self._attrs_loaded = True
+
         yield from self._attrs
 
-        for attr in self._attr_generator:
-            self._attrs.append(attr)
-            yield attr
+    def longest_filename(self) -> Optional[objects.String]:
+        names = [name.get_full_name() for name in self.filename_attributes()]
+        if not names:
+            return None
+
+        return max(names, key=lambda x: len(str(x)))
 
     def _attributes(self) -> Iterator["MFTAttribute"]:
 
@@ -75,21 +72,67 @@ class MFTEntry(objects.StructType):
 
         # There is no field that has a count of Attributes
         # Keep Attempting to read attributes until we get an invalid attr_header.AttrType
-        while attr.Attr_Header.AttrType.is_valid_choice:
+        try:
+            while attr.Attr_Header.AttrType.is_valid_choice:
+                yield attr
+
+                # If there's no advancement the loop will never end, so break it now
+                if attr.Attr_Header.Length == 0:
+                    break
+
+                # Update the base offset to point to the next attribute
+                attr_base_offset += attr.Attr_Header.Length
+                # Get the next attribute
+                attr: MFTAttribute = self._context.object(
+                    attribute_object_type_name,
+                    offset=self.vol.offset + attr_base_offset,
+                    layer_name=self.vol.layer_name,
+                )
+        except exceptions.InvalidAddressException:
+            return
+
+    def standard_information_attributes(self) -> Iterator[objects.StructType]:
+        for attr in self.attributes:
+            if attr.Attr_Header.AttrType.lookup() != "STANDARD_INFORMATION":
+                continue
+
+            si_object = (
+                self.symbol_table_name + constants.BANG + "STANDARD_INFORMATION_ENTRY"
+            )
+
+            yield attr.Attr_Data.cast(si_object)
+
+    def filename_attributes(self) -> Iterator["MFTFileName"]:
+        for attr in self.attributes:
+            try:
+                if attr.Attr_Header.AttrType.lookup() != "FILE_NAME":
+                    continue
+
+                fn_object = self.symbol_table_name + constants.BANG + "FILE_NAME_ENTRY"
+                attr_data = attr.Attr_Data.cast(fn_object)
+            except exceptions.InvalidAddressException:
+                continue
+            yield attr_data
+
+    def _data_attributes(self):
+        for attr in self.attributes:
+            if not (
+                attr.Attr_Header.AttrType.lookup() == "DATA"
+                and attr.Attr_Header.NonResidentFlag == 0
+            ):
+                continue
+
             yield attr
 
-            # If there's no advancement the loop will never end, so break it now
-            if attr.Attr_Header.Length == 0:
-                break
+    def resident_data_attributes(self) -> Iterator["MFTAttribute"]:
+        for attr in self._data_attributes():
+            if attr.Attr_Header.NameLength == 0:
+                yield attr
 
-            # Update the base offset to point to the next attribute
-            attr_base_offset += attr.Attr_Header.Length
-            # Get the next attribute
-            attr: MFTAttribute = self._context.object(
-                attribute_object_type_name,
-                offset=self.vol.offset + attr_base_offset,
-                layer_name=self.vol.layer_name,
-            )
+    def alternate_data_streams(self) -> Iterator["MFTAttribute"]:
+        for attr in self._data_attributes():
+            if attr.Attr_Header.NameLength != 0:
+                yield attr
 
 
 class MFTFileName(objects.StructType):
