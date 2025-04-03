@@ -83,6 +83,12 @@ Default Arguments
 
 Default arguments are fine, but not with mutable types (because they're constructed once at module load time and can lead to confusion/errors.)
 
+Format strings
+--------------
+Generally f-strings are preferred, and where possible a format modifier should be used over a separate method call.  As an example, hex output should be `f"0x{offset:x}"` rather than `f"{hex(offset)}"`.
+F-strings should be used over other formatting methods *except* in cases of logging where the f-string gets calculated/executed whether the log message is displayed or not (where as parameters are not evaluated if not needed).
+The ruff linter should alert about these situations and exceptions can be maded if needed.
+
 True/False Evaluations
 ----------------------
 
