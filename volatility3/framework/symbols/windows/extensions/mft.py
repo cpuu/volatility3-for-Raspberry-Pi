@@ -10,7 +10,7 @@ from volatility3.framework import objects, constants, exceptions
 class MFTEntry(objects.StructType):
     """This represents the base MFT Record"""
 
-    def get_signature(self) -> "objects.String":
+    def get_signature(self) -> objects.String:
         signature = self.Signature.cast("string", max_length=4, encoding="latin-1")
         return signature
 
@@ -18,7 +18,7 @@ class MFTEntry(objects.StructType):
 class MFTFileName(objects.StructType):
     """This represents an MFT $FILE_NAME Attribute"""
 
-    def get_full_name(self) -> "objects.String":
+    def get_full_name(self) -> objects.String:
         output = self.Name.cast(
             "string", encoding="utf16", max_length=self.NameLength * 2, errors="replace"
         )
@@ -28,7 +28,7 @@ class MFTFileName(objects.StructType):
 class MFTAttribute(objects.StructType):
     """This represents an MFT ATTRIBUTE"""
 
-    def get_resident_filename(self) -> Optional["objects.String"]:
+    def get_resident_filename(self) -> Optional[objects.String]:
         # 4MB chosen as cutoff instead of 4KB to allow for recovery from format /L created file systems
         # Length as 512 as its 256*2, which is the maximum size for an entire file path, so this is even generous
         if (
@@ -51,7 +51,7 @@ class MFTAttribute(objects.StructType):
         except exceptions.InvalidAddressException:
             return None
 
-    def get_resident_filecontent(self) -> Optional["objects.Bytes"]:
+    def get_resident_filecontent(self) -> Optional[objects.Bytes]:
         # smear observed in mass testing of samples
         # 4MB chosen as cutoff instead of 4KB to allow for recovery from format /L created file systems
         if (
