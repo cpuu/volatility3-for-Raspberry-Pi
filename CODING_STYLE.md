@@ -14,10 +14,10 @@ This is heavily based upon https://google.github.io/styleguide/pyguide.html with
 Imports
 -------
 
-Use import statements for packages and modules only, not for individual types, classes, or functions and ideally not aliased naming would cause confusion.  This is to prevent people importing an imported method (which can lead to confusion and add in an unnecessary dependency in the import chain).
+Use import statements for packages and modules only, not for individual types, classes, or functions and ideally not aliased unless the imported name would cause confusion.  This is to prevent people from importing something that was itself imported from elsewhere (which can lead to confusion and add in an unnecessary dependency in the import chain).
 
 * Use `import x` for importing packages and modules.
-* Use `from x import y where x` is the package prefix and y is the module name with no prefix.
+* Use `from x import y` where x is the package prefix and y is the module name with no prefix.
 * Use `from x import y as z` in any of the following circumstances:
     * Two modules named `y` are to be imported.
     * `y` conflicts with a top-level name defined in the current module.
