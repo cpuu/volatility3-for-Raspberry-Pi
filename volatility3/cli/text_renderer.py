@@ -466,7 +466,9 @@ class PrettyTextRenderer(CLIRenderer):
             accumulator.append((node.path_depth, line))
             return accumulator
 
-        final_output: List[Tuple[int, Dict[interfaces.renderers.Column, str]]] = []
+        final_output: List[Tuple[int, Dict[interfaces.renderers.Column, list[str]]]] = (
+            []
+        )
         if not grid.populated:
             grid.populate(visitor, final_output)
         else:
@@ -503,7 +505,9 @@ class PrettyTextRenderer(CLIRenderer):
                 if column in ignore_columns:
                     del line[column]
                 else:
-                    line[column] = line[column] + ("" * (nums_line - len(line[column])))
+                    line[column] = line[column] + (
+                        [""] * (nums_line - len(line[column]))
+                    )
             for index in range(nums_line):
                 if index == 0:
                     outfd.write(
