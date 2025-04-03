@@ -622,7 +622,12 @@ class Volshell(interfaces.plugins.PluginInterface):
                     elif isinstance(value, objects.Array):
                         return repr([self._display_value(val) for val in value])
                     else:
-                        return f"offset: {hex(value.vol.offset)}"
+                        if self.context.layers[self.current_layer].is_valid(
+                            value.vol.offset
+                        ):
+                            return f"offset: {hex(value.vol.offset)}"
+                        else:
+                            return f"offset: {hex(value.vol.offset)} (unreadable)"
                 else:
                     # non volobject
                     if value is None:
