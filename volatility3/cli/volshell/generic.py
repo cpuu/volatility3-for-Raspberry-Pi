@@ -636,9 +636,9 @@ class Volshell(interfaces.plugins.PluginInterface):
                         if self.context.layers[self.current_layer].is_valid(
                             value.vol.offset
                         ):
-                            return f"offset: {hex(value.vol.offset)}"
+                            return f"offset: 0x{value.vol.offset:x}"
                         else:
-                            return f"offset: {hex(value.vol.offset)} (unreadable)"
+                            return f"offset: 0x{value.vol.offset:x} (unreadable)"
                 else:
                     # non volobject
                     if value is None:
