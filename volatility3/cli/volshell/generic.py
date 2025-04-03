@@ -622,7 +622,7 @@ class Volshell(interfaces.plugins.PluginInterface):
                     elif isinstance(value, objects.Array):
                         return repr([self._display_value(val) for val in value])
                     else:
-                        return hex(value.vol.offset)
+                        return f"offset: {hex(value.vol.offset)}"
                 else:
                     # non volobject
                     if value is None:
