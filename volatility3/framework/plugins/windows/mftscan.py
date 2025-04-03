@@ -231,7 +231,7 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
         content = attr.get_resident_filecontent()
         if content:
-            content = format_hints.HexBytes(content)
+            content = renderers.LayerData.from_object(content)
         else:
             content = renderers.NotAvailableValue()
 
@@ -334,9 +334,9 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 class ADS(interfaces.plugins.PluginInterface):
     """Scans for Alternate Data Stream"""
 
-    _required_framework_version = (2, 7, 0)
+    _required_framework_version = (2, 22, 0)
 
-    _version = (1, 0, 1)
+    _version = (1, 0, 2)
 
     @classmethod
     def get_requirements(cls):
@@ -395,7 +395,7 @@ class ADS(interfaces.plugins.PluginInterface):
                 ("MFT Type", str),
                 ("Filename", str),
                 ("ADS Filename", str),
-                ("Hexdump", format_hints.HexBytes),
+                ("Hexdump", renderers.LayerData),
             ],
             self._generator(),
         )
@@ -404,9 +404,9 @@ class ADS(interfaces.plugins.PluginInterface):
 class ResidentData(interfaces.plugins.PluginInterface):
     """Scans for MFT Records with Resident Data"""
 
-    _required_framework_version = (2, 7, 0)
+    _required_framework_version = (2, 22, 0)
 
-    _version = (1, 0, 1)
+    _version = (1, 0, 2)
 
     @classmethod
     def get_requirements(cls):
@@ -461,7 +461,7 @@ class ResidentData(interfaces.plugins.PluginInterface):
                 ("Record Number", int),
                 ("MFT Type", str),
                 ("Filename", str),
-                ("Hexdump", format_hints.HexBytes),
+                ("Hexdump", renderers.LayerData),
             ],
             self._generator(),
         )

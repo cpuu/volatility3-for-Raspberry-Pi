@@ -41,6 +41,11 @@ class CmdScan(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="consoles", component=consoles.Consoles, version=(3, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="bytes_scanner",
+                component=scanners.BytesScanner,
+                version=(1, 0, 0),
+            ),
             requirements.BooleanRequirement(
                 name="no_registry",
                 description="Don't search the registry for possible values of CommandHistorySize",

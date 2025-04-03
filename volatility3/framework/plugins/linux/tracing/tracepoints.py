@@ -5,15 +5,15 @@
 # Public researches: https://i.blackhat.com/USA21/Wednesday-Handouts/us-21-Fixing-A-Memory-Forensics-Blind-Spot-Linux-Kernel-Tracing-wp.pdf
 
 import logging
-from typing import Iterable, List, Optional
 from dataclasses import dataclass
+from typing import Iterable, List, Optional
 
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
-from volatility3.framework import constants, exceptions, interfaces
+from volatility3.framework import constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
-from volatility3.framework.renderers import format_hints, NotAvailableValue, TreeGrid
-from volatility3.framework.objects import utility
 from volatility3.framework.constants import architectures
+from volatility3.framework.objects import utility
+from volatility3.framework.renderers import format_hints
 
 vollog = logging.getLogger(__name__)
 
@@ -250,14 +250,14 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
                 formatted_results = (
                     tracepoint_parsed.tracepoint_name,
                     format_hints.Hex(tracepoint_parsed.tracepoint_address),
-                    tracepoint_parsed.probe_name or NotAvailableValue(),
+                    tracepoint_parsed.probe_name or renderers.NotAvailableValue(),
                     format_hints.Hex(tracepoint_parsed.probe_address),
-                    tracepoint_parsed.probe_priority or NotAvailableValue(),
-                    tracepoint_parsed.module_name or NotAvailableValue(),
+                    tracepoint_parsed.probe_priority or renderers.NotAvailableValue(),
+                    tracepoint_parsed.module_name or renderers.NotAvailableValue(),
                     (
                         format_hints.Hex(tracepoint_parsed.module_address)
                         if tracepoint_parsed.module_address is not None
-                        else NotAvailableValue()
+                        else renderers.NotAvailableValue()
                     ),
                 )
                 yield (
@@ -276,7 +276,7 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
             ("Module address", format_hints.Hex),
         ]
 
-        return TreeGrid(
+        return renderers.TreeGrid(
             columns,
             self._generator(),
         )

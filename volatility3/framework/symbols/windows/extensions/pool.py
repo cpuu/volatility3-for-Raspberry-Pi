@@ -4,7 +4,7 @@ import logging
 import struct
 from typing import Dict, List, Optional, Tuple, Union
 
-from volatility3.plugins.windows.poolscanner import PoolConstraint
+from volatility3.plugins.windows import poolscanner
 
 from volatility3.framework import (
     constants,
@@ -28,7 +28,7 @@ class POOL_HEADER(objects.StructType):
 
     def get_object(
         self,
-        constraint: PoolConstraint,
+        constraint: poolscanner.PoolConstraint,
         use_top_down: bool,
         kernel_symbol_table: Optional[str] = None,
         native_layer_name: Optional[str] = None,

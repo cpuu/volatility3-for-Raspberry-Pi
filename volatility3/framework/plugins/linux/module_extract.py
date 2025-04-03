@@ -36,6 +36,11 @@ class ModuleExtract(interfaces.plugins.PluginInterface):
                 description="Base virtual address to reconstruct an ELF file",
                 optional=False,
             ),
+            requirements.VersionRequirement(
+                name="linux_utilities_module_extract",
+                version=(1, 0, 0),
+                component=linux_utilities_module_extract.ModuleExtract,
+            ),
         ]
 
     def _generator(self):

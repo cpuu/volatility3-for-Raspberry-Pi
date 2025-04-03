@@ -48,6 +48,11 @@ class VerInfo(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="modules", component=modules.Modules, version=(3, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="page_start_scanner",
+                component=scanners.BytesScanner,
+                version=(1, 0, 0),
+            ),
             requirements.BooleanRequirement(
                 name="extensive",
                 description="Search physical layer for version information",

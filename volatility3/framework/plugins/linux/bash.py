@@ -13,7 +13,7 @@ from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import plugins
 from volatility3.framework.layers import scanners
 from volatility3.framework.objects import utility
-from volatility3.framework.symbols.linux.bash import BashIntermedSymbols
+from volatility3.framework.symbols.linux import bash
 from volatility3.plugins import timeliner
 from volatility3.plugins.linux import pslist
 
@@ -40,6 +40,16 @@ class Bash(plugins.PluginInterface, timeliner.TimeLinerInterface):
                 component=timeliner.TimeLinerInterface,
                 version=(1, 0, 0),
             ),
+            requirements.VersionRequirement(
+                name="multi_string_scanner",
+                component=scanners.MultiStringScanner,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="bytes_scanner",
+                component=scanners.BytesScanner,
+                version=(1, 0, 0),
+            ),
             requirements.ListRequirement(
                 name="pid",
                 element_type=int,
@@ -60,7 +70,7 @@ class Bash(plugins.PluginInterface, timeliner.TimeLinerInterface):
             pack_format = "Q"
             bash_json_file = "bash64"
 
-        bash_table_name = BashIntermedSymbols.create(
+        bash_table_name = bash.BashIntermedSymbols.create(
             self.context, self.config_path, "linux", bash_json_file
         )
 

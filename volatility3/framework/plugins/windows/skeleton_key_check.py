@@ -63,6 +63,11 @@ class Skeleton_Key_Check(interfaces.plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="pe_symbols", component=pe_symbols.PESymbols, version=(3, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="bytes_scanner",
+                component=scanners.BytesScanner,
+                version=(1, 0, 0),
+            ),
         ]
 
     def _check_for_skeleton_key_vad(

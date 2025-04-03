@@ -17,7 +17,7 @@ from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.windows import pdbutil
 from volatility3.framework.symbols.windows.extensions import pe
 from volatility3.plugins.windows import pslist, modules
-from volatility3.framework.constants.windows import KERNEL_MODULE_NAMES
+from volatility3.framework.constants import windows
 
 vollog = logging.getLogger(__name__)
 
@@ -533,7 +533,7 @@ class PESymbols(interfaces.plugins.PluginInterface):
         # a `ntoskrnl.exe` can have an internal PDB name of any of the ones in the following list
         # The code attempts to find all possible PDBs to ensure the best chance of recovery
         if mod_name == PESymbols.os_module_name:
-            pdb_names = [fn + ".pdb" for fn in KERNEL_MODULE_NAMES]
+            pdb_names = [fn + ".pdb" for fn in windows.KERNEL_MODULE_NAMES]
 
         # for non-kernel files, replace the exe, sys, or dll extension with pdb
         else:

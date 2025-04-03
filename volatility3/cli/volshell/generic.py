@@ -40,6 +40,8 @@ class Volshell(interfaces.plugins.PluginInterface):
 
     _required_framework_version = (2, 0, 0)
 
+    _version = (1, 0, 0)
+
     DEFAULT_NUM_DISPLAY_BYTES = 128
 
     def __init__(self, *args, **kwargs):
@@ -54,9 +56,18 @@ class Volshell(interfaces.plugins.PluginInterface):
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
-        reqs: List[interfaces.configuration.RequirementInterface] = []
+        reqs: List[interfaces.configuration.RequirementInterface] = [
+            requirements.VersionRequirement(
+                name="regex_scanner",
+                component=scanners.RegExScanner,
+                version=(1, 0, 0),
+            ),
+        ]
         if cls == Volshell:
-            reqs = [
+            reqs += [
+                requirements.TranslationLayerRequirement(
+                    name="primary", description="Memory layer for the kernel"
+                ),
                 requirements.URIRequirement(
                     name="script",
                     description="File to load and execute at start",
@@ -70,11 +81,8 @@ class Volshell(interfaces.plugins.PluginInterface):
                     optional=True,
                 ),
             ]
-        return reqs + [
-            requirements.TranslationLayerRequirement(
-                name="primary", description="Memory layer for the kernel"
-            ),
-        ]
+
+        return reqs
 
     def run(
         self, additional_locals: Dict[str, Any] = {}
@@ -502,6 +510,7 @@ class Volshell(interfaces.plugins.PluginInterface):
                 relative_offset, member_type = volobject.vol.members[member]
                 len_offset = len(hex(relative_offset))
                 len_member = len(member)
+
                 member_type_name = self._get_type_name_with_pointer(
                     member_type
                 )  # special case for pointers to show what they point to
@@ -509,6 +518,7 @@ class Volshell(interfaces.plugins.PluginInterface):
                 if len(member_type_name) > MAX_TYPENAME_DISPLAY_LENGTH:
                     len_typename = MAX_TYPENAME_DISPLAY_LENGTH
                     member_type_name = f"{member_type_name[:len_typename - 3]}..."
+
                 if isinstance(volobject, interfaces.objects.ObjectInterface):
                     # We're an instance, so also display the data
                     try:
@@ -593,6 +603,7 @@ class Volshell(interfaces.plugins.PluginInterface):
                 return f"{display_type_string} @ {hex(volobject.vol.offset)} -> {self._display_value(volobject)}"
             else:
                 return f"{display_type_string}: {self._display_value(volobject)}"
+
         else:
             return display_type_string
 

@@ -42,6 +42,11 @@ class SvcList(svcscan.SvcScan):
                 description="Windows kernel",
                 architectures=["Intel32", "Intel64"],
             ),
+            requirements.VersionRequirement(
+                name="bytes_scanner",
+                component=scanners.BytesScanner,
+                version=(1, 0, 0),
+            ),
         ]
 
     @classmethod

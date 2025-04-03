@@ -39,6 +39,11 @@ class RegExScan(plugins.PluginInterface):
                 default=cls.MAXSIZE_DEFAULT,
                 optional=True,
             ),
+            requirements.VersionRequirement(
+                name="regex_scanner",
+                component=scanners.RegExScanner,
+                version=(1, 0, 0),
+            ),
         ]
 
     def _generator(self, regex_pattern):

@@ -458,6 +458,7 @@ class Pointer(Integer):
                     offset=offset,
                     parent=self,
                     size=self.vol.subtype.size,
+                    native_layer_name=layer_name,
                 ),
             )
         return self._cache[layer_name]
@@ -811,7 +812,7 @@ class Array(interfaces.objects.ObjectInterface, collections.abc.Sequence):
                 layer_name=self.vol.layer_name,
                 offset=mask & (self.vol.offset + (self.vol.subtype.size * index)),
                 parent=self,
-                native_layer_name=self.vol.native_layer_name,
+                native_layer_name=self.vol.native_layer_name or self.vol.layer_name,
                 size=self.vol.subtype.size,
             )
             result += [self.vol.subtype(context=self._context, object_info=object_info)]
@@ -978,7 +979,7 @@ class AggregateType(interfaces.objects.ObjectInterface):
                 offset=mask & (self.vol.offset + relative_offset),
                 member_name=attr,
                 parent=self,
-                native_layer_name=self.vol.native_layer_name,
+                native_layer_name=self.vol.native_layer_name or self.vol.layer_name,
                 size=template.size,
             )
             member = template(context=self._context, object_info=object_info)

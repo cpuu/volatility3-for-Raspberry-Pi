@@ -7,11 +7,6 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
 
 from volatility3.framework import constants, exceptions, interfaces, objects
 from volatility3.framework.configuration import requirements
-from volatility3.framework.configuration.requirements import (
-    IntRequirement,
-    TranslationLayerRequirement,
-)
-from volatility3.framework.exceptions import InvalidAddressException
 from volatility3.framework.layers import linear
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.windows import extensions
@@ -154,7 +149,7 @@ class RegistryHive(linear.LinearlyMappedLayer):
     @property
     def root_cell_offset(self) -> int:
         """Returns the offset for the root cell in this hive."""
-        with contextlib.suppress(InvalidAddressException):
+        with contextlib.suppress(exceptions.InvalidAddressException):
             if (
                 self._base_block.Signature.cast(
                     "string", max_length=4, encoding="latin-1"
@@ -271,7 +266,7 @@ class RegistryHive(linear.LinearlyMappedLayer):
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
         return [
-            IntRequirement(
+            requirements.IntRequirement(
                 name="hive_offset",
                 description="Offset within the base layer at which the hive lives",
                 default=0,
@@ -280,7 +275,7 @@ class RegistryHive(linear.LinearlyMappedLayer):
             requirements.SymbolTableRequirement(
                 name="nt_symbols", description="Windows kernel symbols"
             ),
-            TranslationLayerRequirement(
+            requirements.TranslationLayerRequirement(
                 name="base_layer",
                 description="Layer in which the registry hive lives",
                 optional=False,

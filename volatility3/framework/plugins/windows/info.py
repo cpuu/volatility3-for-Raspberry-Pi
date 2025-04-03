@@ -3,12 +3,11 @@
 #
 
 import time
-from typing import List, Tuple, Iterable
+from typing import Iterable, List, Tuple
 
-from volatility3.framework import constants, interfaces, layers, symbols
+from volatility3.framework import constants, interfaces, layers, renderers, symbols
 from volatility3.framework.configuration import requirements
 from volatility3.framework.interfaces import plugins
-from volatility3.framework.renderers import TreeGrid
 from volatility3.framework.symbols import intermed
 from volatility3.framework.symbols.windows.extensions import kdbg, pe
 
@@ -294,4 +293,6 @@ class Info(plugins.PluginInterface):
         )
 
     def run(self):
-        return TreeGrid([("Variable", str), ("Value", str)], self._generator())
+        return renderers.TreeGrid(
+            [("Variable", str), ("Value", str)], self._generator()
+        )

@@ -7,9 +7,14 @@ import ntpath
 import re
 from typing import List, Tuple, Type, Optional, Generator
 
-from volatility3.framework import interfaces, renderers, exceptions, constants
+from volatility3.framework import (
+    interfaces,
+    exceptions,
+    constants,
+    renderers,
+)
 from volatility3.framework.configuration import requirements
-from volatility3.framework.renderers import format_hints, UnreadableValue
+from volatility3.framework.renderers import format_hints
 from volatility3.plugins.windows import handles
 from volatility3.plugins.windows import pslist
 
@@ -258,7 +263,7 @@ class DumpFiles(interfaces.plugins.PluginInterface):
 
                             if file_re:
                                 name = file_obj.file_name_with_device()
-                                if isinstance(name, UnreadableValue):
+                                if isinstance(name, renderers.UnreadableValue):
                                     continue
                                 if not file_re.search(name):
                                     continue
@@ -298,7 +303,7 @@ class DumpFiles(interfaces.plugins.PluginInterface):
 
                         if file_re:
                             name = file_obj.file_name_with_device()
-                            if isinstance(name, UnreadableValue):
+                            if isinstance(name, renderers.UnreadableValue):
                                 continue
                             if not file_re.search(name):
                                 continue

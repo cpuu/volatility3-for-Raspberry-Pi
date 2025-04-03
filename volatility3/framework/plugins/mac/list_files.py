@@ -31,6 +31,11 @@ class List_Files(plugins.PluginInterface):
             requirements.VersionRequirement(
                 name="mount", component=mount.Mount, version=(2, 0, 0)
             ),
+            requirements.VersionRequirement(
+                name="mac_utilities",
+                component=mac.MacUtilities,
+                version=(1, 3, 0),
+            ),
         ]
 
     @classmethod

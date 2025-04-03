@@ -4,6 +4,7 @@ import struct
 from typing import Iterator, List, Optional, Tuple, Type
 
 from volatility3.framework import exceptions, interfaces, renderers
+from volatility3.framework.layers import registry as registry_layer
 from volatility3.framework.configuration import requirements
 from volatility3.framework.symbols.windows.extensions import registry
 from volatility3.plugins.windows.registry import hivelist, printkey
@@ -80,7 +81,7 @@ class Certificates(interfaces.plugins.PluginInterface):
             ]:
                 with contextlib.suppress(
                     KeyError,
-                    registry.RegistryException,
+                    registry_layer.RegistryException,
                     exceptions.InvalidAddressException,
                 ):
                     # Walk it
