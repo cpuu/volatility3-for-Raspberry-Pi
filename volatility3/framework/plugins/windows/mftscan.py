@@ -20,7 +20,7 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
     _required_framework_version = (2, 0, 0)
 
-    _version = (2, 0, 1)
+    _version = (3, 0, 0)
 
     class MFTScanResult(NamedTuple):
         offset: format_hints.Hex
@@ -266,7 +266,7 @@ class ADS(interfaces.plugins.PluginInterface):
 
     _required_framework_version = (2, 22, 0)
 
-    _version = (1, 0, 2)
+    _version = (2, 0, 0)
 
     class ADSResult(NamedTuple):
         offset: format_hints.Hex
@@ -366,7 +366,7 @@ class ResidentData(interfaces.plugins.PluginInterface):
 
     _required_framework_version = (2, 22, 0)
 
-    _version = (1, 0, 2)
+    _version = (2, 0, 0)
 
     class ResidentDataResult(NamedTuple):
         offset: format_hints.Hex
