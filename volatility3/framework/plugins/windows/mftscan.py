@@ -4,14 +4,7 @@
 import contextlib
 import datetime
 import logging
-from typing import (
-    Callable,
-    Iterator,
-    Optional,
-    Tuple,
-    DefaultDict,
-)
-
+from typing import Callable, DefaultDict, Iterator, Optional, Tuple
 
 from volatility3.framework import constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
@@ -120,8 +113,8 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         )
 
         # get each of the individual Field Sets
-        mft_object_typ_name = symbol_table + constants.BANG + "MFT_ENTRY"
-        attribute_object_typ_name = symbol_table + constants.BANG + "ATTRIBUTE"
+        mft_object_type_name = symbol_table + constants.BANG + "MFT_ENTRY"
+        attribute_object_type_name = symbol_table + constants.BANG + "ATTRIBUTE"
 
         record_map: DefaultDict[str, MFTRecord] = DefaultDict(MFTRecord)
 
@@ -131,13 +124,13 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         ):
             with contextlib.suppress(exceptions.InvalidAddressException):
                 mft_record: mft.MFTEntry = context.object(
-                    mft_object_typ_name, offset=offset, layer_name=layer.name
+                    mft_object_type_name, offset=offset, layer_name=layer.name
                 )
 
                 # We will update this on each pass in the next loop and use it as the new offset.
                 attr_base_offset = mft_record.FirstAttrOffset
                 attr: mft.MFTAttribute = context.object(
-                    attribute_object_typ_name,
+                    attribute_object_type_name,
                     offset=offset + attr_base_offset,
                     layer_name=layer.name,
                 )
@@ -155,7 +148,7 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                     attr_base_offset += attr.Attr_Header.Length
                     # Get the next attribute
                     attr: mft.MFTAttribute = context.object(
-                        attribute_object_typ_name,
+                        attribute_object_type_name,
                         offset=offset + attr_base_offset,
                         layer_name=layer.name,
                     )
