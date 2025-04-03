@@ -2,22 +2,70 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 
-from typing import Optional, Iterator
+from typing import Dict, Iterator, List, Optional, Tuple
 
-from volatility3.framework import objects, constants, exceptions
+from volatility3.framework import constants, exceptions, interfaces, objects
 
 
 class MFTEntry(objects.StructType):
     """This represents the base MFT Record"""
 
+    def __init__(
+        self,
+        context: interfaces.context.ContextInterface,
+        type_name: str,
+        object_info: interfaces.objects.ObjectInformation,
+        size: int,
+        members: Dict[str, Tuple[int, interfaces.objects.Template]],
+        **kwargs,
+    ) -> None:
+        super().__init__(context, type_name, object_info, size, members)
+
+        self._symbol_table_name = kwargs.get("symbol_table_name")
+        self._attr_generator = self._attributes()
+        self._attrs: List[MFTAttribute] = []
+
+    @property
+    def symbol_table_name(self) -> str:
+        if self._symbol_table_name is None:
+            raise ValueError(
+                "MFTEntry was instantiated without an MFT symbol table name"
+            )
+        return self._symbol_table_name
+
     def get_signature(self) -> objects.String:
         signature = self.Signature.cast("string", max_length=4, encoding="latin-1")
         return signature
 
-    def attributes(self, symbol_table_name: str) -> Iterator["MFTAttribute"]:
+    def filename(self, symbol_table_name: str) -> Optional[objects.String]:
+        try:
+            fname_attr = next(
+                attr
+                for attr in self.attributes()
+                if attr.Attr_Header.AttrType.lookup() == "FILE_NAME"
+            )
+        except StopIteration:
+            return None
+
+        fn_object = symbol_table_name + constants.BANG + "FILE_NAME_ENTRY"
+        attr_data = fname_attr.Attr_Data.cast(fn_object)
+
+        return attr_data.get_full_name()
+
+    def attributes(self) -> Iterator["MFTAttribute"]:
+        yield from self._attrs
+
+        for attr in self._attr_generator:
+            self._attrs.append(attr)
+            yield attr
+
+    def _attributes(self) -> Iterator["MFTAttribute"]:
+
         # We will update this on each pass in the next loop and use it as the new offset.
         attr_base_offset = self.FirstAttrOffset
-        attribute_object_type_name = symbol_table_name + constants.BANG + "ATTRIBUTE"
+        attribute_object_type_name = (
+            self.symbol_table_name + constants.BANG + "ATTRIBUTE"
+        )
 
         attr: MFTAttribute = self._context.object(
             attribute_object_type_name,

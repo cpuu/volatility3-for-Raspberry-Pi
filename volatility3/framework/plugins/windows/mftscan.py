@@ -100,7 +100,7 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         )
 
         # Read in the Symbol File
-        symbol_table = intermed.IntermediateSymbolTable.create(
+        symbol_table_name = intermed.IntermediateSymbolTable.create(
             context=context,
             config_path=config_path,
             sub_path="windows",
@@ -113,9 +113,9 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         )
 
         # get each of the individual Field Sets
-        mft_object_type_name = symbol_table + constants.BANG + "MFT_ENTRY"
 
         record_map: DefaultDict[str, MFTRecord] = DefaultDict(MFTRecord)
+        mft_object_type_name = symbol_table_name + constants.BANG + "MFT_ENTRY"
 
         # Scan the layer for Raw MFT records and parse the fields
         for offset, _rule_name, _name, _value in layer.scan(
@@ -123,12 +123,15 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         ):
             with contextlib.suppress(exceptions.InvalidAddressException):
                 mft_record: mft.MFTEntry = context.object(
-                    mft_object_type_name, offset=offset, layer_name=layer.name
+                    mft_object_type_name,
+                    offset=offset,
+                    layer_name=layer.name,
+                    symbol_table_name=symbol_table_name,
                 )
 
-                for attribute in mft_record.attributes(symbol_table):
+                for attribute in mft_record.attributes():
                     yield from attr_callback(
-                        record_map, mft_record, attribute, symbol_table
+                        record_map, mft_record, attribute, symbol_table_name
                     )
 
     @classmethod
