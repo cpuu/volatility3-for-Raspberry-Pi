@@ -281,7 +281,7 @@ class ADS(interfaces.plugins.PluginInterface):
     def get_requirements(cls):
         return [
             requirements.VersionRequirement(
-                name="MFTScan", component=MFTScan, version=(2, 0, 0)
+                name="MFTScan", component=MFTScan, version=(3, 0, 0)
             ),
             requirements.TranslationLayerRequirement(
                 name="primary",
@@ -380,7 +380,7 @@ class ResidentData(interfaces.plugins.PluginInterface):
     def get_requirements(cls):
         return [
             requirements.VersionRequirement(
-                name="MFTScan", component=MFTScan, version=(2, 0, 0)
+                name="MFTScan", component=MFTScan, version=(3, 0, 0)
             ),
             requirements.TranslationLayerRequirement(
                 name="primary",
