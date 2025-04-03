@@ -18,7 +18,7 @@ vollog = logging.getLogger(__name__)
 class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
     """Scans for MFT FILE objects present in a particular windows memory image."""
 
-    _required_framework_version = (2, 0, 0)
+    _required_framework_version = (2, 26, 0)
 
     _version = (3, 0, 0)
 
@@ -269,7 +269,7 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 class ADS(interfaces.plugins.PluginInterface):
     """Scans for Alternate Data Stream"""
 
-    _required_framework_version = (2, 22, 0)
+    _required_framework_version = (2, 26, 0)
 
     _version = (2, 0, 0)
 
@@ -373,7 +373,7 @@ class ADS(interfaces.plugins.PluginInterface):
 class ResidentData(interfaces.plugins.PluginInterface):
     """Scans for MFT Records with Resident Data"""
 
-    _required_framework_version = (2, 22, 0)
+    _required_framework_version = (2, 26, 0)
 
     _version = (2, 0, 0)
 
