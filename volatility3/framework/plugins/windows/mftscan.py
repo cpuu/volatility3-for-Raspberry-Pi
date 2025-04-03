@@ -114,7 +114,6 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
         # get each of the individual Field Sets
         mft_object_type_name = symbol_table + constants.BANG + "MFT_ENTRY"
-        attribute_object_type_name = symbol_table + constants.BANG + "ATTRIBUTE"
 
         record_map: DefaultDict[str, MFTRecord] = DefaultDict(MFTRecord)
 
@@ -127,30 +126,9 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                     mft_object_type_name, offset=offset, layer_name=layer.name
                 )
 
-                # We will update this on each pass in the next loop and use it as the new offset.
-                attr_base_offset = mft_record.FirstAttrOffset
-                attr: mft.MFTAttribute = context.object(
-                    attribute_object_type_name,
-                    offset=offset + attr_base_offset,
-                    layer_name=layer.name,
-                )
-
-                # There is no field that has a count of Attributes
-                # Keep Attempting to read attributes until we get an invalid attr_header.AttrType
-                while attr.Attr_Header.AttrType.is_valid_choice:
-                    yield from attr_callback(record_map, mft_record, attr, symbol_table)
-
-                    # If there's no advancement the loop will never end, so break it now
-                    if attr.Attr_Header.Length == 0:
-                        break
-
-                    # Update the base offset to point to the next attribute
-                    attr_base_offset += attr.Attr_Header.Length
-                    # Get the next attribute
-                    attr: mft.MFTAttribute = context.object(
-                        attribute_object_type_name,
-                        offset=offset + attr_base_offset,
-                        layer_name=layer.name,
+                for attribute in mft_record.attributes(symbol_table):
+                    yield from attr_callback(
+                        record_map, mft_record, attribute, symbol_table
                     )
 
     @classmethod

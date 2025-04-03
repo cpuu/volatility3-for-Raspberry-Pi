@@ -2,7 +2,7 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 
-from typing import Optional
+from typing import Optional, Iterator
 
 from volatility3.framework import objects, constants, exceptions
 
@@ -13,6 +13,35 @@ class MFTEntry(objects.StructType):
     def get_signature(self) -> objects.String:
         signature = self.Signature.cast("string", max_length=4, encoding="latin-1")
         return signature
+
+    def attributes(self, symbol_table_name: str) -> Iterator["MFTAttribute"]:
+        # We will update this on each pass in the next loop and use it as the new offset.
+        attr_base_offset = self.FirstAttrOffset
+        attribute_object_type_name = symbol_table_name + constants.BANG + "ATTRIBUTE"
+
+        attr: MFTAttribute = self._context.object(
+            attribute_object_type_name,
+            offset=self.vol.offset + attr_base_offset,
+            layer_name=self.vol.layer_name,
+        )
+
+        # There is no field that has a count of Attributes
+        # Keep Attempting to read attributes until we get an invalid attr_header.AttrType
+        while attr.Attr_Header.AttrType.is_valid_choice:
+            yield attr
+
+            # If there's no advancement the loop will never end, so break it now
+            if attr.Attr_Header.Length == 0:
+                break
+
+            # Update the base offset to point to the next attribute
+            attr_base_offset += attr.Attr_Header.Length
+            # Get the next attribute
+            attr: MFTAttribute = self._context.object(
+                attribute_object_type_name,
+                offset=self.vol.offset + attr_base_offset,
+                layer_name=self.vol.layer_name,
+            )
 
 
 class MFTFileName(objects.StructType):
