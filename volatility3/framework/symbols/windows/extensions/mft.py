@@ -5,19 +5,13 @@
 import logging
 from typing import Dict, Iterator, List, Optional, Tuple
 
-from volatility3 import framework
 from volatility3.framework import constants, exceptions, interfaces, objects
 
 vollog = logging.getLogger(__name__)
 
 
-class MFTEntry(objects.StructType, interfaces.configuration.VersionableInterface):
+class MFTEntry(objects.StructType):
     """This represents the base MFT Record"""
-
-    _version = (1, 0, 0)
-    _required_framework_version = (2, 26, 0)
-
-    framework.require_interface_version(*_required_framework_version)
 
     def __init__(
         self,
@@ -150,14 +144,8 @@ class MFTEntry(objects.StructType, interfaces.configuration.VersionableInterface
                 yield attr
 
 
-class MFTFileName(objects.StructType, interfaces.configuration.VersionableInterface):
+class MFTFileName(objects.StructType):
     """This represents an MFT $FILE_NAME Attribute"""
-
-    _version = (1, 0, 0)
-
-    _required_framework_version = (2, 26, 0)
-
-    framework.require_interface_version(*_required_framework_version)
 
     def get_full_name(self) -> objects.String:
         output = self.Name.cast(
@@ -166,14 +154,8 @@ class MFTFileName(objects.StructType, interfaces.configuration.VersionableInterf
         return output
 
 
-class MFTAttribute(objects.StructType, interfaces.configuration.VersionableInterface):
+class MFTAttribute(objects.StructType):
     """This represents an MFT ATTRIBUTE"""
-
-    _version = (1, 0, 0)
-
-    _required_framework_version = (2, 26, 0)
-
-    framework.require_interface_version(*_required_framework_version)
 
     def get_resident_filename(self) -> Optional[objects.String]:
         # 4MB chosen as cutoff instead of 4KB to allow for recovery from format /L created file systems
