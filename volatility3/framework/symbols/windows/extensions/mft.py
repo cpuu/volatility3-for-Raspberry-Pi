@@ -20,21 +20,15 @@ class MFTEntry(objects.StructType):
         object_info: interfaces.objects.ObjectInformation,
         size: int,
         members: Dict[str, Tuple[int, interfaces.objects.Template]],
-        **kwargs,
     ) -> None:
         super().__init__(context, type_name, object_info, size, members)
 
-        self._symbol_table_name = kwargs.get("symbol_table_name")
         self._attrs_loaded = False
         self._attrs: List[MFTAttribute] = []
 
     @property
     def symbol_table_name(self) -> str:
-        if self._symbol_table_name is None:
-            raise ValueError(
-                "MFTEntry was instantiated without an MFT symbol table name"
-            )
-        return self._symbol_table_name
+        return self.vol.type_name.split(constants.BANG)[0]
 
     def get_signature(self) -> objects.String:
         signature = self.Signature.cast("string", max_length=4, encoding="latin-1")

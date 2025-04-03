@@ -112,7 +112,6 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 mft_object_type_name,
                 offset=offset,
                 layer_name=layer.name,
-                symbol_table_name=symbol_table_name,
             )
 
             yield mft_record
