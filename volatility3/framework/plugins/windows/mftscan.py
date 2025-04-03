@@ -50,6 +50,21 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
                 version=(1, 0, 0),
             ),
             requirements.VersionRequirement(
+                name="mft_entry",
+                component=mft.MFTEntry,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="mft_filename",
+                component=mft.MFTFileName,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="mft_attribute",
+                component=mft.MFTAttribute,
+                version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
                 name="yarascanner", component=yarascan.YaraScanner, version=(2, 1, 0)
             ),
             requirements.VersionRequirement(
