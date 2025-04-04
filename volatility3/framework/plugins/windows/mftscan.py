@@ -238,9 +238,9 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
             _depth, row_data = row
 
             # Only Output FN Records
-            if row_data[6] == "FILE_NAME":
+            if row_data[6] in ("FILE_NAME", "STANDARD_INFORMATION"):
                 filename = row_data[-1]
-                description = f"MFT FILE_NAME entry for {filename}"
+                description = f"MFT {row_data[6]} entry for {filename}"
                 yield (description, timeliner.TimeLinerType.CREATED, row_data[7])
                 yield (description, timeliner.TimeLinerType.MODIFIED, row_data[8])
                 yield (description, timeliner.TimeLinerType.CHANGED, row_data[9])
