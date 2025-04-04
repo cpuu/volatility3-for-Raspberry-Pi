@@ -25,8 +25,8 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
     class MFTScanResult(NamedTuple):
         offset: format_hints.Hex
         record_type: str
-        record_number: int
-        link_count: int
+        record_number: objects.Integer
+        link_count: objects.Integer
         mft_type: str
         permissions: Union[str, interfaces.renderers.BaseAbsentValue]
         attribute_type: str
@@ -275,8 +275,8 @@ class ADS(interfaces.plugins.PluginInterface):
 
     class ADSResult(NamedTuple):
         offset: format_hints.Hex
-        signature: str
-        record_number: int
+        signature: objects.String
+        record_number: objects.Integer
         attribute_type: str
         filename: Union[objects.String, interfaces.renderers.BaseAbsentValue]
         stream_name: Union[objects.String, interfaces.renderers.BaseAbsentValue]
@@ -379,7 +379,7 @@ class ResidentData(interfaces.plugins.PluginInterface):
 
     class ResidentDataResult(NamedTuple):
         offset: format_hints.Hex
-        signature: str
+        signature: objects.String
         record_number: int
         attribute_type: str
         filename: Union[objects.String, interfaces.renderers.BaseAbsentValue]
@@ -426,7 +426,7 @@ class ResidentData(interfaces.plugins.PluginInterface):
 
         return cls.ResidentDataResult(
             format_hints.Hex(attr.Attr_Data.vol.offset),
-            str(mft_record.get_signature()),
+            mft_record.get_signature(),
             mft_record.RecordNumber,
             attr.Attr_Header.AttrType.lookup(),
             filename,
@@ -449,7 +449,7 @@ class ResidentData(interfaces.plugins.PluginInterface):
                 # exposed through classmethods.
                 yield 0, (
                     resident_data_entry.offset,
-                    resident_data_entry.signature,
+                    str(resident_data_entry.signature),
                     int(resident_data_entry.record_number),
                     resident_data_entry.attribute_type,
                     str(resident_data_entry.filename),
