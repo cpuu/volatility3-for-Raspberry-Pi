@@ -131,7 +131,7 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         try:
             # There should only be one STANDARD_INFORMATION attribute, but we
             # do this just in case.
-            for std_information in mft_record.standard_information_attributes():
+            for std_information in mft_record.standard_information_entries():
                 yield 0, cls.MFTScanResult(
                     format_hints.Hex(std_information.vol.offset),
                     str(mft_record.get_signature()),
@@ -162,7 +162,7 @@ class MFTScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
 
         # File Name Attribute
         try:
-            for filename_info in mft_record.filename_attributes():
+            for filename_info in mft_record.filename_entries():
 
                 # If we don't have a valid enum, coerce to hex so we can keep the record
                 try:

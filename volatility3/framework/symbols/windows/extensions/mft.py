@@ -47,7 +47,7 @@ class MFTEntry(objects.StructType):
         yield from self._attrs
 
     def longest_filename(self) -> Optional[objects.String]:
-        names = [name.get_full_name() for name in self.filename_attributes()]
+        names = [name.get_full_name() for name in self.filename_entries()]
         if not names:
             return None
 
@@ -91,9 +91,17 @@ class MFTEntry(objects.StructType):
             )
             return
 
-    def standard_information_attributes(self) -> Iterator[objects.StructType]:
+    def standard_information_entries(
+        self,
+    ) -> Iterator[objects.StructType]:
+        """
+        Yields a STANDARD_INFORMATION struct for each of the
+        STANDARD_INFORMATION attributes in this MFT record (although there
+        should only be one per record).
+        """
         for attr in self.attributes:
-            if attr.Attr_Header.AttrType.lookup() != "STANDARD_INFORMATION":
+            attr_type = attr.Attr_Header.AttrType.lookup()
+            if attr_type != "STANDARD_INFORMATION":
                 continue
 
             si_object = (
@@ -102,10 +110,16 @@ class MFTEntry(objects.StructType):
 
             yield attr.Attr_Data.cast(si_object)
 
-    def filename_attributes(self) -> Iterator["MFTFileName"]:
+    def filename_entries(self) -> Iterator["MFTFileName"]:
+        """
+        Yields an MFT Filename for each of the FILE_NAME attributes contained
+        in this MFT record. There are often two - one for the long filename,
+        and the other with the DOS 8.3 short name.
+        """
         for attr in self.attributes:
             try:
-                if attr.Attr_Header.AttrType.lookup() != "FILE_NAME":
+                attr_type = attr.Attr_Header.AttrType.lookup()
+                if attr_type != "FILE_NAME":
                     continue
 
                 fn_object = self.symbol_table_name + constants.BANG + "FILE_NAME_ENTRY"
@@ -128,11 +142,18 @@ class MFTEntry(objects.StructType):
             yield attr
 
     def resident_data_attributes(self) -> Iterator["MFTAttribute"]:
+        """
+        Yields all MFT attributes that contain resident data for the primary
+        stream.
+        """
         for attr in self._data_attributes():
             if attr.Attr_Header.NameLength == 0:
                 yield attr
 
     def alternate_data_streams(self) -> Iterator["MFTAttribute"]:
+        """
+        Yields all MFT attributes that contain alternate data streams (ADS).
+        """
         for attr in self._data_attributes():
             if attr.Attr_Header.NameLength != 0:
                 yield attr
@@ -142,6 +163,9 @@ class MFTFileName(objects.StructType):
     """This represents an MFT $FILE_NAME Attribute"""
 
     def get_full_name(self) -> objects.String:
+        """
+        Returns the UTF-16 decoded filename.
+        """
         output = self.Name.cast(
             "string", encoding="utf16", max_length=self.NameLength * 2, errors="replace"
         )
@@ -152,6 +176,9 @@ class MFTAttribute(objects.StructType):
     """This represents an MFT ATTRIBUTE"""
 
     def get_resident_filename(self) -> Optional[objects.String]:
+        """
+        Returns the resident filename (typically for an Alternate Data Stream (ADS)).
+        """
         # 4MB chosen as cutoff instead of 4KB to allow for recovery from format /L created file systems
         # Length as 512 as its 256*2, which is the maximum size for an entire file path, so this is even generous
         if (
@@ -178,6 +205,10 @@ class MFTAttribute(objects.StructType):
             return None
 
     def get_resident_filecontent(self) -> Optional[objects.Bytes]:
+        """
+        Returns the file content that is resident within this MFT attribute,
+        for either the primary or an alternate data stream.
+        """
         # smear observed in mass testing of samples
         # 4MB chosen as cutoff instead of 4KB to allow for recovery from format /L created file systems
         if (
