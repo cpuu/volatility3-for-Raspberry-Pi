@@ -629,7 +629,7 @@ class Volshell(interfaces.plugins.PluginInterface):
                             else:
                                 suffix = ""
                         except exceptions.SymbolError as exc:
-                            suffix = f" (pointer to {exc.symbol_name} - unknown size)"
+                            suffix = f" (unknown sized {exc.symbol_name})"
                         return f"{hex(value)}{suffix}"
                     elif isinstance(value, objects.PrimitiveObject):
                         return repr(value)
