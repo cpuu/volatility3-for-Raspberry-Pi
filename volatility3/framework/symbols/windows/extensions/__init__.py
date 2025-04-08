@@ -568,16 +568,20 @@ class ETHREAD(objects.StructType, pool.ExecutiveObject):
         # passed all validations
         return True
 
-    def get_create_time(self):
+    def get_create_time(
+        self,
+    ) -> Union[datetime.datetime, interfaces.renderers.BaseAbsentValue]:
         # For Windows XPs
         if self.has_member("ThreadsProcess"):
             return conversion.wintime_to_datetime(self.CreateTime.QuadPart >> 3)
         return conversion.wintime_to_datetime(self.CreateTime.QuadPart)
 
-    def get_exit_time(self):
+    def get_exit_time(
+        self,
+    ) -> Union[datetime.datetime, interfaces.renderers.BaseAbsentValue]:
         return conversion.wintime_to_datetime(self.ExitTime.QuadPart)
 
-    def owning_process(self) -> interfaces.objects.ObjectInterface:
+    def owning_process(self) -> "EPROCESS":
         """Return the EPROCESS that owns this thread."""
 
         # For Windows XPs
