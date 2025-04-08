@@ -23,7 +23,7 @@ more details.
 1. Install the required dependencies:
 
     ```shell
-    pip install --user -e.
+    pip install --user -e ".[full]"
     ```
 
 2. See available options:
