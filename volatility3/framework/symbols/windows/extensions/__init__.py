@@ -709,7 +709,11 @@ class EPROCESS(generic.GenericIntelProcess, pool.ExecutiveObject):
                         return False
 
             # NT pids are divisible by 4
-            if self.UniqueProcessId % 4 != 0:
+            if (
+                self.UniqueProcessId % 4 != 0
+                or self.UniqueProcessId == 0
+                or self.UniqueProcessId > constants.windows.MAX_PID
+            ):
                 return False
 
             # check for all 0s besides the PCID entries

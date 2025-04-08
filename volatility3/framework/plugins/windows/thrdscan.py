@@ -7,6 +7,7 @@ from typing import Callable, Dict, NamedTuple, Optional, Union, Tuple, Iterator
 
 from volatility3.framework import exceptions, interfaces, objects, renderers
 from volatility3.framework.configuration import requirements
+from volatility3.framework.constants import windows as windows_constants
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.symbols.windows import extensions as win_extensions
 from volatility3.plugins import timeliner
@@ -112,10 +113,19 @@ class ThrdScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface)
             vollog.debug(f"Thread invalid address {ethread.vol.offset:#x}")
             return None
 
-        # don't look for VADs in kernel threads, just let them get reported with empty paths
+        # Filter junk PIDs
         if (
-            owner_proc_pid != 4
-            and owner_proc.InheritedFromUniqueProcessId != 4
+            ethread.Cid.UniqueProcess > windows_constants.MAX_PID
+            or ethread.Cid.UniqueProcess == 0
+            or ethread.Cid.UniqueProcess % 4 != 0
+        ):
+            return None
+
+        # Get VAD mappings for valid non-system (PID 4) processes
+        if (
+            owner_proc
+            and owner_proc.is_valid()
+            and owner_proc.UniqueProcessId != 4
             and vads_cache is not None
         ):
             vads = pe_symbols.PESymbols.get_vads_for_process_cache(
