@@ -474,8 +474,6 @@ class Modules(interfaces.configuration.VersionableInterface):
         Returns:
             The struct module alignment
         """
-        # Not L1 cache aligned, but compiler should naturally
-        # align to the referenced type as a minimum.
         return context.modules[vmlinux_module_name].get_type("pointer").size
 
     @classmethod
