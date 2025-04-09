@@ -474,10 +474,7 @@ class Modules(interfaces.configuration.VersionableInterface):
         Returns:
             The struct module alignment
         """
-        # FIXME: When dwarf2json/ISF supports type alignments. Read it directly from the type metadata
-        # Additionally, while 'context' and 'vmlinux_module_name' are currently unused, they will be
-        # essential for retrieving type metadata in the future.
-        return 64
+        return context.modules[vmlinux_module_name].get_type("pointer").size
 
     @classmethod
     def list_modules(
