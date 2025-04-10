@@ -24,7 +24,7 @@ vollog = logging.getLogger(__name__)
 class DebugRegisters(interfaces.plugins.PluginInterface):
     # version 2.6.0 adds support for scanning for 'Ethread' structures by pool tags
     _required_framework_version = (2, 6, 0)
-    _version = (1, 0, 1)
+    _version = (1, 0, 2)
 
     @classmethod
     def get_requirements(cls) -> List:
@@ -38,7 +38,7 @@ class DebugRegisters(interfaces.plugins.PluginInterface):
                 name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="threads", component=threads.Threads, version=(3, 0, 0)
+                name="threads", component=threads.Threads, version=(3, 0, 1)
             ),
             requirements.VersionRequirement(
                 name="pe_symbols", component=pe_symbols.PESymbols, version=(3, 0, 0)

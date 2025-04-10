@@ -17,7 +17,7 @@ class SuspiciousThreads(interfaces.plugins.PluginInterface):
     """Lists suspicious userland process threads"""
 
     _required_framework_version = (2, 4, 0)
-    _version = (2, 0, 1)
+    _version = (2, 0, 2)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -35,13 +35,13 @@ class SuspiciousThreads(interfaces.plugins.PluginInterface):
                 optional=True,
             ),
             requirements.VersionRequirement(
-                name="thrdscan", component=thrdscan.ThrdScan, version=(2, 0, 0)
+                name="thrdscan", component=thrdscan.ThrdScan, version=(2, 0, 1)
             ),
             requirements.VersionRequirement(
                 name="pslist", component=pslist.PsList, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="threads", component=threads.Threads, version=(3, 0, 0)
+                name="threads", component=threads.Threads, version=(3, 0, 1)
             ),
             requirements.VersionRequirement(
                 name="vadinfo", component=vadinfo.VadInfo, version=(2, 0, 0)

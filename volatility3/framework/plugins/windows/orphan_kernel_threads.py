@@ -18,7 +18,7 @@ class Threads(thrdscan.ThrdScan):
     _required_framework_version = (2, 4, 0)
 
     # 2.0.0 - changed the signature of `list_orphan_kernel_threads`
-    _version = (2, 0, 0)
+    _version = (2, 0, 1)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -34,7 +34,7 @@ class Threads(thrdscan.ThrdScan):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="thrdscan", component=thrdscan.ThrdScan, version=(2, 0, 0)
+                name="thrdscan", component=thrdscan.ThrdScan, version=(2, 0, 1)
             ),
             requirements.VersionRequirement(
                 name="ssdt", component=ssdt.SSDT, version=(2, 0, 0)
