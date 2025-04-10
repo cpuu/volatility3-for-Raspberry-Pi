@@ -19,7 +19,7 @@ class SuspendedThreads(interfaces.plugins.PluginInterface):
     """Enumerates suspended threads."""
 
     _required_framework_version = (2, 13, 0)
-    _version = (1, 0, 1)
+    _version = (1, 0, 0)
 
     @classmethod
     def get_requirements(cls):
@@ -36,7 +36,7 @@ class SuspendedThreads(interfaces.plugins.PluginInterface):
                 name="pe_symbols", component=pe_symbols.PESymbols, version=(3, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="threads", component=threads.Threads, version=(3, 0, 1)
+                name="threads", component=threads.Threads, version=(3, 0, 0)
             ),
         ]
 

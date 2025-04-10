@@ -34,7 +34,7 @@ We recommend using -r pretty if you are looking at this plugin's output in a ter
     # code I do have from it, and will happily share it if anyone else wants to add it.
 
     _required_framework_version = (2, 0, 0)
-    _version = (1, 0, 1)
+    _version = (1, 0, 0)
 
     valid_proc_name_chars = set(
         string.ascii_lowercase + string.ascii_uppercase + "." + " "
@@ -55,7 +55,7 @@ We recommend using -r pretty if you are looking at this plugin's output in a ter
                 name="psscan", component=psscan.PsScan, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
-                name="thrdscan", component=thrdscan.ThrdScan, version=(2, 0, 1)
+                name="thrdscan", component=thrdscan.ThrdScan, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="handles", component=handles.Handles, version=(3, 0, 0)

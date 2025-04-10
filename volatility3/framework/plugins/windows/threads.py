@@ -16,7 +16,7 @@ class Threads(thrdscan.ThrdScan):
     """Lists process threads"""
 
     _required_framework_version = (2, 4, 0)
-    _version = (3, 0, 1)
+    _version = (3, 0, 0)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -32,7 +32,7 @@ class Threads(thrdscan.ThrdScan):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="thrdscan", component=thrdscan.ThrdScan, version=(2, 0, 1)
+                name="thrdscan", component=thrdscan.ThrdScan, version=(2, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="pslist", component=pslist.PsList, version=(3, 0, 0)
