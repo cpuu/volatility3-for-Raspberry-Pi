@@ -21,7 +21,7 @@ class ThrdScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface)
 
     # version 2.6.0 adds support for scanning for 'Ethread' structures by pool tags
     _required_framework_version = (2, 6, 0)
-    _version = (2, 0, 1)
+    _version = (2, 1, 0)
 
     class ThreadInfo(NamedTuple):
         offset: int
