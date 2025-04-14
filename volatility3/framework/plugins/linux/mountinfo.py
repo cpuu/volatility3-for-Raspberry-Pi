@@ -279,7 +279,7 @@ class MountInfo(plugins.PluginInterface):
             if not (sb_ptr and sb_ptr.is_readable()):
                 continue
 
-            if int(sb_ptr) in seen_sb_ptr:
+            if sb_ptr in seen_sb_ptr:
                 continue
             seen_sb_ptr.add(int(sb_ptr))
 
