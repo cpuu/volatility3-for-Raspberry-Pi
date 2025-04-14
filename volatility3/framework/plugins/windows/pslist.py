@@ -24,7 +24,7 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
     _required_framework_version = (2, 0, 0)
 
     # 3.0.0 - changed signature for `list_processes`
-    _version = (3, 0, 0)
+    _version = (3, 0, 1)
     PHYSICAL_DEFAULT = False
 
     @classmethod

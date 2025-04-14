@@ -34,7 +34,7 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
     """Lists the processes present in a particular linux memory image."""
 
     _required_framework_version = (2, 13, 0)
-    _version = (4, 1, 0)
+    _version = (4, 1, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
