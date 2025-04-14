@@ -174,6 +174,8 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
                     vad.get_start() + SHIM_NUM_ENTRIES_OFFSET,
                 )
 
+                vollog.debug(f"Found {num_entries} shimcache entries")
+
                 if num_entries > SHIM_MAX_ENTRIES:
                     continue
 
@@ -204,7 +206,6 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
 
                     if physical_addr in seen:
                         continue
-                    seen.add(physical_addr)
 
                     shim_entry = proc_layer.context.object(
                         shimcache_symbol_table + constants.BANG + "SHIM_CACHE_ENTRY",
@@ -215,6 +216,8 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
                         continue
                     if not shim_entry.is_valid():
                         continue
+
+                    seen.add(physical_addr)
 
                     yield shim_entry
 
