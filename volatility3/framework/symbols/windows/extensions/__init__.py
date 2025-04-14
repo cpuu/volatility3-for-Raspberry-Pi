@@ -762,7 +762,6 @@ class EPROCESS(generic.GenericIntelProcess, pool.ExecutiveObject):
             self._context, dtb, config_prefix, preferred_name
         )
 
-    @functools.lru_cache
     def get_peb(self) -> interfaces.objects.ObjectInterface:
         """Constructs a PEB object"""
         if constants.BANG not in self.vol.type_name:
@@ -788,7 +787,6 @@ class EPROCESS(generic.GenericIntelProcess, pool.ExecutiveObject):
         )
         return peb
 
-    @functools.lru_cache
     def get_peb32(self) -> Optional[interfaces.objects.ObjectInterface]:
         """Constructs a PEB32 object"""
         if constants.BANG not in self.vol.type_name:
