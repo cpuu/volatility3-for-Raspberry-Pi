@@ -264,7 +264,9 @@ class PsList(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface):
         seen = set()
         for forward in (True, False):
             for proc in eproc.ActiveProcessLinks.to_list(
-                eproc.vol.type_name, "ActiveProcessLinks", forward=forward
+                symbol_type=eproc.vol.type_name,
+                member="ActiveProcessLinks",
+                forward=forward,
             ):
                 if proc.vol.offset in seen:
                     continue
