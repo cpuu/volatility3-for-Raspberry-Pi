@@ -204,10 +204,10 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
             if dentry_addr == root_dentry.vol.offset:
                 continue
 
-            if int(dentry_addr) in seen_dentries:
+            if dentry_addr in seen_dentries:
                 continue
 
-            seen_dentries.add(int(dentry_addr))
+            seen_dentries.add(dentry_addr)
 
             inode_ptr = dentry.d_inode
             if not (inode_ptr and inode_ptr.is_readable()):
