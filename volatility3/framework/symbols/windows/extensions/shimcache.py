@@ -136,7 +136,7 @@ class SHIM_CACHE_ENTRY(objects.StructType):
                 self._context,
                 self.Path.vol.layer_name,
                 self.Path.vol.offset,
-                520,
+                self.Path.vol.count,
                 encoding="utf-16le",
             )
 
