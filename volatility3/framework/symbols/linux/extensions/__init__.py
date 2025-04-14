@@ -471,6 +471,7 @@ class task_struct(generic.GenericIntelProcess):
 
         return True
 
+    @functools.lru_cache
     def add_process_layer(
         self, config_prefix: Optional[str] = None, preferred_name: Optional[str] = None
     ) -> Optional[str]:
