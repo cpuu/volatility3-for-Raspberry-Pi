@@ -287,7 +287,7 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
             # addresses we've already seen. Storing the full `objects.Pointer`
             # uses too much memory, and we don't need all of the information
             # that it contains.
-            if int(root_inode_ptr) in seen_inodes:
+            if root_inode_ptr in seen_inodes:
                 continue
 
             seen_inodes.add(int(root_inode_ptr))
@@ -327,7 +327,7 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
                 # addresses we've already seen. Storing the full `objects.Pointer`
                 # uses too much memory, and we don't need all of the information
                 # that it contains.
-                if int(file_inode_ptr) in seen_inodes:
+                if file_inode_ptr in seen_inodes:
                     continue
                 seen_inodes.add(int(file_inode_ptr))
 
