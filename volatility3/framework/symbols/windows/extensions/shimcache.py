@@ -57,12 +57,14 @@ class SHIM_CACHE_ENTRY(objects.StructType):
                 blob_offset, blob_size
             ):
                 self._exec_flag = renderers.UnparsableValue()
+                return self._exec_flag
 
             raw_flag = self._context.layers[self.vol.native_layer_name].read(
                 blob_offset, blob_size
             )
             if not raw_flag:
                 self._exec_flag = renderers.UnparsableValue()
+                return self._exec_flag
 
             try:
                 self._exec_flag = bool(struct.unpack("<I", raw_flag)[0])
@@ -72,6 +74,7 @@ class SHIM_CACHE_ENTRY(objects.StructType):
         else:
             # Always set to true for XP/2K3
             self._exec_flag = renderers.NotApplicableValue()
+
         return self._exec_flag
 
     @property
@@ -118,6 +121,8 @@ class SHIM_CACHE_ENTRY(objects.StructType):
             )
         except AttributeError:
             self._last_updated = renderers.NotApplicableValue()
+        except exceptions.InvalidAddressException:
+            self._last_updated = renderers.UnreadableValue()
 
         return self._last_updated
 
