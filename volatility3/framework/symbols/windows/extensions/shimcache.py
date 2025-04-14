@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Dict, Optional, Tuple, Union
 
 from volatility3.framework import constants, exceptions, interfaces, objects, renderers
+from volatility3.framework.objects.utility import address_to_string
 from volatility3.framework.symbols.windows.extensions import conversion
 
 vollog = logging.getLogger(__name__)
@@ -126,8 +127,12 @@ class SHIM_CACHE_ENTRY(objects.StructType):
             return self._file_path
 
         if not hasattr(self.Path, "Buffer"):
-            return self.Path.cast(
-                "string", max_length=self.Path.vol.count, encoding="utf-16le"
+            return address_to_string(
+                self._context,
+                self.Path.vol.layer_name,
+                self.Path.vol.offset,
+                520,
+                encoding="utf-16le",
             )
 
         try:
