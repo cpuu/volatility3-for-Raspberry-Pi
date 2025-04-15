@@ -131,7 +131,7 @@ class PoolScanner(plugins.PluginInterface):
     """A generic pool scanner plugin."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (3, 0, 0)
+    _version = (3, 0, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -343,7 +343,7 @@ class PoolScanner(plugins.PluginInterface):
                 type_name=symbol_table + constants.BANG + "_OBJECT_SYMBOLIC_LINK",
                 object_type="SymbolicLink",
                 size=(72, None),
-                page_type=PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.PAGED | PoolType.FREE,
             ),
             # symlinks on windows starting with windows 8
             PoolConstraint(
@@ -351,7 +351,7 @@ class PoolScanner(plugins.PluginInterface):
                 type_name=symbol_table + constants.BANG + "_OBJECT_SYMBOLIC_LINK",
                 object_type="SymbolicLink",
                 size=(72, None),
-                page_type=PoolType.NONPAGED | PoolType.FREE,
+                page_type=PoolType.PAGED | PoolType.FREE,
             ),
             # registry hives
             PoolConstraint(
