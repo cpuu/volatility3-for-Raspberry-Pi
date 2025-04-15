@@ -119,11 +119,6 @@ class ThrdScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface)
             vads = pe_symbols.PESymbols.get_vads_for_process_cache(
                 vads_cache, owner_proc
             )
-            if not vads or len(vads) < 5:
-                vollog.debug(
-                    f"Not enough vads for process at {owner_proc.vol.offset:#x}. Skipping thread at {ethread.vol.offset:#x}"
-                )
-                return None
 
             start_path = pe_symbols.PESymbols.filepath_for_address(
                 vads, thread_start_addr
