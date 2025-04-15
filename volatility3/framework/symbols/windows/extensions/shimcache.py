@@ -57,7 +57,7 @@ class SHIM_CACHE_ENTRY(objects.StructType):
                 if not self._context.layers[self.vol.native_layer_name].is_valid(
                     blob_offset, blob_size
                 ):
-                    self._exec_flag = renderers.UnparsableValue()
+                    self._exec_flag = renderers.UnreadableValue()
                     return self._exec_flag
 
                 raw_flag = self._context.layers[self.vol.native_layer_name].read(
