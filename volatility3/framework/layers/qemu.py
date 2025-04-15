@@ -102,7 +102,7 @@ class QemuSuspendLayer(segmented.NonLinearlySegmentedLayer):
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
-        return [
+        return super().get_requirements() + [
             requirements.VersionRequirement(
                 name="regex_scanner",
                 component=scanners.RegExScanner,
