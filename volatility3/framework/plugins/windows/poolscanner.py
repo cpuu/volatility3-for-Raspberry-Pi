@@ -142,7 +142,7 @@ class PoolScanner(plugins.PluginInterface):
                 architectures=["Intel32", "Intel64"],
             ),
             requirements.VersionRequirement(
-                name="handles", component=handles.Handles, version=(3, 0, 0)
+                name="handles", component=handles.Handles, version=(4, 0, 0)
             ),
             requirements.VersionRequirement(
                 name="pool_header_scanner",
