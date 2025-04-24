@@ -17,7 +17,6 @@ vollog = logging.getLogger(__name__)
 class EtwPatch(interfaces.plugins.PluginInterface):
     """Detects ETW patching by examining the first opcode of EtwEventWrite in ntdll.dll."""
 
-    # Plugin metadata for auto-discovery
     _version = (1, 0, 0)
     _required_framework_version = (2, 26, 0)
 
