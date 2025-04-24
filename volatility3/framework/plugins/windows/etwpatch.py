@@ -3,6 +3,7 @@
 #
 import contextlib
 import logging
+import pefile
 
 from volatility3.framework import exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
