@@ -3065,7 +3065,9 @@ class kernel_symbol(objects.StructType):
         else:
             raise AttributeError("Unsupported kernel_symbol type implementation")
 
-        return utility.pointer_to_string(name_offset, linux_constants.KSYM_NAME_LEN)
+        return utility.pointer_to_string(
+            name_offset, linux_constants.KSYM_NAME_LEN, errors="ignore"
+        )
 
     def get_name(self) -> Optional[str]:
         try:
@@ -3102,7 +3104,7 @@ class kernel_symbol(objects.StructType):
             raise AttributeError("Unsupported kernel_symbol type implementation")
 
         return utility.pointer_to_string(
-            namespace_offset, linux_constants.KSYM_NAME_LEN
+            namespace_offset, linux_constants.KSYM_NAME_LEN, errors="ignore"
         )
 
     def get_namespace(self) -> Optional[str]:
