@@ -3065,14 +3065,9 @@ class kernel_symbol(objects.StructType):
         else:
             raise AttributeError("Unsupported kernel_symbol type implementation")
 
-        layer = self._context.layers[self.vol.layer_name]
-        name_bytes = layer.read(name_offset, linux_constants.KSYM_NAME_LEN)
-
-        idx = name_bytes.find(b"\x00")
-        if idx != -1:
-            name_bytes = name_bytes[:idx]
-
-        return name_bytes.decode("utf-8", errors="ignore")
+        return utility.pointer_to_string(
+            name_offset, linux_constants.KSYM_NAME_LEN, errors="ignore"
+        )
 
     def get_name(self) -> Optional[str]:
         try:
@@ -3108,14 +3103,9 @@ class kernel_symbol(objects.StructType):
         else:
             raise AttributeError("Unsupported kernel_symbol type implementation")
 
-        layer = self._context.layers[self.vol.layer_name]
-        namespace_bytes = layer.read(namespace_offset, linux_constants.KSYM_NAME_LEN)
-
-        idx = namespace_bytes.find(b"\x00")
-        if idx != -1:
-            namespace_bytes = namespace_bytes[:idx]
-
-        return namespace_bytes.decode("utf-8", errors="ignore")
+        return utility.pointer_to_string(
+            namespace_offset, linux_constants.KSYM_NAME_LEN, errors="ignore"
+        )
 
     def get_namespace(self) -> Optional[str]:
         try:
