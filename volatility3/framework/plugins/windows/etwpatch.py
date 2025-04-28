@@ -1,15 +1,11 @@
 # This file is Copyright 2019 Volatility Foundation and licensed under the Volatility Software License 1.0
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
-import contextlib
 import logging
-import pefile
 
 from volatility3.framework import exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
-from volatility3.framework.symbols import intermed
-from volatility3.framework.symbols.windows.extensions import pe
 from volatility3.plugins.windows import pslist, pe_symbols 
 
 vollog = logging.getLogger(__name__)
