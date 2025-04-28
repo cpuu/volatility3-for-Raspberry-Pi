@@ -42,90 +42,80 @@ class EtwPatch(interfaces.plugins.PluginInterface):
             )
         ]
 
+    def _get_dll_vads(self, proc, dll_name):
+        """Retrieve VADs for a specific DLL in the process."""
+        collected_modules = pe_symbols.PESymbols.get_proc_vads_with_file_paths(proc)
+        return [
+            (vad_start, vad_size, proc.add_process_layer())
+            for vad_start, vad_size, filepath in collected_modules
+            if pe_symbols.PESymbols.filename_for_path(filepath) == dll_name
+        ]
+
+    def _find_symbols(self, dll_name, symbols, proc_layer_name, dll_vads):
+        """Find symbols for a specific DLL."""
+        filter_module = {dll_name: {"names": symbols}}
+        process_modules = {dll_name: [(proc_layer_name, vad_start, vad_size) for vad_start, vad_size, _ in dll_vads]}
+        return pe_symbols.PESymbols.find_symbols(self.context, self.config_path, filter_module, process_modules)
+
+    def _get_first_opcode(self, proc_layer_name, function_start):
+        """Check the first opcode of a function."""
+        try:
+            return self.context.layers[proc_layer_name].read(function_start, 1).hex()
+        except exceptions.InvalidAddressException:
+            return None
+
     def _generator(self):
         pid_filter = self.config.get('pid', None)
 
         for proc in pslist.PsList.list_processes(
                 context=self.context,
                 kernel_module_name=self.config['kernel']):
-            
-            # If the user passed --pid, only process those IDs
+            # Skip processes not in the PID filter
             if pid_filter and proc.UniqueProcessId not in pid_filter:
                 continue
 
             pid = int(proc.UniqueProcessId)
             proc_name = proc.ImageFileName.cast(
                 "string",
-                max_length = proc.ImageFileName.vol.count,
-                errors = 'replace'
+                max_length=proc.ImageFileName.vol.count,
+                errors='replace'
             )
 
-            # Build a per-process memory layer
             try:
                 proc_layer_name = proc.add_process_layer()
-            except Exception:
+            except exceptions.InvalidAddressException:
                 continue
 
-            proc_layer = self.context.layers[proc_layer_name]
+            dlls_to_check = {
+                "ntdll.dll": [
+                    "EtwEventWrite",
+                    "EtwEventWriteFull",
+                    "NtTraceEvent"
+                ],
+                "advapi32.dll": [
+                    "EventWrite"
+                ]
+            }
 
-            # Find ntdll.dll module
-            for module in proc.load_order_modules():
-                BaseDllName = FullDllName = renderers.UnreadableValue()
-                with contextlib.suppress(exceptions.InvalidAddressException):
-                    BaseDllName = module.BaseDllName.get_string()
-                    FullDllName = module.FullDllName.get_string()
-                
-                if BaseDllName != 'ntdll.dll':
+            for dll_name, symbols in dlls_to_check.items():
+                dll_vads = self._get_dll_vads(proc, dll_name)
+                if not dll_vads:
                     continue
 
-                base = module.DllBase
-                size = module.SizeOfImage
-
-                pe_table_name = intermed.IntermediateSymbolTable.create(
-                    self.context, self.config_path, "windows", "pe", class_types=pe.class_types
-                )
-                
-                pe_obj = pe_symbols.PESymbols.get_pefile_obj(
-                    self.context, pe_table_name, proc_layer_name, base
-                )
-                
-                try:
-                    pe_obj.parse_data_directories(
-                        directories=[pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_EXPORT"]]
-                    )
-                except Exception as e:
-                    vollog.debug(f"Error parsing IMAGE_DIRECTORY_ENTRY_EXPORT with {e}")
+                found_symbols, _ = self._find_symbols(dll_name, symbols, proc_layer_name, dll_vads)
+                if dll_name not in found_symbols:
                     continue
-                
-                if not hasattr(pe_obj, "DIRECTORY_ENTRY_EXPORT"):
-                    return None
-                
-                for export in pe_obj.DIRECTORY_ENTRY_EXPORT.symbols:
-                    if export.name not in [b"EtwEventWrite", b"EtwEventWriteFull", b"NtTraceEvent"]:
-                        continue
-        
-                    function_start = base + export.address
-                    try:
-                        with contextlib.suppress(exceptions.InvalidAddressException):
-                            opcode = self.context.layers[proc_layer_name].read(
-                                function_start, 1
-                            ).hex()
-                        
-                            # 0xC3 = RET, 0xE9 = JMP (common ETW patches)
-                            if opcode in ('c3', 'e9'):
-                                yield (0, (
-                                    pid,
-                                    proc_name,
-                                    BaseDllName,
-                                    export.name.decode(),
-                                    format_hints.Hex(function_start),
-                                    opcode
-                                ))
-                    except Exception as e:
-                        vollog.debug(f"Error parsing IMAGE_DIRECTORY_ENTRY_EXPORT with {e}")
-                        continue
-                    finally:
-                      break
+
+                for symbol_name, function_start in found_symbols[dll_name]:
+                    opcode = self._get_first_opcode(proc_layer_name, function_start)
+                    if opcode in ('c3', 'e9'):  # RET or JMP
+                        yield (0, (
+                            pid,
+                            proc_name,
+                            dll_name,
+                            symbol_name,
+                            format_hints.Hex(function_start), opcode
+                        ))
 
     def run(self):
         return renderers.TreeGrid(
