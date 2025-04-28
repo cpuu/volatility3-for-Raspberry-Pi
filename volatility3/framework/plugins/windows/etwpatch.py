@@ -114,7 +114,8 @@ class EtwPatch(interfaces.plugins.PluginInterface):
                             proc_name,
                             dll_name,
                             symbol_name,
-                            format_hints.Hex(function_start), opcode
+                            format_hints.Hex(function_start),
+                            opcode
                         ))
 
     def run(self):
