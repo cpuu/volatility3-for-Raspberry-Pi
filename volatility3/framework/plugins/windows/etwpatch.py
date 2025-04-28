@@ -12,7 +12,13 @@ from volatility3.plugins.windows import pslist, pe_symbols
 vollog = logging.getLogger(__name__)
 
 class EtwPatch(interfaces.plugins.PluginInterface):
-    """Detects ETW patching by examining the first opcode of EtwEventWrite in ntdll.dll."""
+    """Identifies ETW (Event Tracing for Windows) patching techniques used by malware to evade detection.
+    
+    This plugin examines the first opcode of key ETW functions in ntdll.dll and advapi32.dll 
+    to detect common ETW bypass techniques such as return pointer manipulation (RET) or function 
+    redirection (JMP). Attackers often patch these functions to prevent security tools from 
+    receiving telemetry about process execution, API calls, and other system events.
+    """
 
     _version = (1, 0, 0)
     _required_framework_version = (2, 26, 0)
