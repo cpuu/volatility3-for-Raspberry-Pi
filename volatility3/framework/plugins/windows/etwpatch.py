@@ -1,10 +1,11 @@
-# This file is Copyright 2019 Volatility Foundation and licensed under the Volatility Software License 1.0
+# This file is Copyright 2025 Volatility Foundation and licensed under the Volatility Software License 1.0
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 import logging
 
 from volatility3.framework import exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
+from volatility3.framework.objects import utility
 from volatility3.framework.renderers import format_hints
 from volatility3.plugins.windows import pslist, pe_symbols 
 
@@ -15,6 +16,11 @@ class EtwPatch(interfaces.plugins.PluginInterface):
 
     _version = (1, 0, 0)
     _required_framework_version = (2, 26, 0)
+
+    etw_functions = {
+        "ntdll.dll": ["EtwEventWrite", "EtwEventWriteFull", "NtTraceEvent"],
+        "advapi32.dll": ["EventWrite"],
+    }
 
     @classmethod
     def get_requirements(cls):
@@ -38,81 +44,63 @@ class EtwPatch(interfaces.plugins.PluginInterface):
             )
         ]
 
-    def _get_dll_vads(self, proc, dll_name):
-        """Retrieve VADs for a specific DLL in the process."""
-        collected_modules = pe_symbols.PESymbols.get_proc_vads_with_file_paths(proc)
-        return [
-            (vad_start, vad_size, proc.add_process_layer())
-            for vad_start, vad_size, filepath in collected_modules
-            if pe_symbols.PESymbols.filename_for_path(filepath) == dll_name
-        ]
-
-    def _find_symbols(self, dll_name, symbols, proc_layer_name, dll_vads):
-        """Find symbols for a specific DLL."""
-        filter_module = {dll_name: {"names": symbols}}
-        process_modules = {dll_name: [(proc_layer_name, vad_start, vad_size) for vad_start, vad_size, _ in dll_vads]}
-        return pe_symbols.PESymbols.find_symbols(self.context, self.config_path, filter_module, process_modules)
-
-    def _get_first_opcode(self, proc_layer_name, function_start):
-        """Check the first opcode of a function."""
-        try:
-            return self.context.layers[proc_layer_name].read(function_start, 1).hex()
-        except exceptions.InvalidAddressException:
-            return None
-
     def _generator(self):
-        pid_filter = self.config.get('pid', None)
+        # Get all ETW function addresses before looping through processes
+        found_symbols = pe_symbols.PESymbols.addresses_for_process_symbols(
+            context=self.context,
+            config_path=self.config_path,
+            kernel_module_name=self.config["kernel"],
+            symbols=self.etw_functions,
+        )
+        
+        filter_func = pslist.PsList.create_pid_filter(self.config.get("pid", None))
 
         for proc in pslist.PsList.list_processes(
                 context=self.context,
-                kernel_module_name=self.config['kernel']):
-            # Skip processes not in the PID filter
-            if pid_filter and proc.UniqueProcessId not in pid_filter:
-                continue
-
-            pid = int(proc.UniqueProcessId)
-            proc_name = proc.ImageFileName.cast(
-                "string",
-                max_length=proc.ImageFileName.vol.count,
-                errors='replace'
-            )
-
+                kernel_module_name=self.config['kernel'],
+                filter_func=filter_func,
+            ):
+            
             try:
+                proc_id = proc.UniqueProcessId
+                proc_name = utility.array_to_string(proc.ImageFileName)
                 proc_layer_name = proc.add_process_layer()
             except exceptions.InvalidAddressException:
+                vollog.debug(f"Unable to create process layer for PID {proc_id}")
                 continue
 
-            dlls_to_check = {
-                "ntdll.dll": [
-                    "EtwEventWrite",
-                    "EtwEventWriteFull",
-                    "NtTraceEvent"
-                ],
-                "advapi32.dll": [
-                    "EventWrite"
-                ]
+            # Map of opcodes to their instruction names
+            opcode_map = {
+                'c3': 'RET',
+                'e9': 'JMP',
             }
 
-            for dll_name, symbols in dlls_to_check.items():
-                dll_vads = self._get_dll_vads(proc, dll_name)
-                if not dll_vads:
-                    continue
-
-                found_symbols, _ = self._find_symbols(dll_name, symbols, proc_layer_name, dll_vads)
-                if dll_name not in found_symbols:
-                    continue
-
-                for symbol_name, function_start in found_symbols[dll_name]:
-                    opcode = self._get_first_opcode(proc_layer_name, function_start)
-                    if opcode in ('c3', 'e9'):  # RET or JMP
-                        yield (0, (
-                            pid,
-                            proc_name,
-                            dll_name,
-                            symbol_name,
-                            format_hints.Hex(function_start),
-                            opcode
-                        ))
+            for dll_name, functions in found_symbols.items():
+                for func_name, func_addr in functions:
+                    try:
+                        opcode = self.context.layers[proc_layer_name].read(
+                            func_addr, 1
+                        ).hex()
+                        if opcode in opcode_map:
+                            instruction = opcode_map[opcode]
+                            yield (
+                                0,
+                                (
+                                    proc_id,
+                                    proc_name,
+                                    dll_name,
+                                    func_name,
+                                    format_hints.Hex(func_addr),
+                                    f"{opcode} ({instruction})"
+                                ),
+                            )
+                    except exceptions.InvalidAddressException:
+                        vollog.debug(f"Invalid address when reading function {func_name} at {func_addr:#x} in process {proc_id}")
+                        continue
+                    except KeyError:
+                        # Layer may no longer exist
+                        vollog.debug(f"Layer {proc_layer_name} no longer exists for process {proc_id}")
+                        continue
 
     def run(self):
         return renderers.TreeGrid(
@@ -122,7 +110,7 @@ class EtwPatch(interfaces.plugins.PluginInterface):
                 ("DLL", str),
                 ("Function", str),
                 ("Offset", format_hints.Hex),
-                ("Opcode", str)
+                ("Opcode", str),
             ],
-            self._generator()
+            self._generator(),
         )
