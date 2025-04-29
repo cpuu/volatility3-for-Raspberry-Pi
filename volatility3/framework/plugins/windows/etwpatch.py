@@ -86,8 +86,8 @@ class EtwPatch(interfaces.plugins.PluginInterface):
 
             # Map of opcodes to their instruction names
             opcode_map = {
-                "c3": "RET",
-                "e9": "JMP",
+                0xc3: "RET",
+                0xe9: "JMP",
             }
 
             for dll_name, functions in found_symbols.items():
