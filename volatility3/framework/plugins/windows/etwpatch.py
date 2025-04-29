@@ -95,8 +95,7 @@ class EtwPatch(interfaces.plugins.PluginInterface):
                     try:
                         opcode = (
                             self.context.layers[proc_layer_name]
-                            .read(func_addr, 1)
-                            .hex()
+                            .read(func_addr, 1)[0]
                         )
                         if opcode in opcode_map:
                             instruction = opcode_map[opcode]
