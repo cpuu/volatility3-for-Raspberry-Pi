@@ -107,7 +107,7 @@ class EtwPatch(interfaces.plugins.PluginInterface):
                                     dll_name,
                                     func_name,
                                     format_hints.Hex(func_addr),
-                                    f"{opcode} ({instruction})",
+                                    f"{opcode:02x} ({instruction})",
                                 ),
                             )
                     except exceptions.InvalidAddressException:
