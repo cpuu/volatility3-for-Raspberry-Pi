@@ -86,17 +86,16 @@ class EtwPatch(interfaces.plugins.PluginInterface):
 
             # Map of opcodes to their instruction names
             opcode_map = {
-                0xc3: "RET",
-                0xe9: "JMP",
+                0xC3: "RET",
+                0xE9: "JMP",
             }
 
             for dll_name, functions in found_symbols.items():
                 for func_name, func_addr in functions:
                     try:
-                        opcode = (
-                            self.context.layers[proc_layer_name]
-                            .read(func_addr, 1)[0]
-                        )
+                        opcode = self.context.layers[proc_layer_name].read(
+                            func_addr, 1
+                        )[0]
                         if opcode in opcode_map:
                             instruction = opcode_map[opcode]
                             yield (
