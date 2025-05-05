@@ -3,7 +3,6 @@
 #
 import binascii
 import code
-import functools
 import io
 import random
 import string
