@@ -190,9 +190,13 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
 
             parent = dentry.d_parent
             dname = dentry.d_name.name_as_str()
-            path_reversed.append(dname.strip("/"))
+            dname_stripped = dname.strip("/")
+            if dname_stripped:
+                path_reversed.append(dname_stripped)
             dentry = parent
 
+        if path_reversed == []:
+            return ""
         path = "/" + "/".join(reversed(path_reversed))
         return path
 
