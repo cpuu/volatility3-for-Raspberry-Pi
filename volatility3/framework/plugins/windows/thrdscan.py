@@ -143,18 +143,8 @@ class ThrdScan(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterface)
                 else None
             )
         else:
-            vads = None
-
-        start_path = (
-            pe_symbols.PESymbols.filepath_for_address(vads, thread_start_addr)
-            if vads
-            else None
-        )
-        win32start_path = (
-            pe_symbols.PESymbols.filepath_for_address(vads, thread_win32start_addr)
-            if vads
-            else None
-        )
+            start_path = None
+            win32start_path = None
 
         return cls.ThreadInfo(
             thread_offset,
