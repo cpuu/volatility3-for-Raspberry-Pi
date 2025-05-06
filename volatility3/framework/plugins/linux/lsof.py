@@ -54,7 +54,7 @@ class FDInternal:
     """
 
     task: interfaces.objects.ObjectInterface
-    fd_fields: Tuple[int, int, str]
+    fd_fields: Tuple[int, interfaces.objects.ObjectInterface, str]
 
     def to_user(self) -> FDUser:
         """Augment the FD information to be presented to the user
@@ -110,7 +110,7 @@ class Lsof(plugins.PluginInterface, timeliner.TimeLinerInterface):
     """Lists open files for each processes."""
 
     _required_framework_version = (2, 0, 0)
-    _version = (2, 0, 0)
+    _version = (2, 0, 2)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -120,8 +120,13 @@ class Lsof(plugins.PluginInterface, timeliner.TimeLinerInterface):
                 description="Linux kernel",
                 architectures=["Intel32", "Intel64"],
             ),
-            requirements.PluginRequirement(
-                name="pslist", plugin=pslist.PsList, version=(2, 0, 0)
+            requirements.VersionRequirement(
+                name="pslist", component=pslist.PsList, version=(4, 0, 0)
+            ),
+            requirements.VersionRequirement(
+                name="timeliner",
+                component=timeliner.TimeLinerInterface,
+                version=(1, 0, 0),
             ),
             requirements.VersionRequirement(
                 name="linuxutils", component=linux.LinuxUtilities, version=(2, 0, 0)
