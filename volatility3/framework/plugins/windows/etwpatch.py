@@ -12,6 +12,8 @@ from volatility3.plugins.windows import pslist, pe_symbols
 vollog = logging.getLogger(__name__)
 
 
+# EtwpEventWriteFull -> https://github.com/SolitudePy/Stealthy-ETW-Patch
+# CAPA rule -> https://github.com/mandiant/capa-rules/blob/master/anti-analysis/anti-av/patch-event-tracing-for-windows-function.yml
 class EtwPatch(interfaces.plugins.PluginInterface):
     """Identifies ETW (Event Tracing for Windows) patching techniques used by malware to evade detection.
 
@@ -80,7 +82,6 @@ class EtwPatch(interfaces.plugins.PluginInterface):
             kernel_module_name=self.config["kernel"],
             filter_func=filter_func,
         ):
-
             try:
                 proc_id = proc.UniqueProcessId
                 proc_name = utility.array_to_string(proc.ImageFileName)
