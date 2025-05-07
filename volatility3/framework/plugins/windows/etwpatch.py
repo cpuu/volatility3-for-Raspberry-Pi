@@ -34,13 +34,11 @@ class EtwPatch(interfaces.plugins.PluginInterface):
                 "ZwTraceEvent",
                 "NtTraceControl",
                 "ZwTraceControl",
-                "EtwpEventWriteFull"
+                "EtwpEventWriteFull",
             ],
         },
         "advapi32.dll": {
-            pe_symbols.wanted_names_identifier: [
-                "EventWrite", 
-                "TraceEvent"],
+            pe_symbols.wanted_names_identifier: ["EventWrite", "TraceEvent"],
         },
     }
 
