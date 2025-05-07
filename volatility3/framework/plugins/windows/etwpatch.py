@@ -32,7 +32,6 @@ class EtwPatch(interfaces.plugins.PluginInterface):
                 "EtwEventWrite",
                 "EtwEventWriteFull",
                 "NtTraceEvent",
-                "NtTraceEvent",
                 "ZwTraceEvent",
                 "NtTraceControl",
                 "ZwTraceControl",
