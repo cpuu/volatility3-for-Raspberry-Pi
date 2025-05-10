@@ -99,7 +99,7 @@ class LinuxKernelIntermedSymbols(intermed.IntermediateSymbolTable):
 class LinuxUtilities(interfaces.configuration.VersionableInterface):
     """Class with multiple useful linux functions."""
 
-    _version = (2, 3, 0)
+    _version = (2, 3, 1)
     _required_framework_version = (2, 0, 0)
 
     framework.require_interface_version(*_required_framework_version)
@@ -200,6 +200,9 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
 
         path = "/" + "/".join(reversed(path_reversed))
         if smeared:
+            # if there is smear the missing dname will be empty. e.g. if the normal
+            # path would be /foo/bar/baz, but bar is missing due to smear the results
+            # returned here will show /foo//baz. Note the // for the missing dname.
             return f"<potentially smeared> {path}"
         return path
 
