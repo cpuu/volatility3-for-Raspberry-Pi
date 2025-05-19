@@ -182,7 +182,7 @@ class YaraScan(plugins.PluginInterface):
             rule = config["yara_string"]
             if rule[0] not in ["{", "/"]:
                 rule = f'"{rule}"'
-            if config.get("case", False):
+            if config.get("insensitive", False):
                 rule += " nocase"
             if config.get("wide", False):
                 rule += " wide ascii"
