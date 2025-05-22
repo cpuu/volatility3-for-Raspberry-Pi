@@ -515,7 +515,7 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
         vmlinux: interfaces.context.ModuleInterface,
     ) -> Optional[interfaces.objects.ObjectInterface]:
         """Cast a member of a structure out to the containing structure.
-        It mimicks the Linux kernel macro container_of() see include/linux.kernel.h
+        It mimics the Linux kernel macro container_of() see include/linux.kernel.h
 
         Args:
             addr: The pointer to the member.

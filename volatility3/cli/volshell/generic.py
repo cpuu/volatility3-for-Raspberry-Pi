@@ -485,7 +485,7 @@ class Volshell(interfaces.plugins.PluginInterface):
                 return
 
         if hasattr(volobject.vol, "members"):
-            # display the header for this object, if the orginal object was just a type string, display the type information
+            # display the header for this object, if the original object was just a type string, display the type information
             struct_header = f'{"    " * dereference_count}{volobject.vol.type_name} ({volobject.vol.size} bytes)'
             if isinstance(object, str) and offset is None:
                 suffix = ":"
@@ -558,7 +558,7 @@ class Volshell(interfaces.plugins.PluginInterface):
                     )
 
         else:  # simple type with no members, only one line to print
-            # if the orginal object was just a type string, display the type information
+            # if the original object was just a type string, display the type information
             if isinstance(object, str) and offset is None:
                 print(self._display_simple_type(volobject, include_value=False))
 

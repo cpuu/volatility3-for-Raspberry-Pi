@@ -118,7 +118,7 @@ class ProcessGhosting(interfaces.plugins.PluginInterface):
 
         Args:
             proc:
-            mapped_files: A dictionary mapping vad base addreses to the path and vad instance for the process
+            mapped_files: A dictionary mapping vad base addresses to the path and vad instance for the process
 
         Return:
             A Generator of tuples of the file object address, the delete pending state, delete on close state, base address of the VAD, and the path
