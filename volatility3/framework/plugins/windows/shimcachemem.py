@@ -236,7 +236,7 @@ class ShimcacheMem(interfaces.plugins.PluginInterface, timeliner.TimeLinerInterf
         2) Iterate over every 4/8 bytes (depending on OS bitness) in the .data
            section and test for the following:
            a) offset represents a valid RTL_AVL_TABLE object
-           b) RTL_AVL_TABLE is preceeded by an ERESOURCE object
+           b) RTL_AVL_TABLE is preceded by an ERESOURCE object
            c) RTL_AVL_TABLE is followed by the beginning of the SHIM LRU list
 
         :param context: The context to retrieve required elements (layers, symbol tables) from

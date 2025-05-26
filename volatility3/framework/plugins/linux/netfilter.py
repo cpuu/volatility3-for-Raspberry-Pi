@@ -417,7 +417,7 @@ class NetfilterImp_to_4_3(AbstractNetfilter):
 
 
 class NetfilterImp_4_3_to_4_9(AbstractNetfilter):
-    """Netfilter hooks were added to network namepaces in 4.3.
+    """Netfilter hooks were added to network namespaces in 4.3.
     It is still implemented as a linked list of 'struct nf_hook_ops' type but inside a
     network namespace. One linked list per protocol per hook type.
 
@@ -611,7 +611,7 @@ class NetfilterImp_4_16_to_latest(NetfilterImp_4_14_to_4_16):
 class AbstractNetfilterNetDev(AbstractNetfilter):
     """Base class to handle the Netfilter NetDev hooks.
     It won't be executed. It has some common functions to all Netfilter NetDev hook
-    implementions.
+    implementations.
 
     Netfilter NetDev hooks are set per network device which belongs to a network
     namespace.

@@ -129,7 +129,7 @@ class SuspiciousThreads(interfaces.plugins.PluginInterface):
         ):
             yield (
                 vad_path,
-                "VAD at base address ({vad_base:#x}) hosting this thread maps an application executable that is not the process exectuable",
+                "VAD at base address ({vad_base:#x}) hosting this thread maps an application executable that is not the process executable",
             )
 
     def _enumerate_processes(

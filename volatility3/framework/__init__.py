@@ -218,4 +218,4 @@ def clear_cache(complete=True):
                 os.unlink(cache_filename)
         os.unlink(os.path.join(constants.CACHE_PATH, constants.IDENTIFIERS_FILENAME))
     except FileNotFoundError:
-        vollog.log(constants.LOGLEVEL_VVVV, "Attempting to clear a non-existant cache")
+        vollog.log(constants.LOGLEVEL_VVVV, "Attempting to clear a non-existent cache")

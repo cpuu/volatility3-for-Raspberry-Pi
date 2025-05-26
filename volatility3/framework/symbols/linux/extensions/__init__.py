@@ -984,9 +984,9 @@ class maple_tree(objects.StructType):
                         current_depth + 1,
                     )
         else:
-            # unkown maple node type
+            # unknown maple node type
             raise AttributeError(
-                f"Unkown Maple Tree node type {node_type} at offset {hex(pointer)}."
+                f"Unknown Maple Tree node type {node_type} at offset {hex(pointer)}."
             )
 
 
@@ -2295,7 +2295,7 @@ class kernel_cap_t(kernel_cap_struct):
 
 
 class Timespec64Abstract(abc.ABC):
-    """Abstract class to handle all required timespec64 operations, convertions and
+    """Abstract class to handle all required timespec64 operations, conversions and
     adjustments."""
 
     @classmethod
@@ -2391,7 +2391,7 @@ class Timespec64Abstract(abc.ABC):
 
 
 class Timespec64Concrete(Timespec64Abstract):
-    """Handle all required timespec64 operations, convertions and adjustments.
+    """Handle all required timespec64 operations, conversions and adjustments.
     This is used to dynamically create timespec64-like objects, each with its own variables
     and the same methods as a timespec64 object extension.
     """
@@ -2402,7 +2402,7 @@ class Timespec64Concrete(Timespec64Abstract):
 
 
 class timespec64(Timespec64Abstract, objects.StructType):
-    """Handle all required timespec64 operations, convertions and adjustments.
+    """Handle all required timespec64 operations, conversions and adjustments.
     This works as an extension of the timespec64 object while maintaining the same methods
     as a Timespec64Concrete object.
     """
@@ -2770,7 +2770,7 @@ class IDR(objects.StructType):
         vmlinux = linux.LinuxUtilities.get_module_from_volobj_type(self._context, self)
         if not vmlinux.get_type("idr_layer").has_member("layer"):
             vollog.info(
-                "Unsupported IDR implementation, it should be a very very old kernel, probabably < 2.6"
+                "Unsupported IDR implementation, it should be a very very old kernel, probably < 2.6"
             )
             return None
 

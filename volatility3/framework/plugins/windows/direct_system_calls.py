@@ -42,7 +42,7 @@ syscall_finder_type.__doc__ = """
 This type is used to specify how malicious system call invocations should be found.
 
 `get_syscall_target_address` is optionally used to extract the address containing the malicious 'syscall' instruction
-`wants_syscall_inst` whether or not this method expects the 'syscall' instrunction directly within the malicious code block
+`wants_syscall_inst` whether or not this method expects the 'syscall' instruction directly within the malicious code block
 `rule` the opcode string to search for the malicious syscall instructions
 `invalid_ops` instructions that only appear in invalid code blocks. Stops processing of the code block when encountered.
 `termination_ops` instructions that are expected to be present in the code block and that stop processing
@@ -116,7 +116,7 @@ class DirectSystemCalls(interfaces.plugins.PluginInterface):
         address: int,
     ) -> Optional[Tuple[str, "capstone._cs_insn"]]:
         """
-        Determines if the bytes starting at `data` represent a valid syscall instrunction invocation block
+        Determines if the bytes starting at `data` represent a valid syscall instruction invocation block
 
         To maliciously invoke the system call instruction, malware must do each of the following:
 
