@@ -14,7 +14,7 @@ import os
 from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple, Type
 from urllib import parse, request
 
-from volatility3.framework import constants, interfaces
+from volatility3.framework import constants, interfaces, deprecation
 
 vollog = logging.getLogger(__name__)
 
@@ -600,6 +600,11 @@ class VersionRequirement(interfaces.configuration.RequirementInterface):
         return True
 
 
+@deprecation.renamed_class(
+    deprecated_class_name="PluginRequirement",
+    removal_date="2026-06-01",
+    message="PluginRequirement is to be deprecated. Use VersionRequirement instead.",
+)
 class PluginRequirement(VersionRequirement):
     def __init__(
         self,
