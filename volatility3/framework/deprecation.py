@@ -10,8 +10,7 @@ import inspect
 
 from typing import Callable, Tuple
 
-from volatility3.framework import interfaces, exceptions
-from volatility3.framework.configuration import requirements
+from volatility3.framework import interfaces, exceptions, versionutils
 
 
 def method_being_removed(message: str, removal_date: str):
@@ -70,7 +69,7 @@ def deprecated_method(
                     interfaces.configuration.VersionableInterface,
                 ):
                     # SemVer check
-                    if not requirements.VersionRequirement.matches_required(
+                    if not versionutils.matches_required(
                         replacement_version, replacement_base_class.version
                     ):
                         raise exceptions.VersionMismatchException(
