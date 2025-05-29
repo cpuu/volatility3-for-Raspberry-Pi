@@ -593,7 +593,7 @@ class VersionRequirement(interfaces.configuration.RequirementInterface):
     def matches_required(
         cls, required: Tuple[int, ...], version: Tuple[int, int, int]
     ) -> bool:
-        versionutils.matches_required(required, version)
+        return versionutils.matches_required(required, version)
 
 
 @deprecation.renamed_class(
