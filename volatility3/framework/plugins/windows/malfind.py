@@ -112,7 +112,7 @@ class Malfind(interfaces.plugins.PluginInterface):
         code.
 
         Args:
-            context: The context to retrieve required elements (layers, symbol tables)
+            context: The context from which to retrieve required elements (layers, symbol tables)
             kernel_layer_name: The name of the kernel layer from which to read the VAD protections
             symbol_table: The name of the table containing the kernel symbols
             proc: an _EPROCESS instance
