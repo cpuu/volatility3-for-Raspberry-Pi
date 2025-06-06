@@ -49,24 +49,24 @@ class RegExScan(plugins.PluginInterface):
     def _generator(self, regex_pattern):
         regex_pattern = bytes(regex_pattern, "UTF-8")
         vollog.debug(f"RegEx Pattern: {regex_pattern}")
-
+        maxsize = self.config.get("maxsize", self.MAXSIZE_DEFAULT)
         layer = self.context.layers[self.config["primary"]]
         for offset in layer.scan(
             context=self.context, scanner=scanners.RegExScanner(regex_pattern)
         ):
-            result_data = layer.read(offset, self.MAXSIZE_DEFAULT, pad=True)
+            result_data = layer.read(offset, maxsize, pad=True)
 
             # reapply the regex in order to extract just the match
             regex_result = re.match(regex_pattern, result_data)
 
             if regex_result:
-                # the match is within the results_data (e.g. it fits within MAXSIZE_DEFAULT)
+                # the match is within the results_data (e.g. it fits within maxsize)
                 # extract just the match itself
                 regex_match = regex_result.group(0)
                 text_result = str(regex_match, encoding="UTF-8", errors="replace")
                 bytes_result = regex_match
             else:
-                # the match is not with the results_data (e.g. it doesn't fit within MAXSIZE_DEFAULT)
+                # the match is not with the results_data (e.g. it doesn't fit within maxsize)
                 text_result = str(result_data, encoding="UTF-8", errors="replace")
                 bytes_result = result_data
 
