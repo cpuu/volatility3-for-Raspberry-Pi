@@ -2,7 +2,7 @@
 # which is available at https://www.volatilityfoundation.org/license/vsl-v1.0
 #
 import logging
-from volatility3.framework import interfaces, deprecation
+from volatility3.framework import deprecation
 from volatility3.plugins.windows.malware import svcdiff
 from volatility3.plugins.windows import svcscan
 
