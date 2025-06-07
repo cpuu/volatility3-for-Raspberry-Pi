@@ -479,7 +479,7 @@ class TestLinuxIomem:
 class TestLinuxKeyboardNotifiers:
     def test_linux_generic_keyboard_notifiers(self, image, volatility, python):
         rc, out, _err = test_volatility.runvol_plugin(
-            "linux.keyboard_notifiers.Keyboard_notifiers", image, volatility, python
+            "linux.malware.keyboard_notifiers.Keyboard_notifiers", image, volatility, python
         )
 
         # linux-sample-1.bin has no suspicious results for this plugin.
