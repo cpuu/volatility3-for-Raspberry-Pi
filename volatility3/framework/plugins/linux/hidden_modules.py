@@ -18,4 +18,3 @@ class Hidden_modules(
 
     _required_framework_version = (2, 25, 0)
     _version = (3, 0, 2)
-
