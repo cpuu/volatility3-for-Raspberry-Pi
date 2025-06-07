@@ -200,7 +200,7 @@ class TestLinuxCapabilities:
 class TestLinuxCheckCreds:
     def test_linux_generic_check_creds(self, image, volatility, python):
         rc, out, _err = test_volatility.runvol_plugin(
-            "linux.check_creds.Check_creds", image, volatility, python
+            "linux.malware.check_creds.Check_creds", image, volatility, python
         )
 
         # linux-sample-1.bin has no processes sharing credentials.
