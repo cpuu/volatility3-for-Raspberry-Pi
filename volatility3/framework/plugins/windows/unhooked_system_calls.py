@@ -3,7 +3,9 @@
 #
 import logging
 from volatility3.framework import interfaces, deprecation
-from volatility3.plugins.windows.malware import unhooked_system_calls as unhooked_syscalls
+from volatility3.plugins.windows.malware import (
+    unhooked_system_calls as unhooked_syscalls,
+)
 
 vollog = logging.getLogger(__name__)
 
