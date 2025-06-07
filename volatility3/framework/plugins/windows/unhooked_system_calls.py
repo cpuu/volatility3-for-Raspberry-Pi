@@ -3,7 +3,7 @@
 #
 import logging
 from volatility3.framework import interfaces, deprecation
-from volatility3.plugins.windows.malware import unhooked_system_calls
+from volatility3.plugins.windows import malware
 
 vollog = logging.getLogger(__name__)
 
@@ -11,7 +11,7 @@ vollog = logging.getLogger(__name__)
 class unhooked_system_calls(
     interfaces.plugins.PluginInterface,
     deprecation.PluginRenameClass,
-    replacement_class=unhooked_system_calls.UnhookedSystemCalls,
+    replacement_class=malware.unhooked_system_calls.UnhookedSystemCalls,
     removal_date="2026-06-07",
 ):
     """Detects hooked ntdll.dll stub functions in Windows processes (deprecated)."""
