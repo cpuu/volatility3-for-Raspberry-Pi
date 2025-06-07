@@ -48,6 +48,7 @@ class RegExScan(plugins.PluginInterface):
 
     def _generator(self, regex_pattern):
         regex_pattern = bytes(regex_pattern, "UTF-8")
+        compiled_pattern = re.compile(regex_pattern)
         vollog.debug(f"RegEx Pattern: {regex_pattern}")
         maxsize = self.config.get("maxsize", self.MAXSIZE_DEFAULT)
         layer = self.context.layers[self.config["primary"]]
@@ -57,7 +58,7 @@ class RegExScan(plugins.PluginInterface):
             result_data = layer.read(offset, maxsize, pad=True)
 
             # reapply the regex in order to extract just the match
-            regex_result = re.match(regex_pattern, result_data)
+            regex_result = compiled_pattern.search(result_data)
 
             if regex_result:
                 # the match is within the results_data (e.g. it fits within maxsize)
