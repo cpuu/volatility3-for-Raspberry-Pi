@@ -29,7 +29,7 @@ class TestLinuxPslist:
 class TestLinuxCheckIdt:
     def test_linux_generic_check_idt(self, image, volatility, python):
         rc, out, _err = test_volatility.runvol_plugin(
-            "linux.check_idt.Check_idt", image, volatility, python
+            "linux.malware.check_idt.Check_idt", image, volatility, python
         )
 
         assert rc == 0
