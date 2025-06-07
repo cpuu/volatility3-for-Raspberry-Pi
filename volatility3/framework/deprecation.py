@@ -139,7 +139,7 @@ class PluginRenameClass:
                         attr,
                         method_being_removed(
                             removal_date=removal_date,
-                            message=f"This plugin has been renamed, please call {replacement_class.__module__}.{replacement_class.__qualname__} rather than deprecated_class_name.",
+                            message=f"This plugin has been renamed, please call {replacement_class.__module__}.{replacement_class.__qualname__} rather than {deprecated_class_name}.",
                         )(value),
                     )
                 elif not attr.startswith("__"):
