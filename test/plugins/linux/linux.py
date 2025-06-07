@@ -41,7 +41,7 @@ class TestLinuxCheckIdt:
 class TestLinuxCheckSyscall:
     def test_linux_generic_check_syscall(self, image, volatility, python):
         rc, out, _err = test_volatility.runvol_plugin(
-            "linux.check_syscall.Check_syscall", image, volatility, python
+            "linux.malware.check_syscall.Check_syscall", image, volatility, python
         )
 
         assert rc == 0
