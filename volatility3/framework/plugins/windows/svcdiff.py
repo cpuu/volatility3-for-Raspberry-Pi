@@ -16,9 +16,11 @@ class SvcDiff(
     removal_date="2026-06-07",
 ):
     """Compares services found through list walking versus scanning to find rootkits (deprecated)."""
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._enumeration_method = self.service_diff
+
     _required_framework_version = (2, 4, 0)
 
     _version = (2, 0, 0)
