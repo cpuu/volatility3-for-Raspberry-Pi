@@ -8,7 +8,7 @@ from volatility3.plugins.windows.malware import unhooked_system_calls
 vollog = logging.getLogger(__name__)
 
 
-class UnhookedSystemCalls(
+class unhooked_system_calls(
     interfaces.plugins.PluginInterface,
     deprecation.PluginRenameClass,
     replacement_class=unhooked_system_calls.UnhookedSystemCalls,
