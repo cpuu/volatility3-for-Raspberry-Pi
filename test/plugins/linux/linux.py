@@ -438,7 +438,7 @@ class TestLinuxCheckAfinfo:
 class TestLinuxCheckModules:
     def test_linux_generic_check_modules(self, image, volatility, python):
         rc, out, _err = test_volatility.runvol_plugin(
-            "linux.check_modules.Check_modules", image, volatility, python
+            "linux.malware.check_modules.Check_modules", image, volatility, python
         )
 
         # linux-sample-1.bin has no suspicious results.
