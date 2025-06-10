@@ -89,7 +89,7 @@ class TestLinuxProcMaps:
 class TestLinuxTtyCheck:
     def test_linux_generic_tty_check(self, image, volatility, python):
         rc, out, _err = test_volatility.runvol_plugin(
-            "linux.malware.tty_check.tty_check", image, volatility, python
+            "linux.malware.tty_check.Tty_Check", image, volatility, python
         )
 
         assert rc == 0
