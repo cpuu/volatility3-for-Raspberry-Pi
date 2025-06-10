@@ -14,7 +14,6 @@ class Modxview(
     replacement_class=modxview.Modxview,
     removal_date="2026-06-07",
 ):
-    
     """Centralize lsmod, check_modules and hidden_modules results to efficiently \
 spot modules presence and taints (deprecated)."""
 

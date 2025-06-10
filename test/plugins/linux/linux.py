@@ -501,7 +501,7 @@ class TestLinuxKmesg:
 class TestLinuxNetfilter:
     def test_linux_generic_netfilter(self, image, volatility, python):
         rc, out, _err = test_volatility.runvol_plugin(
-            "linux.netfilter.Netfilter", image, volatility, python
+            "linux.malware.netfilter.Netfilter", image, volatility, python
         )
 
         # linux-sample-1.bin has no suspicious results for this plugin.
