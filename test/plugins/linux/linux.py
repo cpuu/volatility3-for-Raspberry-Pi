@@ -426,7 +426,7 @@ class TestLinuxPageCacheInodepages:
 class TestLinuxCheckAfinfo:
     def test_linux_generic_check_afinfo(self, image, volatility, python):
         rc, out, _err = test_volatility.runvol_plugin(
-            "linux.check_afinfo.Check_afinfo", image, volatility, python
+            "linux.malware.check_afinfo.Check_afinfo", image, volatility, python
         )
 
         # linux-sample-1.bin has no suspicious results.
@@ -525,7 +525,7 @@ class TestLinuxHiddenModules:
         # TODO: this check should be specific, against a distinct infected sample
         image = LinuxSamples.LINUX_GENERIC.value.path
         rc, out, _err = test_volatility.runvol_plugin(
-            "linux.hidden_modules.Hidden_modules", image, volatility, python
+            "linux.malware.hidden_modules.Hidden_modules", image, volatility, python
         )
 
         # linux-sample-1.bin has no hidden modules.

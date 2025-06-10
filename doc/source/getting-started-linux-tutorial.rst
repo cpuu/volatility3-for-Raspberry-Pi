@@ -36,7 +36,7 @@ For plugin requests, please create an issue with a description of the requested 
     $ python3 vol.py --help | grep -i linux. | head -n 5
         banners.Banners     Attempts to identify potential linux banners in an
         linux.bash.Bash     Recovers bash command history from memory.
-        linux.check_afinfo.Check_afinfo
+        linux.malware.check_afinfo.Check_afinfo
         linux.check_creds.Check_creds
         linux.malware.check_idt.Check_idt
 
