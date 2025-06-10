@@ -89,7 +89,7 @@ class TestLinuxProcMaps:
 class TestLinuxTtyCheck:
     def test_linux_generic_tty_check(self, image, volatility, python):
         rc, out, _err = test_volatility.runvol_plugin(
-            "linux.tty_check.tty_check", image, volatility, python
+            "linux.malware.tty_check.Tty_Check", image, volatility, python
         )
 
         assert rc == 0
@@ -504,7 +504,7 @@ class TestLinuxKmesg:
 class TestLinuxNetfilter:
     def test_linux_generic_netfilter(self, image, volatility, python):
         rc, out, _err = test_volatility.runvol_plugin(
-            "linux.netfilter.Netfilter", image, volatility, python
+            "linux.malware.netfilter.Netfilter", image, volatility, python
         )
 
         # linux-sample-1.bin has no suspicious results for this plugin.
