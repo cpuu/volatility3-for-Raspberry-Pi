@@ -46,7 +46,8 @@ class RegExScan(plugins.PluginInterface):
             ),
         ]
 
-    def _generator(self, layer, pattern, maxsize):
+    def _generator(self, context, layer_name, pattern, maxsize):
+        layer = self.context.layers[layer_name]
         vollog.debug(f"RegEx Pattern: {pattern}")
 
         # Convert string pattern to bytes for RegExScanner
@@ -60,7 +61,7 @@ class RegExScan(plugins.PluginInterface):
             raise ValueError(f"Invalid regex pattern: {e}")
 
         for offset in layer.scan(
-            context=self.context, scanner=scanners.RegExScanner(pattern_bytes)
+            context=context, scanner=scanners.RegExScanner(pattern_bytes)
         ):
             result_data = layer.read(offset, maxsize, pad=True)
 
@@ -83,7 +84,8 @@ class RegExScan(plugins.PluginInterface):
     def run(self):
         pattern = self.config.get("pattern")
         maxsize = self.config.get("maxsize", self.MAXSIZE_DEFAULT)
-        layer = self.context.layers[self.config["primary"]]
+        layer_name = self.config["primary"]
+        context = self.context
 
         return renderers.TreeGrid(
             [
@@ -91,5 +93,5 @@ class RegExScan(plugins.PluginInterface):
                 ("Text", str),
                 ("Hex", bytes),
             ],
-            self._generator(layer, pattern, maxsize),
+            self._generator(context, layer_name, pattern, maxsize),
         )
