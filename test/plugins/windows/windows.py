@@ -58,6 +58,7 @@ class TestWindowsPslist:
         }
         assert test_volatility.match_output_row(expected_row, json.loads(out))
 
+
 class TestWindowsTimeliner:
     def test_windows_specific_timeliner(self, volatility, python):
         image = WindowsSamples.WINDOWSXP_GENERIC.value.path
@@ -66,6 +67,7 @@ class TestWindowsTimeliner:
         )
         assert rc == 0
         assert out.count(b"\n") > 10
+
 
 class TestWindowsPsscan:
     def test_windows_specific_psscan(self, volatility, python):
@@ -780,19 +782,19 @@ class TestWindowsSymlinkScan:
         assert test_volatility.count_entries_flat(json_out) > 5
         expected_rows = [
             {
-              "CreateTime": "2005-06-25T16:47:28+00:00",
-              "From Name": "AUX",
-              "Offset": 453082584,
-              "To Name": "\\DosDevices\\COM1",
-              "__children": []
+                "CreateTime": "2005-06-25T16:47:28+00:00",
+                "From Name": "AUX",
+                "Offset": 453082584,
+                "To Name": "\\DosDevices\\COM1",
+                "__children": [],
             },
             {
-              "CreateTime": "2005-06-25T16:47:28+00:00",
-              "From Name": "UNC",
-              "Offset": 453176664,
-              "To Name": "\\Device\\Mup",
-              "__children": []
-            }
+                "CreateTime": "2005-06-25T16:47:28+00:00",
+                "From Name": "UNC",
+                "Offset": 453176664,
+                "To Name": "\\Device\\Mup",
+                "__children": [],
+            },
         ]
 
         for expected_row in expected_rows:
@@ -803,7 +805,7 @@ class TestWindowsLdrModules:
     def test_windows_specific_ldrmodules(self, volatility, python):
         image = WindowsSamples.WINDOWSXP_GENERIC.value.path
         rc, out, _err = test_volatility.runvol_plugin(
-            "windows.ldrmodules.LdrModules",
+            "windows.malware.ldrmodules.LdrModules",
             image,
             volatility,
             python,
