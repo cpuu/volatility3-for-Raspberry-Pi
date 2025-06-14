@@ -23,6 +23,7 @@ syscall_finder_type = namedtuple(
     ],
 )
 
+
 class DirectSystemCalls(
     interfaces.plugins.PluginInterface,
     deprecation.PluginRenameClass,
