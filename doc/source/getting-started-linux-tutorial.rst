@@ -24,20 +24,25 @@ Volatility3 will automatically detect and use symbol tables from this location.
 Listing plugins
 ---------------
 
-The following is a sample of the linux plugins available for volatility3, it is not complete and more plugins may
-be added.  For a complete reference, please see the volatility 3 :doc:`list of plugins <volatility3.plugins>`.
-For plugin requests, please create an issue with a description of the requested plugin.
+Volatility3 currently supports over 40 Linux-specific plugins covering a wide range of forensic analysis needs, such as process enumeration, memory-mapped file inspection, loaded modules, and kernel tracing features.
+
+Some representative plugins include:
+
+- ``linux.pslist``: Lists running processes with their PIDs and PPIDs.
+- ``linux.bash``: Recovers bash command history from memory.
+- ``linux.lsmod``: Displays loaded kernel modules.
+- ``linux.kmsg``: Reads messages from the kernel log buffer.
+- ``linux.elfs``: Lists all memory-mapped ELF files.
+- ``linux.check_creds``: Checks for suspicious credential structures.
+- ``linux.vmayarascan``: Scans process memory using YARA signatures.
+
+For a full list of supported plugins, run the following command:
 
 .. code-block:: shell-session
 
-    $ python3 vol.py --help | grep -i linux. | head -n 5
-        banners.Banners     Attempts to identify potential linux banners in an
-        linux.bash.Bash     Recovers bash command history from memory.
-        linux.malware.check_afinfo.Check_afinfo
-        linux.malware.check_creds.Check_creds
-        linux.malware.check_idt.Check_idt
+    $ python3 vol.py --help | grep -i linux.
 
-.. note:: Here the command is piped to grep and head to provide the start of the list of linux plugins.
+.. note:: You can also filter and inspect available plugins using more sophisticated patterns or tools like ``grep``, ``awk``, or simply explore the source under ``volatility3/framework/plugins/linux``.
 
 
 Using plugins
