@@ -85,6 +85,23 @@ The above command helps us identify the kernel version and distribution from the
 Using this information, follow the instructions in :ref:`getting-started-linux-tutorial:Procedure to create symbol tables for linux` to generate the required ISF file.  
 Once created, place the file under the ``volatility3/symbols`` directory so that Volatility3 can recognize it automatically.
 
+linux.boottime
+~~~~~~~~~~~~~~
+
+This plugin provides the system boot time extracted from memory.  
+It is useful for establishing a timeline, particularly when analyzing incident response scenarios or determining system uptime.
+
+.. code-block:: shell-session
+
+    $ python3 vol.py -f memory.vmem linux.boottime
+
+        Volatility 3 Framework 2.26.0
+        Progress:  100.00               Stacking attempts finished
+        TIME NS Boot Time
+
+        -       2022-02-10 06:50:16.450008 UTC
+
+This timestamp can serve as a reference point for correlating system events, such as process start times, logs, or malicious activity.
 
 
 linux.pslist
