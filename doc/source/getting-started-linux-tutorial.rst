@@ -14,14 +14,11 @@ Volatility3 does not provide the ability to acquire memory.  Below are some exam
 Be aware that LiME raw format is not supported by volatility3, the padded or lime option should be used instead. `This issue contains further information <https://github.com/504ensicsLabs/LiME/issues/111>`_.
 
 Procedure to create symbol tables for linux
---------------------------------------------
+-------------------------------------------
 
-To create a symbol table please refer to :ref:`symbol-tables:Mac or Linux symbol tables`.
-
-.. tip:: It may be possible to locate pre-made ISF files from the `Linux ISF Server <https://isf-server.techanarchy.net/>`_ ,
-    which is built and maintained by `kevthehermit <https://twitter.com/kevthehermit>`_.
-    After creating the file or downloading it from the ISF server, place the file under the directory ``volatility3/symbols/linux``.
-    If necessary create a linux directory under the symbols directory (this will become unnecessary in future versions).
+To create a symbol table please refer to :ref:`symbol-tables:Mac or Linux symbol tables`.  
+After creating the file, place it under the directory ``volatility3/symbols``.  
+Volatility3 will automatically detect and use symbol tables from this location.
 
 
 Listing plugins
