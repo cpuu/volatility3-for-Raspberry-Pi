@@ -97,6 +97,7 @@ It is useful for establishing a timeline, particularly when analyzing incident r
 
         Volatility 3 Framework 2.26.0
         Progress:  100.00               Stacking attempts finished
+
         TIME NS Boot Time
 
         -       2022-02-10 06:50:16.450008 UTC
@@ -107,77 +108,51 @@ This timestamp can serve as a reference point for correlating system events, suc
 linux.pslist
 ~~~~~~~~~~~~
 
+This plugin lists active processes by walking the task list from memory.  
+It provides detailed metadata for each process, including identifiers and user/group information.
+
 .. code-block:: shell-session
 
     $ python3 vol.py -f memory.vmem linux.pslist
 
-        Volatility 3 Framework 2.0.1    Stacking attempts finished
+        Volatility 3 Framework 2.26.0
+        Progress:  100.00               Stacking attempts finished
+        OFFSET (V)      PID     TID     PPID    COMM    UID     GID     EUID    EGID    CREATION TIME   File output
 
-        PID     PPID    COMM
+        0x8ca6db1aac80  1       1       0       systemd 0       0       0       0       2022-02-10 06:50:16.364213 UTC  Disabled
+        0x8ca6db1a9640  2       2       0       kthreadd        0       0       0       0       2022-02-10 06:50:16.364213 UTC  Disabled
+        0x8ca6db1ac2c0  3       3       2       rcu_gp  0       0       0       0       2022-02-10 06:50:16.372213 UTC  Disabled
+        ...
 
-        1       0       systemd
-        2       0       kthreadd
-        3       2       kworker/0:0
-        4       2       kworker/0:0H
-        5       2       kworker/u256:0
-        6       2       mm_percpu_wq
-        7       2       ksoftirqd/0
-        8       2       rcu_sched
-        9       2       rcu_bh
-        10      2       migration/0
-        11      2       watchdog/0
-        12      2       cpuhp/0
-        13      2       kdevtmpfs
-        14      2       netns
-        15      2       rcu_tasks_kthre
-        16      2       kauditd
-        .....
+This detailed view allows investigators to correlate user privileges, startup times, and relationships between processes more precisely than before.
 
-``linux.pslist`` helps us to list the processes which are running, their PIDs and PPIDs.
 
 linux.pstree
 ~~~~~~~~~~~~
 
+This plugin presents the process hierarchy as a tree, clearly showing parent-child relationships between processes.  
+It is especially useful for identifying unusual or suspicious process structures, such as orphaned child processes, injected children under legitimate parents, or long chains of shell execution.
+
 .. code-block:: shell-session
 
     $ python3 vol.py -f memory.vmem linux.pstree
-        Volatility 3 Framework 2.0.1
+
+        Volatility 3 Framework 2.26.0
         Progress:  100.00               Stacking attempts finished
-        PID     PPID    COMM
+        OFFSET (V)      PID     TID     PPID    COMM
 
-        1       0       systemd
-        * 636   1       polkitd
-        * 514   1       acpid
-        * 1411  1       pulseaudio
-        * 517   1       rsyslogd
-        * 637   1       cups-browsed
-        * 903   1       whoopsie
-        * 522   1       ModemManager
-        * 525   1       cron
-        * 526   1       avahi-daemon
-        ** 542  526     avahi-daemon
-        * 657   1       unattended-upgr
-        * 914   1       kerneloops
-        * 532   1       dbus-daemon
-        * 1429  1       ibus-x11
-        * 929   1       kerneloops
-        * 1572  1       gsd-printer
-        * 933   1       upowerd
-        * 1071  1       rtkit-daemon
-        * 692   1       gdm3
-        ** 1234 692     gdm-session-wor
-        *** 1255        1234    gdm-x-session
-        **** 1257       1255    Xorg
-        **** 1266       1255    gnome-session-b
-        ***** 1537      1266    gsd-clipboard
-        ***** 1539      1266    gsd-color
-        ***** 1542      1266    gsd-datetime
-        ***** 2950      1266    deja-dup-monito
-        ***** 1546      1266    gsd-housekeepin
-        ***** 1548      1266    gsd-keyboard
-        ***** 1550      1266    gsd-media-keys
+        0x8ca6db1aac80  1       1       0       systemd
+        * 0x8ca6db3342c0        278     278     1       systemd-journal
+        * 0x8ca6d005ac80        315     315     1       systemd-udevd
+        * 0x8ca6d0eac2c0        478     478     1       systemd-resolve
+        * ...
+        *** 0x8ca67108c2c0      1507    1507    1438    gdm-x-session
+        **** 0x8ca671215900     1527    1527    1507    Xorg
+        **** 0x8ca671210000     1608    1608    1507    gnome-session-b
+        ***** 0x8ca66fba42c0    1765    1765    1608    ssh-agent
 
-``linux.pstree`` helps us to display the parent-child relationships between processes.
+The tree view can help identify anomalies in process launch sequences or privilege escalations by inspecting unexpected parent-child relationships.
+
 
 linux.bash
 ~~~~~~~~~~
