@@ -163,7 +163,7 @@ Now to find the commands that were run in the bash shell by using ``linux.bash``
 
     $ python3 vol.py -f memory.vmem linux.bash 
 
-        Volatility 3 Framework 2.0.1
+        Volatility 3 Framework 2.26.0
         Progress:  100.00               Stacking attempts finished
         PID     Process CommandTime     Command
 
@@ -172,17 +172,37 @@ Now to find the commands that were run in the bash shell by using ``linux.bash``
         1733    bash    2020-01-16 14:00:36.000000      sudo apt upgrade
         1733    bash    2020-01-16 14:00:36.000000      sudo apt upgrade
         1733    bash    2020-01-16 14:00:36.000000      sudo reboot
-        1733    bash    2020-01-16 14:00:36.000000      sudo apt update
-        1733    bash    2020-01-16 14:00:36.000000      sudo apt update
-        1733    bash    2020-01-16 14:00:36.000000      sudo reboot
-        1733    bash    2020-01-16 14:00:36.000000      sudo apt upgrade
-        1733    bash    2020-01-16 14:00:36.000000      sudo apt update
-        1733    bash    2020-01-16 14:00:36.000000      rub
-        1733    bash    2020-01-16 14:00:36.000000      sudo apt upgrade
         1733    bash    2020-01-16 14:00:36.000000      uname -a
-        1733    bash    2020-01-16 14:00:36.000000      uname -a
-        1733    bash    2020-01-16 14:00:36.000000      sudo apt autoclean
-        1733    bash    2020-01-16 14:00:36.000000      sudo reboot
-        1733    bash    2020-01-16 14:00:36.000000      sudo apt upgrade
         1733    bash    2020-01-16 14:00:41.000000      chmod +x meterpreter
         1733    bash    2020-01-16 14:00:42.000000      sudo ./meterpreter
+
+
+linux.ip.Addr and linux.ip.Link
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Network configuration is an essential aspect of memory forensics.  
+Analyzing the network interfaces and their IP assignments can reveal active connections, misconfigured settings, or even artifacts of malicious activity.
+
+Volatility3 provides the following two plugins to examine this information:
+
+**linux.ip.Addr** displays IP-related metadata for each interface, including IPv4/IPv6 addresses, MAC, scope, and interface status.
+
+.. code-block:: shell-session
+
+    $ python3 vol.py -f memory.vmem linux.ip.Addr
+
+        NetNS   Index   Interface       MAC     Promiscuous     IP      Prefix  Scope Type      State
+        4026531992      2       enp0s3  08:00:27:8a:4d:eb       False   10.0.2.15       24      global  UP
+        ...
+
+**linux.ip.Link** shows lower-level link information such as MTU, Qdisc, and interface flags.
+
+.. code-block:: shell-session
+
+    $ python3 vol.py -f memory.vmem linux.ip.Link
+
+        NS      Interface       MAC     State   MTU     Qdisc   Qlen    Flags
+        4026531992      enp0s3  08:00:27:8a:4d:eb       UP      1500    fq_codel        1000    BROADCAST,LOWER_UP,MULTICAST,UP
+
+Together, these plugins help investigators assess the system’s network exposure and identify anomalies such as multiple network namespaces, unexpected IP addresses, or active interfaces in promiscuous mode.
+
