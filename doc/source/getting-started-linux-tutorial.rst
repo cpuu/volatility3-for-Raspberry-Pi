@@ -206,3 +206,44 @@ Volatility3 provides the following two plugins to examine this information:
 
 Together, these plugins help investigators assess the system’s network exposure and identify anomalies such as multiple network namespaces, unexpected IP addresses, or active interfaces in promiscuous mode.
 
+linux.malfind
+~~~~~~~~~~~~~
+
+This plugin scans process memory for suspicious executable regions that may indicate code injection or malicious payloads.  
+It is particularly useful for detecting fileless malware, injected shellcode, or unpacked runtime payloads that do not correspond to legitimate binary files on disk.
+
+.. code-block:: shell-session
+
+    $ python3 vol.py -f memory.vmem linux.malfind
+
+        Volatility 3 Framework 2.26.0
+        Progress:  100.00               Stacking attempts finished
+        PID     Process Start   End     Path    Protection      Hexdump Disasm
+
+        540     networkd-dispat 0x7f1506482000  0x7f1506483000  Anonymous Mapping       rwx
+        00 00 00 00 00 00 00 00 43 00 00 00 00 00 00 00 ........C.......
+        4c 8d 15 f9 ff ff ff ff 25 03 00 00 00 0f 1f 00 L.......%.......
+        ...
+        0x7f1506482000: add     byte ptr [rax], al
+        0x7f1506482002: add     byte ptr [rax], al
+        ...
+        0x7f1506482013: stc
+
+In this output:
+
+- **PID / Process**: Identifies the target process (in this case, `networkd-dispat`, PID 540)
+- **Start / End**: The memory address range of the suspicious region
+- **Path**: Indicates that the region is an anonymous memory mapping (i.e., not backed by a file)
+- **Protection**: The region is marked `rwx` (read-write-execute), which is uncommon for legitimate memory regions
+- **Disasm**: Shows the disassembled machine code found in that memory region
+
+**Key indicators to focus on:**
+
+- **Anonymous Mapping + rwx**: Memory that is not backed by a file and has execute permissions is often used for injected code
+- **Disassembly patterns**: Repetitive `add` instructions, `nop`, or unusual instruction sequences can be artifacts of shellcode, packer stubs, or JIT-compiled code
+- **Process context**: The suspicious memory is found in `networkd-dispat`, a system service — if this service is not expected to have dynamic executable memory regions, it may be compromised
+
+Use this plugin early in an investigation to flag processes for deeper inspection.
+
+
+
