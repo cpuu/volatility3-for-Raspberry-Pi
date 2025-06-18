@@ -69,7 +69,7 @@ Thanks go to `stuxnet <https://github.com/stuxnet999/>`_ for providing this memo
 
     $ python3 vol.py -f memory.vmem banners
         
-        Volatility 3 Framework 2.0.1
+        Volatility 3 Framework 2.26.0
 
         Progress:  100.00               PDB scanning finished
         Offset  Banner
@@ -81,10 +81,11 @@ Thanks go to `stuxnet <https://github.com/stuxnet999/>`_ for providing this memo
         0x7fde0010      Linux version 4.15.0-72-generic (buildd@lcy01-amd64-026) (gcc version 7.4.0 (Ubuntu 7.4.0-1ubuntu1~18.04.1)) #81-Ubuntu SMP Tue Nov 26 12:20:02 UTC 2019 (Ubuntu 4.15.0-72.81-generic 4.15.18)
 
 
-The above command helps us to find the memory dump's kernel version and the distribution version. Now using the above banner we can search for the needed ISF file from the ISF server.
-If an ISF file cannot be found then, follow the instructions on :ref:`getting-started-linux-tutorial:Procedure to create symbol tables for linux`. After that, place the ISF file under the ``volatility3/symbols/linux`` directory.
+The above command helps us identify the kernel version and distribution from the memory dump.  
+Using this information, follow the instructions in :ref:`getting-started-linux-tutorial:Procedure to create symbol tables for linux` to generate the required ISF file.  
+Once created, place the file under the ``volatility3/symbols`` directory so that Volatility3 can recognize it automatically.
 
-.. tip:: Use the banner text which is most repeated to search on the ISF Server.
+
 
 linux.pslist
 ~~~~~~~~~~~~
