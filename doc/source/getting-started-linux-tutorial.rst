@@ -62,7 +62,7 @@ banners
 ~~~~~~~
 
 In this example we will be using a memory dump from the Insomni'hack teaser 2020 CTF Challenge called Getdents.  We will limit the discussion to memory forensics with volatility 3 and not extend it to other parts of the challenge.
-Thanks go to `stuxnet <https://github.com/stuxnet999/>`_ for providing this memory dump and `writeup <https://stuxnet999.github.io/insomnihack/2020/09/17/Insomihack-getdents.html>`_.
+Thanks go to `stuxnet <https://github.com/stuxnet999/>`_ for providing this memory dump and writeup <https://stuxnet999.github.io/dfir/insomnihack-teaser-2020-getdents/>`_.
 
 
 .. code-block:: shell-session
