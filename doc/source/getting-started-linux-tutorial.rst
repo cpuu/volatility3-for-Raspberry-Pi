@@ -245,5 +245,11 @@ In this output:
 
 Use this plugin early in an investigation to flag processes for deeper inspection.
 
+Further Exploration and Contribution
+------------------------------------
 
+This guide has introduced several key Linux plugins available in Volatility 3 for memory forensics.  
+However, many more plugins are available, covering topics such as kernel modules, page cache analysis, tracing frameworks, and malware detection.
 
+If you identify gaps in plugin functionality or wish to extend support for a specific analysis use case, you are encouraged to contribute new plugins or enhancements.
+Your insights can help shape the future of Linux memory forensics.
