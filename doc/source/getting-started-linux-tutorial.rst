@@ -62,7 +62,7 @@ banners
 ~~~~~~~
 
 In this example we will be using a memory dump from the Insomni'hack teaser 2020 CTF Challenge called Getdents.  We will limit the discussion to memory forensics with volatility 3 and not extend it to other parts of the challenge.
-Thanks go to `stuxnet <https://github.com/stuxnet999/>`_ for providing this memory dump and writeup <https://stuxnet999.github.io/dfir/insomnihack-teaser-2020-getdents/>`_.
+Thanks go to `stuxnet <https://github.com/stuxnet999/>`_ for providing this memory dump and `writeup <https://stuxnet999.github.io/dfir/insomnihack-teaser-2020-getdents/>`_.
 
 
 .. code-block:: shell-session
@@ -253,3 +253,4 @@ However, many more plugins are available, covering topics such as kernel modules
 
 If you identify gaps in plugin functionality or wish to extend support for a specific analysis use case, you are encouraged to contribute new plugins or enhancements.
 Your insights can help shape the future of Linux memory forensics.
+
