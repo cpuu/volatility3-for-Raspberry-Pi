@@ -6,12 +6,11 @@ This guide will give you a brief overview of how volatility3 works as well as a 
 Acquiring memory
 ----------------
 
-Volatility3 does not provide the ability to acquire memory.  Below are some examples of tools that can be used to acquire memory, but more are available:
+Volatility3 does not provide the ability to acquire memory.  Below is an example of a tool that can be used to acquire memory on Linux systems:
 
 * `AVML - Acquire Volatile Memory for Linux <https://github.com/microsoft/avml>`_
-* `LiME - Linux Memory Extract <https://github.com/504ensicsLabs/LiME>`_
 
-Be aware that LiME raw format is not supported by volatility3, the padded or lime option should be used instead. `This issue contains further information <https://github.com/504ensicsLabs/LiME/issues/111>`_.
+Other tools may exist, but please verify their maintenance status and compatibility with volatility3 before use.
 
 Procedure to create symbol tables for linux
 -------------------------------------------
