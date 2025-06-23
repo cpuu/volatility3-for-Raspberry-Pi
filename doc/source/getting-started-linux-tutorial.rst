@@ -133,9 +133,7 @@ This detailed view allows investigators to correlate user privileges, startup ti
 
 linux.pstree
 ~~~~~~~~~~~~
-
-This plugin presents the process hierarchy as a tree, clearly showing parent-child relationships between processes.  
-It is especially useful for identifying unusual or suspicious process structures, such as orphaned child processes, injected children under legitimate parents, or long chains of shell execution.
+This plugin presents the process hierarchy as a tree, clearly showing parent-child relationships between processes. 
 
 .. code-block:: shell-session
 
@@ -155,7 +153,10 @@ It is especially useful for identifying unusual or suspicious process structures
         **** 0x8ca671210000     1608    1608    1507    gnome-session-b
         ***** 0x8ca66fba42c0    1765    1765    1608    ssh-agent
 
-The tree view can help identify anomalies in process launch sequences or privilege escalations by inspecting unexpected parent-child relationships.
+ 
+It helps identify unusual or suspicious process structures such as orphaned child processes, injected children under legitimate parents, or long chains of shell execution.
+The tree view is particularly useful for spotting anomalies in process launch sequences or privilege escalations by inspecting unexpected parent-child relationships.
+
 
 
 linux.bash
