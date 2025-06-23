@@ -12,12 +12,17 @@ Volatility3 does not provide the ability to acquire memory.  Below is an example
 
 Other tools may exist, but please verify their maintenance status and compatibility with volatility3 before use.
 
-Procedure to create symbol tables for linux
+Procedure to create symbol tables for Linux
 -------------------------------------------
 
-To create a symbol table please refer to :ref:`symbol-tables:Mac or Linux symbol tables`.  
+It is recommended to first check the repository `volatility3-symbols <https://github.com/Abyss-W4tcher/volatility3-symbols>`_ for pre-generated JSON.xz symbol table files.  
+This repository provides files organized by kernel version for popular Linux distributions such as Debian, Ubuntu, and AlmaLinux.  
+
+If you cannot find a suitable symbol table for your kernel version there, please refer to :ref:`symbol-tables:Mac or Linux symbol tables` to create one manually.  
+
 After creating the file, place it under the directory ``volatility3/symbols``.  
 Volatility3 will automatically detect and use symbol tables from this location.
+
 
 
 Listing plugins
