@@ -274,13 +274,52 @@ All five final runs exited 0 without WARNING/ERROR messages. Tests cover this Pi
 
 ### Remaining work and evidence
 
-The remaining six “Output only” cases — EBPF, Fbdev, Kthreads, Modxview, Netfilter and ProcessSpoofing — still need suitable independent references/positive fixtures. The empty-result cases also remain unverified for positive detection. Implementation fixes and investigations from stages 3/4 remain deferred; no such changes were made here.
+At the end of this first five-plugin round, the remaining six “Output only” cases — EBPF, Fbdev, Kthreads, Modxview, Netfilter and ProcessSpoofing — still needed independent references. Their subsequent results are recorded in the next section. The empty-result cases also remain unverified for positive detection. Implementation fixes and investigations from stages 3/4 remain deferred; no such changes were made here.
 
 With this round, there are **11 additional declaration-only implementations with bounded reference evidence**: six adopted from the first round and five adopted from this round, in addition to the original eight regression-tested implementations. This is a per-case evidence count across two captures, not a claim that all 19 have been rerun together on this new capture.
 
 Local artifacts are in `pi4-stage2-lab/`: `scripts/` retains capture, input validation, execution and comparison code; `results/environment.json`, `declaration-only.patch`, `input-validation.json`, `runs.json` and `comparison.json` record the evidence; `results/plugins/` retains JSON and logs. The first launch failed before analysis because the runner had not created its cache directory; those logs remain in `results/attempt1-missing-cache/` and `attempt1-runs.json`. Creating the directory fixed the runner setup; no Volatility implementation change was involved. The test service was confirmed inactive and its FIFO removed after acquisition. Existing captures were preserved. Raw memory and reference environment values remain local.
 
 Experimental patch SHA-256: `4e2a471788371e7f4372c3e638ac76cbafcdffc48168f1bbe1a1edab3e6a6377`.
+
+## Stage 2 — remaining six reference checks (2026-11-06)
+
+All six remaining “Output only” implementations were exercised with independent references on a new physical-Pi capture. **Four have declaration-only success within the checked scope; two remain partial/mismatched.** No implementation fixes or deeper root-cause investigation were undertaken. The four reference-checked declarations (EBPF, Modxview, Netfilter and ProcessSpoofing) are now adopted in the public checkout. Kthreads and Fbdev declarations and implementation fixes remain deferred. The four adopted source files are byte-identical to the files exercised in this experiment; no algorithm or shared architecture-constant changes are included.
+
+### Capture and method
+
+- Baseline commit: `e6325165` (the preceding five declarations and their validation report are committed and pushed). The isolated snapshot adds AArch64 only to EBPF, Fbdev, Kthreads, Modxview, Netfilter and ProcessSpoofing. AST comparison confirms no algorithm changes.
+- Same Pi 4 / Ubuntu 24.04.5 / kernel `6.8.0-1064-raspi` / 4 KB configuration and matching ISF as earlier rounds.
+- AVML 0.21.0 compressed acquisition: **2026-11-06 16:09:19–16:13:39 KST**, 259.866 seconds; streamed over SSH to the Mac.
+- Capture `pi4-stage2b-001/memory.avml`: **6,357,380,074 bytes**, SHA-256 `dfa066e1e4b9628d04ef3d0acddc78298fc19d108c582acc33b55ed52a0a1a88`.
+- Source/destination hashes, matching kernel Build ID/ISF and all three System RAM ranges verified. 128,832 Snappy data frames decompress to 8,443,133,952 bytes with valid lengths/trailers; per-frame CRC not checked.
+- Seven runs: six default/PID-scoped cases plus `Fbdev --dump`; all exited 0 without WARNING/ERROR messages. No timeout. The capture is live, not atomic.
+- References collected before/after: BPF program-info syscalls (read-only enumeration, no program loading), fbdev ioctl metadata and `/dev/fb0` bytes, `nft list hooks`, `/proc/modules`, `/sys/module`, `/proc/kallsyms`, kernel-thread `/proc` records, and controlled process exe/comm/cmdline/status records. BPF, hook, loaded-module and framebuffer references were stable across acquisition. No firewall changes, hidden modules or malicious hooks were introduced.
+
+### Results
+
+| Plugin | Rows | Reference comparison | Classification |
+|---|---:|---|---|
+| `linux.ebpf.EBPF` | 13 | Exact multiset of program names, tags and types from `BPF_PROG_GET_NEXT_ID` / `BPF_OBJ_GET_INFO_BY_FD`, including duplicate names/tags | Declaration-only verified for enumeration fields; kernel object addresses not independently checked |
+| `linux.malware.modxview.Modxview` | 109 | All 109 loaded-module names match `/proc/modules`; procfs/sysfs membership flags match the corresponding references; all loaded reference modules appear in the scan | Declaration-only verified for ordinary loaded modules; hidden-module detection, address ranges and taint fields not independently validated |
+| `linux.malware.netfilter.Netfilter` | 30 | Exact protocol/hook/priority/module multiset matches `nft list hooks`; all 22 named-function hook handlers match live `/proc/kallsyms` addresses | Declaration-only verified for ordinary hook enumeration; chain-wrapper addresses, all Symbol fields and tampering detection not fully validated |
+| `linux.malware.process_spoofing.ProcessSpoofing --pid 179521 179522` | 2 | Executable paths, comm and argv[0] basenames match `/proc`; controlled name-mismatch case gives both flags true, ordinary sleep case both false; neither executable is deleted | Declaration-only verified for these positive/negative name-comparison cases; a mismatch flag is not proof of malicious activity |
+| `linux.kthreads.Kthreads` | 125 | All output TIDs occur in before/after kernel-thread references; 116/117 stable TIDs found (PID 2 absent). All 125 handler addresses match live symbols, but only 121 module/symbol pairs match | Partial / mismatch; do not adopt as fully reference-verified |
+| `linux.graphics.fbdev.Fbdev` and `--dump` | 1 each | ID, 1920×1080 virtual size, 16 bpp and 4,147,200-byte size match ioctl data. Extracted PNG exactly preserves raw RGB565 channel codes but does not match their normalized 8-bit colors | Metadata and data extraction verified; PNG color representation mismatch |
+
+### Partial results retained without fixes
+
+**Kthreads:** the four nonmatching module/symbol rows are retained in `kthreads-symbol-differences.json`. Three have the correct module but a missing symbol (brcmfmac and two cec threads). The SMIO thread's handler resolves in the live reference to `vc_sm_cma_vchi_videocore_io` in `vc_sm_cma`, while the plugin labels it `snd_pcm` with no symbol. This is stronger evidence than simply observing nonempty output. The 125 valid function addresses do not independently prove each thread-to-function binding; full names can also differ from `/proc` display names. No cause is attributed to AArch64 without further investigation.
+
+**Fbdev:** before/after raw framebuffer bytes are identical and contain 7,810 nonzero bytes. PNG dimensions and every unscaled channel value match those bytes, establishing recovery of real screen data. The conversion leaves 5/6-bit RGB565 values in 8-bit PNG channels instead of scaling them across 0–255; the normalized color comparison fails. This is a rendering limitation in the exercised path, not evidence that ARM64 memory extraction failed. No conversion change was made.
+
+The process-name positive fixture is harmless: the Python probe sets comm to `arm64-probe`, and argv[0] is `python3` while the executable basename is `python3.12`. Its ordinary `/usr/bin/sleep` child supplies the negative case. These comparisons validate the reported name differences, not an ability to distinguish benign aliases from malicious masquerading.
+
+### Status and reproducibility
+
+Stage 2 has now covered all eleven previously output-only implementations: **five adopted declarations from the preceding capture, four additional adopted declarations with bounded reference matches, and two partial/mismatched cases**. Across the declaration-only work, 15 additional implementations have bounded reference evidence (all 15 declarations adopted). Keep the original eight regression results and the earlier empty/error/N/A cases separate; these numbers are not an all-options or single-capture support guarantee.
+
+The six-plugin experiment remains local under `pi4-stage2b-lab/`. `scripts/reference.c` uses the Pi's installed Linux UAPI headers for BPF enumeration and framebuffer ioctls; `extra-refs.py` collects the other references. Capture, input validation, run and comparison scripts are retained alongside `results/environment.json`, `declaration-only.patch`, `input-validation.json`, `runs.json`, `comparison.json`, per-plugin JSON/log files and the extracted PNG. Raw captures/reference values remain outside the public repository. The test service was confirmed inactive and FIFO removed. Existing captures and README were preserved. Implementation work from stages 3/4 remains deferred.
 
 ## Historical validation
 
