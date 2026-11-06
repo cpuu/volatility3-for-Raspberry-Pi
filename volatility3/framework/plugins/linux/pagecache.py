@@ -124,7 +124,7 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=architectures.LINUX_ARCHS,
+                architectures=[*architectures.LINUX_ARCHS, "AArch64"],
             ),
             requirements.VersionRequirement(
                 name="mountinfo", component=mountinfo.MountInfo, version=(1, 2, 0)
