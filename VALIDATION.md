@@ -246,6 +246,42 @@ Rows count flattened JSON objects. A zero exit code alone is not a pass. “Regr
 | 59 | `linux.vmayarascan.VmaYaraScan` | Requirement rejection (exit 1) | 0 / 3 | Declaration-only verified (bounded) | Three exact marker hits in probe PID 171671; marker independently present in captured command line. |
 | 60 | `linux.vmcoreinfo.VMCoreInfo` | No architecture gate | 0 / 0 | Empty / insufficient fixture | No record found; no guaranteed VMCOREINFO record in this live capture. No declaration change needed. |
 
+## Stage 2 — first five reference checks (2026-11-06)
+
+The first five of the eleven previously “Output only” implementations have now been checked against independent capture-time references: **Boottime, Capabilities, Envars, ip.Addr and ip.Link**. All five pass within the scope below using declaration-only changes. These five declarations are now adopted in the public checkout; no algorithm or shared-helper changes are included. All four adopted source files are byte-identical to the files used in the successful five-plugin experiment. Ruff lint and format checks passed. The earlier 49-implementation matrix remains the record of the first capture; it is not silently relabeled using a different dump.
+
+### Capture and code
+
+- Physical Pi 4, Ubuntu 24.04.5 / `6.8.0-1064-raspi`, 4 KB pages; same kernel Build ID and ISF as the first round.
+- Baseline: `c2382683699ed6b6403251b09f9dd39d992b4a4e` (the six adopted declarations). An isolated snapshot adds **five declarations in four files**: `boottime.py`, `capabilities.py`, `envars.py`, `ip.py`. AST comparison confirms no algorithm changes. Shared architecture constants and core/symbol helpers are unchanged.
+- AVML 0.21.0 compressed acquisition, **2026-11-06 15:39:34–15:44:13 KST**, 279.785 seconds. FIFO over SSH to the Mac; no memory dump stored on the Pi SD card.
+- New capture: `pi4-stage2-001/memory.avml`, **6,368,769,978 bytes**; SHA-256 `f1b047652fe126447290db352da917cd6fa40422fc4b7b7dd06693f1535872e0`.
+- Pi stream hash and Mac file hash match. All 128,832 Snappy data frames decompress with valid lengths/trailers; decoded RAM totals 8,443,133,952 bytes and matches all three System RAM ranges. Per-frame CRC was not checked. Kernel Build ID and ISF SHA-256 match the fixed environment above.
+- Controlled process: PID `178657`, PPID `1`, comm `arm64-probe`, with two explicit environment markers. PID 1 supplies a second capability case. Acquisition is live, not an atomic snapshot.
+- Capture-time references: `/proc/PID/environ`, `/proc/PID/status`, `/proc/1/status`, `ip -j address`, `ip -j -d link`, `/proc/stat`, time-namespace identity and `cap_last_cap`. Compared fields were stable before/after acquisition. Capability names were decoded against the Pi's Linux capability header; the network namespace was also recorded during acquisition.
+
+### Results
+
+| Plugin / tested options | Rows | Independent comparison | Result |
+|---|---:|---|---|
+| `linux.envars.Envars --pid 178657` | 13 | All 13 key/value pairs exactly match `/proc/PID/environ`, including two custom markers; PID/PPID/comm match | Declaration-only verified |
+| `linux.capabilities.Capabilities --pids 178657 1` | 2 | All five capability bitsets for both processes match `/proc/PID/status`; PID/PPID/EUID/name match | Declaration-only verified |
+| `linux.ip.Addr` | 7 | Exact interface-index/name/address/prefix set for the recorded network namespace; MAC, scope, state and promiscuous values match | Declaration-only verified |
+| `linux.ip.Link` | 4 | Exact interface set; MAC, state, MTU, qdisc, queue length and flag sets match `ip -j -d link` | Declaration-only verified |
+| `linux.boottime.Boottime` | 1 | Time namespace matches; returned timestamp lies within the integer second reported by `/proc/stat` btime (fractional difference 0.734509 s) | Declaration-only verified at reference precision |
+
+All five final runs exited 0 without WARNING/ERROR messages. Tests cover this Pi/kernel and the stated process/network/time namespaces. They do not establish all-process/all-namespace correctness, nonzero values in every capability set, or subsecond boot-time accuracy beyond the reference's resolution.
+
+### Remaining work and evidence
+
+The remaining six “Output only” cases — EBPF, Fbdev, Kthreads, Modxview, Netfilter and ProcessSpoofing — still need suitable independent references/positive fixtures. The empty-result cases also remain unverified for positive detection. Implementation fixes and investigations from stages 3/4 remain deferred; no such changes were made here.
+
+With this round, there are **11 additional declaration-only implementations with bounded reference evidence**: six adopted from the first round and five adopted from this round, in addition to the original eight regression-tested implementations. This is a per-case evidence count across two captures, not a claim that all 19 have been rerun together on this new capture.
+
+Local artifacts are in `pi4-stage2-lab/`: `scripts/` retains capture, input validation, execution and comparison code; `results/environment.json`, `declaration-only.patch`, `input-validation.json`, `runs.json` and `comparison.json` record the evidence; `results/plugins/` retains JSON and logs. The first launch failed before analysis because the runner had not created its cache directory; those logs remain in `results/attempt1-missing-cache/` and `attempt1-runs.json`. Creating the directory fixed the runner setup; no Volatility implementation change was involved. The test service was confirmed inactive and its FIFO removed after acquisition. Existing captures were preserved. Raw memory and reference environment values remain local.
+
+Experimental patch SHA-256: `4e2a471788371e7f4372c3e638ac76cbafcdffc48168f1bbe1a1edab3e6a6377`.
+
 ## Historical validation
 
 ### Initial independent-project validation
