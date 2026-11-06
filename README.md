@@ -4,8 +4,8 @@ Raspberry Pi / AArch64 Linux memory analysis, maintained independently by [cpuu]
 
 ## Basis
 
-- Upstream `develop`: `77ff0b1932d77527f850c8ced01d85805ea7bf97` (2026-11-06).
-- Original AArch64 implementation: `5ee05ce7b440c0d6a0d45f7f9a343b702c7b38e4`.
+- Upstream `develop`: [77ff0b1932d77527f850c8ced01d85805ea7bf97](https://github.com/volatilityfoundation/volatility3/commit/77ff0b1932d77527f850c8ced01d85805ea7bf97) (2026-11-06), including development changes after the official [v2.28.2 release](https://github.com/volatilityfoundation/volatility3/releases/tag/v2.28.2).
+- Original AArch64 implementation: [5ee05ce7b440c0d6a0d45f7f9a343b702c7b38e4](https://github.com/Abyss-W4tcher/volatility3/commit/5ee05ce7b440c0d6a0d45f7f9a343b702c7b38e4) (2024-10-20).
 
 ## Quick start
 
@@ -65,7 +65,7 @@ The recorded LiME capture (2026-10-12) was 8,443,150,080 bytes; transfer hashes 
 
 ## ISF generation
 
-Generate an ISF from the captured kernel's matching debug `vmlinux`. Our Pi used `linux-image-6.8.0-1064-raspi-dbgsym_6.8.0-1064.68_arm64.ddeb`; its GNU Build ID matched `/sys/kernel/notes` on the Pi. Run the following from the repository root on the Mac, with Go installed:
+Generate an ISF from the captured kernel's matching debug `vmlinux`. Our Pi used `linux-image-6.8.0-1064-raspi-dbgsym_6.8.0-1064.68_arm64.ddeb`; its GNU Build ID matched `/sys/kernel/notes` on the Pi. For Ubuntu, available Raspberry Pi kernel debug package versions can be found in the [Ubuntu debug symbol archive](https://ddebs.ubuntu.com/pool/main/l/linux-raspi/). Run the following from the repository root on the Mac, with Go installed:
 
 ```sh
 set -eu
@@ -100,15 +100,6 @@ Initial hardware evidence: Raspberry Pi 4, Ubuntu 24.04.5 LTS, kernel `6.8.0-106
 | sockstat | 568 rows; after the now-upstream IPv6 fix, 11/11 stable local TCP/UDP endpoint tuples matched |
 
 These are bounded checks on one live, non-atomic capture, not a guarantee of complete forensic correctness. Real Linux Intel end-to-end discovery, other Raspberry Pi models, other kernels/page sizes and all-plugin compatibility remain unverified. Synthetic Intel tests do not replace real Linux Intel captures. See [VALIDATION.md](VALIDATION.md) for this repository's initial verification.
-
-## Development
-
-```sh
-uv sync --locked --extra test
-uv run --locked --extra test pytest test/test_linux_arm64_integration.py test/test_linux_socket_addresses.py test/test_cli.py --volatility vol.py -q
-```
-
-When reporting an issue, include the code revision, kernel, page size, ISF provenance and sanitized logs.
 
 ## Credits and license
 
