@@ -1,136 +1,56 @@
-# Volatility 3: The volatile memory extraction framework
+# volatility3 for Raspberry Pi
 
-Volatility is the world's most widely used framework for extracting digital
-artifacts from volatile memory (RAM) samples. The extraction techniques are
-performed completely independent of the system being investigated but offer
-visibility into the runtime state of the system. The framework is intended
-to introduce people to the techniques and complexities associated with
-extracting digital artifacts from volatile memory samples and provide a
-platform for further work into this exciting area of research.
+Experimental Raspberry Pi / AArch64 Linux memory analysis, maintained independently by [cpuu](https://github.com/cpuu). This project builds on [Volatility 3](https://github.com/volatilityfoundation/volatility3) and [Abyss-W4tcher's AArch64 implementation (#1088)](https://github.com/volatilityfoundation/volatility3/pull/1088). It is not an official Volatility Foundation release. Original Git history, copyright notices and license are retained.
 
-In 2019, the Volatility Foundation released a complete rewrite of the
-framework, Volatility 3. The project was intended to address many of the
-technical and performance challenges associated with the original
-code base that became apparent over the previous 10 years. Another benefit
-of the rewrite is that Volatility 3 could be released under a custom
-license that was more aligned with the goals of the Volatility community,
-the Volatility Software License (VSL). See the
-[LICENSE](https://www.volatilityfoundation.org/license/vsl-v1.0) file for
-more details.
+## Basis
 
-## Quick Start
+- Upstream `develop`: `77ff0b1932d77527f850c8ced01d85805ea7bf97` (checked 2026-11-06).
+- Original AArch64 implementation: `5ee05ce7b440c0d6a0d45f7f9a343b702c7b38e4`.
+- Previously tested integration: `c3ebd40e1863280f608d954651360bc92a763c6f`.
+- Latest upstream includes the generic Linux IPv6 host-family fix (#2052); it is inherited here as an upstream change.
 
-1. Install the required dependencies:
+## Quick start
 
-    ```shell
-    pip install --user -e ".[full]"
-    ```
+Use Python 3.12 and [uv](https://docs.astral.sh/uv/). Acquisition occurs on the Raspberry Pi; analysis can run on another machine.
 
-2. See available options:
-
-    ```shell
-    vol -h
-    ```
-
-3. To get more information on a Windows memory sample and to make sure Volatility supports that sample type, run `vol -f <imagepath> windows.info`:
-
-    ```shell
-    vol -f /home/user/samples/stuxnet.vmem windows.info
-    ```
-
-4. Run some other plugins. The `-f` or `--single-location` is not strictly required, but most plugins expect a single sample.
-Some also require/accept other options.  Run `vol <plugin> -h` for more information on a particular command.
-
-## Installing
-
-Volatility 3 requires Python 3.8.0 or later and is published on the [PyPi registry](https://pypi.org/project/volatility3).
-
-```shell
-pip install volatility3
+```sh
+git clone https://github.com/cpuu/volatility3-for-Raspberry-Pi.git
+cd volatility3-for-Raspberry-Pi
+uv sync --locked --extra full
+uv run --locked --extra full python vol.py --help
+mkdir -p symbols/linux
+# Place an ISF matching the capture's exact kernel build under symbols/linux.
+uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.pslist.PsList
 ```
 
-If you want to use the latest development version of Volatility 3 we recommend you manually clone this repository and install an editable version of the project.
-We recommend you use a virtual environment to keep installed dependencies separate from system packages.
+The validated capture was acquired with AVML 0.21.0. Generate the ISF from the matching debug vmlinux using dwarf2json; architecture and kernel release alone do not establish a matching build. Memory captures and private symbols are not included in this repository.
 
-The latest stable version of Volatility will always be the `stable` branch of the GitHub repository. The default branch is `develop`.
+## Validation scope
 
-```shell
-git clone https://github.com/volatilityfoundation/volatility3.git
-cd volatility3/
-python3 -m venv venv && . venv/bin/activate
-pip install -e ".[dev]"
+Initial hardware evidence: Raspberry Pi 4, Ubuntu 24.04.5 LTS, kernel `6.8.0-1064-raspi`, 4 KB pages, 48-bit virtual addresses. Eight Linux plugins are enabled for AArch64; not every Linux plugin is supported.
+
+| Plugin | Observations from the existing capture |
+|---|---|
+| pslist | 158 rows; all 132 PIDs stable across acquisition were present |
+| lsmod | 108 module names matched |
+| iomem | 61 regions matched |
+| kmsg | 624 of 625 reference message texts matched |
+| proc.Maps | Test process: 29 ranges and core fields matched; three path labels differed |
+| psaux | Test process command line matched; another row contained a replacement character |
+| mountinfo | 24 reference mounts represented; detailed option differences and one extra entry |
+| sockstat | 568 rows; after the now-upstream IPv6 fix, 11/11 stable local TCP/UDP endpoint tuples matched |
+
+These are bounded checks on one live, non-atomic capture, not a guarantee of complete forensic correctness. Real Linux Intel end-to-end discovery, other Raspberry Pi models, other kernels/page sizes and all-plugin compatibility remain unverified. Synthetic Intel tests do not replace real Linux Intel captures. See [VALIDATION.md](VALIDATION.md) for this repository's initial verification.
+
+## Development
+
+```sh
+uv sync --locked --extra test
+uv run --locked --extra test pytest test/test_linux_arm64_integration.py test/test_linux_socket_addresses.py test/test_cli.py --volatility vol.py -q
 ```
 
-## Symbol Tables
+Use this repository's issues for reproducible problems. Include the code revision, analysis host, target kernel, page size, ISF provenance and sanitized logs. Do not post raw memory dumps containing personal data.
 
-Symbol table packs for the various operating systems are available for download at:
+## Credits and license
 
-[windows.zip](https://github.com/volatilityfoundation/volatility3-test-data/releases/download/v0.0.1/windows.zip)
-
-[mac.zip](https://github.com/volatilityfoundation/volatility3-test-data/releases/download/v0.0.1/mac.zip)
-
-[linux.zip](https://github.com/volatilityfoundation/volatility3-test-data/releases/download/v0.0.1/linux.zip)
-
-The hashes to verify whether any of the symbol pack files have downloaded successfully or have changed can be found at:
-
-[SHA256SUMS](https://raw.githubusercontent.com/volatilityfoundation/volatility3-test-data/refs/tags/v0.0.1/symbols/SHA256SUMS)
-
-[SHA1SUMS](https://raw.githubusercontent.com/volatilityfoundation/volatility3-test-data/refs/tags/v0.0.1/symbols/SHA1SUMS)
-
-[MD5SUMS](https://raw.githubusercontent.com/volatilityfoundation/volatility3-test-data/refs/tags/v0.0.1/symbols/MD5SUMS)
-
-Symbol tables zip files must be placed, as named, into the `volatility3/symbols` directory (or just the symbols directory next to the executable file).
-
-Windows symbols that cannot be found will be queried, downloaded, generated and cached.  Mac and Linux symbol tables must be manually produced by a tool such as [dwarf2json](https://github.com/volatilityfoundation/dwarf2json).
-
-Important: The first run of volatility with new symbol files will require the cache to be updated.  The symbol packs contain a large number of symbol files and so may take some time to update!
-However, this process only needs to be run once on each new symbol file, so assuming the pack stays in the same location will not need to be done again.  Please also note it can be interrupted and next run will restart itself.
-
-Please note: These are representative and are complete up to the point of creation for Windows and Mac.  Due to the ease of compiling Linux kernels and the inability to uniquely distinguish them, an exhaustive set of Linux symbol tables cannot easily be supplied.
-
-## Documentation
-
-The framework is documented through doc strings and can be built using sphinx.
-
-The latest generated copy of the documentation can be found at: <https://volatility3.readthedocs.io/en/latest/>
-
-## Licensing and Copyright
-
-Copyright (C) 2007-2026 Volatility Foundation
-
-All Rights Reserved
-
-<https://www.volatilityfoundation.org/license/vsl-v1.0>
-
-## Bugs and Support
-
-If you think you've found a bug, please report it at:
-
-<https://github.com/volatilityfoundation/volatility3/issues>
-
-In order to help us solve your issues as quickly as possible,
-please include the following information when filing a bug:
-
-- The version of Volatility you're using
-- The operating system used to run Volatility
-- The version of Python used to run Volatility
-- The suspected operating system of the memory sample
-- The complete command line you used to run Volatility
-
-For community support, please join us on Slack:
-
-<https://www.volatilityfoundation.org/slack>
-
-## Contact
-
-For information or requests, contact:
-
-Volatility Foundation
-
-Web: <https://www.volatilityfoundation.org>
-
-Blog:     <https://volatility-labs.blogspot.com>
-
-Email: volatility (at) volatilityfoundation (dot) org
-
-Twitter: [@volatility](https://twitter.com/volatility)
+Volatility Foundation and the original contributors provide the framework. Abyss-W4tcher provides the original AArch64 work. cpuu maintains this integration, testing and Raspberry Pi-focused distribution. See [Volatility Software License](LICENSE.txt) and [upstream README](README.upstream.md). This project does not relicense the original code. The Python package/import name remains `volatility3` for compatibility; this repository does not publish a replacement package to PyPI.
