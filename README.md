@@ -84,7 +84,7 @@ tools/dwarf2json/dwarf2json linux --elf symbol-input/extracted/usr/lib/debug/boo
 mv symbols/linux/ubuntu-6.8.0-1064-raspi-arm64.json.partial symbols/linux/ubuntu-6.8.0-1064-raspi-arm64.json
 ```
 
-The generated ISF passed schema 6.2.0 validation and contains 170,389 symbols and 11,151 user types. For another kernel build, use its corresponding debug package and ISF.
+The [generated ISF](symbols/linux/ubuntu-6.8.0-1064-raspi-arm64.json) passed schema 6.2.0 validation and contains 170,389 symbols and 11,151 user types. For another kernel build, use its corresponding debug package and ISF.
 
 ## Validation scope
 
