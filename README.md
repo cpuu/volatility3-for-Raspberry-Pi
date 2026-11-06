@@ -42,6 +42,8 @@ The capture target and the analysis host were separate machines. The environment
 
 The matching ISF was generated on the Mac on 2026-10-07 and reused for the October 12 capture after confirming the kernel build had not changed. The kernel was not rebuilt for this experiment, and the debug package was not installed on the Pi. Broader kernel, page-size and hardware coverage remains future work.
 
+Both uncompressed LiME and Snappy-compressed AVML (`--compress`) captures were tested on this physical Raspberry Pi 4 using AVML 0.21.0, with the compressed AVML file analyzed directly on the Mac using the same eight plugins.
+
 ## Memory acquisition
 
 The validation dump was collected **on the Raspberry Pi**, then transferred to a Mac for analysis. Acquisition used the official [AVML 0.21.0 AArch64 binary](https://github.com/microsoft/avml/releases/tag/v0.21.0), reading `/proc/kcore` as root and writing an **uncompressed LiME** image. No LiME kernel module was loaded for this capture.
