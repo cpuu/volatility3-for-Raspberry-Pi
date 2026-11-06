@@ -51,6 +51,7 @@ sudo chown "$(id -u):$(id -g)" "$capture_dir/memory.lime"
 ```
 
 The default output is uncompressed LiME; add `--compress` for Snappy-compressed AVML. 
+
 On macOS, compressed input also requires the native Snappy library to be discoverable (our setup used `DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib`).
 
 Transfer the capture directory to the analysis host and verify its checksum:
