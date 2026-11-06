@@ -6,7 +6,6 @@ Experimental Raspberry Pi / AArch64 Linux memory analysis, maintained independen
 
 - Upstream `develop`: `77ff0b1932d77527f850c8ced01d85805ea7bf97` (checked 2026-11-06).
 - Original AArch64 implementation: `5ee05ce7b440c0d6a0d45f7f9a343b702c7b38e4`.
-- Latest upstream includes the generic Linux IPv6 host-family fix (#2052); it is inherited here as an upstream change.
 
 ## Quick start
 
