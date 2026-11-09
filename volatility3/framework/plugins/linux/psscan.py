@@ -28,7 +28,7 @@ class PsScan(interfaces.plugins.PluginInterface):
     """Scans for processes present in a particular linux image."""
 
     _required_framework_version = (2, 13, 0)
-    _version = (2, 0, 0)
+    _version = (2, 0, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -36,7 +36,7 @@ class PsScan(interfaces.plugins.PluginInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=["Intel32", "Intel64"],
+                architectures=["Intel32", "Intel64", "AArch64"],
             ),
             requirements.VersionRequirement(
                 name="pslist", component=pslist.PsList, version=(4, 0, 0)
@@ -132,6 +132,13 @@ class PsScan(interfaces.plugins.PluginInterface):
         memory_layer_name = kernel_layer.dependencies[0]
         memory_layer = context.layers[memory_layer_name]
 
+        # Use the kernel's supported PID limit rather than a fixed 16-bit bound.
+        # The current pid_max can be lowered while older tasks still exist.
+        pid_limit = int(vmlinux.object_from_symbol("pid_max_max"))
+        if pid_limit <= 0:
+            raise ValueError("Kernel pid_max_max must be positive")
+        vollog.debug("Scanning tasks with PID upper bound %d", pid_limit)
+
         # scan the memory_layer for these needles
         for address, _ in memory_layer.scan(
             context, scanners.MultiStringScanner(needles)
@@ -154,7 +161,7 @@ class PsScan(interfaces.plugins.PluginInterface):
                 )
                 continue
             # sanity check pid
-            if not (0 < ptask.pid < 65535):
+            if not (0 < ptask.pid < pid_limit):
                 vollog.debug(
                     f"Skipping task_struct at {hex(ptask.vol.offset)} as pid {ptask.pid} is likely not valid"
                 )
