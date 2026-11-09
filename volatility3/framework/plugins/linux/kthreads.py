@@ -21,7 +21,7 @@ class Kthreads(plugins.PluginInterface):
     """Enumerates kthread functions"""
 
     _required_framework_version = (2, 11, 0)
-    _version = (1, 0, 3)
+    _version = (1, 0, 4)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -29,12 +29,12 @@ class Kthreads(plugins.PluginInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=architectures.LINUX_ARCHS,
+                architectures=[*architectures.LINUX_ARCHS, "AArch64"],
             ),
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
                 component=linux_utilities_modules.Modules,
-                version=(3, 0, 0),
+                version=(3, 0, 3),
             ),
             requirements.VersionRequirement(
                 name="linux_utilities_module_gatherers",

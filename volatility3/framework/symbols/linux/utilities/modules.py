@@ -74,7 +74,7 @@ class ModuleGathererInterface(
 class Modules(interfaces.configuration.VersionableInterface):
     """Kernel modules related utilities."""
 
-    _version = (3, 0, 2)
+    _version = (3, 0, 3)
     _required_framework_version = (2, 0, 0)
 
     framework.require_interface_version(*_required_framework_version)
@@ -120,7 +120,30 @@ class Modules(interfaces.configuration.VersionableInterface):
                     "Modules list must be gathered from `run_modules_scanners` to be used in this function"
                 )
 
-            if module.start <= target_address < module.end:
+            ranges = [(module.start, module.end)]
+            if module.name != constants.linux.KERNEL_NAME:
+                try:
+                    module_object = kernel.object(
+                        "module", offset=module.offset, absolute=True
+                    )
+                    if module_object.has_member("mem"):
+                        # Linux 6.4+ allocates module memory types separately.
+                        # A text base plus the sum of sizes is not a valid range.
+                        ranges = []
+                        for region in module_object.mem:
+                            base = int(region.base) & kernel_layer.address_mask
+                            size = int(region.size)
+                            if base and size:
+                                ranges.append((base, base + size))
+                except exceptions.InvalidAddressException:
+                    vollog.debug(
+                        "Cannot read memory regions for module %s at %#x",
+                        module.name,
+                        module.offset,
+                    )
+                    continue
+
+            if any(start <= target_address < end for start, end in ranges):
                 matches.append(module)
 
         if len(matches) >= 1:
@@ -140,7 +163,7 @@ class Modules(interfaces.configuration.VersionableInterface):
                 if len(symbols):
                     symbol_name = symbols[0]
             else:
-                module = kernel.object("module", offset=module.offset, absolute=True)
+                module = kernel.object("module", offset=match.offset, absolute=True)
                 symbol_name = module.get_symbol_by_address(target_address)
 
             if symbol_name and symbol_name.find(constants.BANG) != -1:
