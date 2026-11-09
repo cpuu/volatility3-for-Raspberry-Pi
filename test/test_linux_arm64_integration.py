@@ -167,3 +167,58 @@ def test_vmcoreinfo_missing_relocation_data_is_rejected(missing):
 
 def test_vmcoreinfo_missing_pgd_is_rejected():
     assert LinuxIntelVMCOREINFOStacker._vmcoreinfo_get_dtb({}, 0, 0) is None
+
+
+@pytest.mark.parametrize("userspace", [False, True])
+@pytest.mark.parametrize(
+    "low_address", [0, 0x7FFFFFFFF000, 0x800000000000, 0xAAAAD1200000, 0xFFFFFFFFF000]
+)
+def test_arm64_full_width_scan_history_and_canonicalization(userspace, low_address):
+    from volatility3.framework.layers import scanners
+    from volatility3.framework.symbols.linux import bash
+
+    address = low_address if userspace else low_address | 0xFFFF000000000000
+    buffer = bytearray(0xA000)
+    for table, child, shift in [
+        (0x1000, 0x2000, 39),
+        (0x2000, 0x3000, 30),
+        (0x3000, 0x4000, 21),
+    ]:
+        struct.pack_into(
+            "<Q", buffer, table + ((address >> shift) & 0x1FF) * 8, child | 3
+        )
+    struct.pack_into("<Q", buffer, 0x4000 + ((address >> 12) & 0x1FF) * 8, 0x8403)
+    struct.pack_into("<QQQ", buffer, 0x8000, address + 0x100, address + 0x180, 0)
+    buffer[0x8100:0x810E] = b"ARM64-HISTORY\x00"
+    buffer[0x8180:0x818C] = b"#1794208133\x00"
+    context = memory_context(buffer)
+    context.config["test.entry_format"] = "<Q"
+    context.config["test.TCR_EL1"] = (2 << 30) | (16 << 16) | 16
+    context.config["test.TTBR1_EL1"] = arm.set_reg_bits(
+        0x9000 if userspace else 0x1000, arm.AArch64RegMap.TTBR1_EL1.BADDR
+    )
+    layer = arm.LinuxAArch64(context, "test", "testlayer")
+    context.layers.add_layer(layer)
+    assert layer.minimum_address == (0 if userspace else 0xFFFF000000000000)
+    assert layer.maximum_address == (
+        0xFFFFFFFFFFFF if userspace else 0xFFFFFFFFFFFFFFFF
+    )
+    assert layer.canonicalize(low_address) == address
+    assert layer.canonicalize(address) == address
+    assert layer.decanonicalize(address) == low_address
+    assert layer.canonicalize(layer.decanonicalize(address)) == address
+    assert list(
+        layer.scan(
+            context,
+            scanners.BytesScanner(b"ARM64-HISTORY"),
+            sections=[(address, 0x1000)],
+        )
+    ) == [address + 0x100]
+    table = bash.BashIntermedSymbols.create(context, "diagnostic", "linux", "bash64")
+    history = context.object(
+        table + "!hist_entry", layer_name=layer.name, offset=address
+    )
+    assert int(history.line) == address + 0x100
+    assert history.is_valid()
+    assert history.get_command() == "ARM64-HISTORY"
+    assert history.get_time_as_integer() == 1794208133

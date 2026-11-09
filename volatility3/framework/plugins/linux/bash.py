@@ -30,7 +30,7 @@ class Bash(plugins.PluginInterface, timeliner.TimeLinerInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=["Intel32", "Intel64"],
+                architectures=["Intel32", "Intel64", "AArch64"],
             ),
             requirements.VersionRequirement(
                 name="pslist", component=pslist.PsList, version=(4, 0, 0)

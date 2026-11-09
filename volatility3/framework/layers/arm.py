@@ -476,11 +476,11 @@ class AArch64(linear.LinearlyMappedLayer):
         # [2], see source/arch/arm64/include/asm/memory.h#L62
         if self._virtual_addr_space == 0:
             ttb_start = 0
-            ttb_size = 1 << (self._ttb_bitsize - 1)
+            ttb_size = 1 << self._ttb_bitsize
             ttb_end = ttb_start + (ttb_size - 1)
         else:
             ttb_end = 2**64 - 1
-            ttb_size = 1 << (self._ttb_bitsize - 1)
+            ttb_size = 1 << self._ttb_bitsize
             ttb_start = ttb_end - (ttb_size - 1)
 
         return (ttb_start, ttb_end)
@@ -614,21 +614,17 @@ class AArch64(linear.LinearlyMappedLayer):
         return masked_trees
 
     def canonicalize(self, addr: int) -> int:
-        """Canonicalizes an address by performing an appropiate sign extension on the higher addresses"""
-        if self._bits_per_register <= self._ttb_bitsize:
-            return addr & self.address_mask
-        elif addr < (1 << self._ttb_bitsize - 1):
-            return addr
-        return self._mask(addr, self._ttb_bitsize, 0) | self._canonical_prefix
+        """Place an address in this layer's TTBR0 or TTBR1 address space.
+
+        Each ARM64 address space has the full configured width; its highest
+        address bit is not a shared user/kernel sign bit as on Intel.
+        """
+        low_mask = (1 << self._ttb_bitsize) - 1
+        return (addr & low_mask) | self.minimum_address
 
     def decanonicalize(self, addr: int) -> int:
-        """Removes canonicalization to ensure an adress fits within the correct range if it has been canonicalized
-
-        This will produce an address outside the range if the canonicalization is incorrect
-        """
-        if addr < (1 << self._ttb_bitsize - 1):
-            return addr
-        return addr ^ self._canonical_prefix
+        """Return the translation-table address bits without the space prefix."""
+        return addr & ((1 << self._ttb_bitsize) - 1)
 
     @staticmethod
     def _mask(
