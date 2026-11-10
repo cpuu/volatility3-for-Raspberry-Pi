@@ -5,8 +5,9 @@ Results as of 2026-11-10: **48 of 49 distinct Linux plugins verified** on Raspbe
 ## Environment
 
 - Raspberry Pi 4 Model B Rev 1.4, 8 GB RAM
-- Ubuntu 24.04.5 LTS, kernel `6.8.0-1064-raspi`, AArch64, 4 KB pages, 48-bit virtual addresses
-- AVML 0.21.0 compressed captures; matching [kernel ISF](symbols/linux/ubuntu-6.8.0-1064-raspi-arm64.json)
+- Ubuntu 24.04.5 LTS, AArch64, 4 KB pages, 48-bit virtual addresses
+- Tested kernels: `6.8.0-1064-raspi`, `6.8.0-1068-raspi`, `6.17.0-1021-raspi`, `7.0.0-1023-raspi`
+- AVML 0.21.0 compressed captures; matching [kernel ISFs](symbols/linux)
 - Analysis on Apple Silicon macOS with Python 3.12.14 and `uv sync --locked --extra full`
 
 The tests used several captures from the same Pi configuration, including controlled processes, sockets, tracing events and a no-op kernel notifier. The QEMU and image-format experiments are separate from this plugin validation.
@@ -47,9 +48,9 @@ All 145 stable PID/parent-PID pairs, ten controlled sockets and six Bash history
 
 ## Remaining limits
 
-- **Kmsg:** the reboot capture reproduced 535 of 536 stable reference message texts. The missing message is present in the finalized head descriptor; the current loop stops before processing it. This off-by-one remains unfixed, and Intel reproduction is pending.
-- **RecoverFs:** the fresh Pi capture completed a full run, but recovery remains limited to cached file contents. It logged 89 out-of-file-bounds page skips; complete recovery of every file is not established. The earlier capture exceeded the external 600-second limit while processing a much larger cache, including a 4.79 GB AVML file.
-- **PerfEvents:** the inherited algorithm reports BPF-attached events and skips ordinary non-BPF events.
-- **Detection controls:** Check_afinfo, Check_creds, Check_modules and Hidden_modules were tested with simulated pointer/list changes during analysis of real Pi memory. Neither the stored dumps nor the live kernel were modified for those controls; these were not live rootkit captures.
-- **Completeness:** ModuleExtract produces analysis ELFs, not reloadable `.ko` files. Matching selected references does not establish exhaustive discovery.
-- **Environment:** these results cover the recorded Pi/kernel configuration and exercised options, not every kernel, page size or plugin option. No real Intel Linux dump regression is claimed.
+- **Kmsg:** a confirmed off-by-one can omit the final message. The fix and Intel reproduction remain pending.
+- **RecoverFs:** full recovery runs complete, but only cached file contents are recoverable; unavailable pages may be skipped.
+- **PerfEvents:** reports BPF-attached events only.
+- **Detection controls:** Check_afinfo, Check_creds, Check_modules and Hidden_modules were checked with simulated changes during analysis, not live rootkit captures.
+- **ModuleExtract:** produces analysis ELFs, not reloadable `.ko` files.
+- **Coverage:** validation covers the listed Pi kernels and exercised options. Other configurations and Intel Linux remain untested.
