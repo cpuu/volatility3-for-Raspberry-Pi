@@ -13,7 +13,7 @@ import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_
 from volatility3.framework import constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
-from volatility3.framework.constants import architectures
+from volatility3.framework.symbols.linux import kallsyms
 
 vollog = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
     Investigate the ftrace infrastructure to uncover kernel attached callbacks, which can be leveraged
     to hook kernel functions and modify their behaviour."""
 
-    _version = (4, 0, 0)
+    _version = (4, 1, 0)
     _required_framework_version = (2, 19, 0)
 
     @classmethod
@@ -74,7 +74,7 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=architectures.LINUX_ARCHS,
+                architectures=["Intel32", "Intel64", "AArch64"],
             ),
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
@@ -85,6 +85,9 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
                 name="linux_utilities_module_gatherers",
                 component=linux_utilities_modules.ModuleGatherers,
                 version=(1, 0, 0),
+            ),
+            requirements.VersionRequirement(
+                name="kallsyms", component=kallsyms.Kallsyms, version=(1, 1, 0)
             ),
             requirements.BooleanRequirement(
                 name="show_ftrace_flags",
@@ -115,17 +118,46 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
             ftrace_hash = ftrace_ops.filter_hash
 
         try:
-            current_bucket_ptr = ftrace_hash.buckets.first
-        except exceptions.InvalidAddressException:
-            vollog.log(
-                constants.LOGLEVEL_VV,
-                f"ftrace_func_entry list of ftrace_ops@{ftrace_ops.vol.offset:#x} is empty/invalid. Skipping it...",
+            size_bits = int(ftrace_hash.size_bits)
+            # Linux bounds allocated filter tables with FTRACE_HASH_MAX_BITS=12.
+            if not 0 <= size_bits <= 12:
+                vollog.warning("Invalid ftrace filter hash size: %d", size_bits)
+                return
+            buckets = ftrace_hash.buckets.dereference().cast(
+                "array", count=1 << size_bits, subtype=ftrace_hash.buckets.vol.subtype
             )
+        except exceptions.InvalidAddressException:
+            vollog.debug("Unreadable ftrace filter hash at %#x", ftrace_ops.vol.offset)
             return
 
-        while current_bucket_ptr.is_readable():
-            yield current_bucket_ptr.dereference().cast("ftrace_func_entry")
-            current_bucket_ptr = current_bucket_ptr.next
+        seen = set()
+        for bucket in buckets:
+            try:
+                node = bucket.first
+                while node and node.is_readable():
+                    address = int(node)
+                    if address in seen:
+                        break
+                    seen.add(address)
+                    yield node.dereference().cast("ftrace_func_entry")
+                    node = node.next
+            except exceptions.InvalidAddressException:
+                vollog.debug("Unreadable ftrace filter bucket; continuing")
+
+    @classmethod
+    def _resolve_hook_symbols(cls, kernel, kas, hook_address: int) -> str:
+        """Preserve exact aliases, then resolve an instruction within a function."""
+        names = list(kernel.get_symbols_by_absolute_location(hook_address))
+        if names:
+            return ",".join(name.split(constants.BANG)[-1] for name in names)
+        symbol = kas.lookup_address(hook_address)
+        if (
+            symbol
+            and symbol.type in "TtWw"
+            and symbol.address <= hook_address < symbol.address + symbol.size
+        ):
+            return symbol.name
+        return ""
 
     @classmethod
     def parse_ftrace_ops(
@@ -134,6 +166,7 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
         kernel_module_name: str,
         known_modules: List[linux_utilities_modules.ModuleInfo],
         ftrace_ops: interfaces.objects.ObjectInterface,
+        kas=None,
     ) -> Generator[ParsedFtraceOps, None, None]:
         """Parse an ftrace_ops struct to highlight ftrace kernel hooking.
         Iterates over embedded ftrace_func_entry entries, which point to hooked memory areas.
@@ -147,6 +180,12 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
         """
         kernel = context.modules[kernel_module_name]
         callback = ftrace_ops.func
+        if kas is None:
+            kas = kallsyms.Kallsyms(
+                context=context,
+                layer_name=kernel.layer_name,
+                module_name=kernel_module_name,
+            )
 
         mod_info, callback_symbol = (
             linux_utilities_modules.Modules.module_lookup_by_address(
@@ -171,14 +210,7 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
         for ftrace_func_entry in cls.extract_hash_table_filters(ftrace_ops):
             hook_address = ftrace_func_entry.ip.cast("pointer")
 
-            # Determine the symbols associated with a hook
-            hooked_symbols = kernel.get_symbols_by_absolute_location(hook_address)
-            hooked_symbols = ",".join(
-                [
-                    hooked_symbol.split(constants.BANG)[-1]
-                    for hooked_symbol in hooked_symbols
-                ]
-            )
+            hooked_symbols = cls._resolve_hook_symbols(kernel, kas, int(hook_address))
             formatted_ftrace_flags = ",".join(
                 [flag.name for flag in FtraceOpsFlags if flag.value & ftrace_ops.flags]
             )
@@ -230,12 +262,16 @@ class CheckFtrace(interfaces.plugins.PluginInterface):
             caller_wanted_gatherers=linux_utilities_modules.ModuleGatherers.all_gatherers_identifier,
         )
 
+        kas = kallsyms.Kallsyms(
+            context=self.context, layer_name=kernel.layer_name, module_name=kernel_name
+        )
         for ftrace_ops in self.iterate_ftrace_ops_list(self.context, kernel_name):
             for ftrace_ops_parsed in self.parse_ftrace_ops(
                 self.context,
                 kernel_name,
                 known_modules,
                 ftrace_ops,
+                kas=kas,
             ):
                 formatted_results = (
                     format_hints.Hex(ftrace_ops_parsed.ftrace_ops_offset),
