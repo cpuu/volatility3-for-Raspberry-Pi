@@ -74,7 +74,7 @@ class ModuleGathererInterface(
 class Modules(interfaces.configuration.VersionableInterface):
     """Kernel modules related utilities."""
 
-    _version = (3, 0, 3)
+    _version = (3, 0, 4)
     _required_framework_version = (2, 0, 0)
 
     framework.require_interface_version(*_required_framework_version)
@@ -561,8 +561,8 @@ class Modules(interfaces.configuration.VersionableInterface):
             except exceptions.InvalidAddressException:
                 continue
 
-            if kobj.name and kobj.reference_count() > 2:
-                ret[name] = mod
+            if kobj.name and kobj.reference_count() > 2 and mod and mod.is_readable():
+                ret[name] = mod.dereference()
 
         return ret
 
@@ -1563,7 +1563,7 @@ class ModuleGathererSysFs(ModuleGathererInterface):
     Gathers modules from the sysfs /sys/modules objects
     """
 
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     name = "SysFs"
 
@@ -1571,12 +1571,7 @@ class ModuleGathererSysFs(ModuleGathererInterface):
     def gather_modules(
         cls, context: interfaces.context.ContextInterface, kernel_module_name: str
     ) -> ModuleGathererInterface.gatherer_return_type:
-        kernel = context.modules[kernel_module_name]
-
-        sysfs_modules: dict = Modules.get_kset_modules(context, kernel_module_name)
-
-        for m_offset in sysfs_modules.values():
-            yield kernel.object(object_type="module", offset=m_offset, absolute=True)
+        yield from Modules.get_kset_modules(context, kernel_module_name).values()
 
 
 class ModuleGathererScanner(ModuleGathererInterface):
