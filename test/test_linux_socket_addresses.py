@@ -6,7 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from volatility3.framework import contexts
+from volatility3.framework import contexts, exceptions
 from volatility3.framework.layers import physical
 from volatility3.framework.symbols.linux.extensions import network
 
@@ -69,6 +69,8 @@ def test_inet_socket_address_host_family(
         inet.daddr = field
         inet.rcv_saddr = field
         inet.pinet6.daddr = field
+        if dump_family == 10:
+            del common.skc_v6_daddr
 
     expected_host_family = 2 if dump_family == 2 else host_ipv6
 
@@ -85,3 +87,64 @@ def test_inet_socket_address_host_family(
     result = getattr(network.inet_sock, f"get_{direction}_addr")(inet)
     assert result == address
     conversion.assert_called_once_with(expected_host_family, packed)
+
+
+def ipv6_destination_fixture(peer, cached):
+    context = contexts.Context()
+    data = ipaddress.IPv6Address(peer).packed + ipaddress.IPv6Address(cached).packed
+    context.layers.add_layer(
+        physical.BufferDataLayer(context, "memory", "memory", data)
+    )
+    peer_field = SimpleNamespace(vol=SimpleNamespace(offset=0, layer_name="memory"))
+    cache_field = SimpleNamespace(vol=SimpleNamespace(offset=16, layer_name="memory"))
+    common = SimpleNamespace(skc_family=10, skc_v6_daddr=peer_field)
+    sk = SimpleNamespace()
+    setattr(sk, "_inet_sock__sk_common", common)
+    inet = SimpleNamespace(
+        sk=sk,
+        pinet6=SimpleNamespace(daddr=cache_field),
+        _context=context,
+        get_family=lambda: "AF_INET6",
+    )
+    return inet, common
+
+
+@pytest.mark.parametrize(
+    "peer,cached",
+    [("::1", "::"), ("::1", "2001:db8::9"), ("::", "::1")],
+    ids=["empty-cache", "different-cache", "listener"],
+)
+def test_ipv6_peer_takes_precedence_over_pinfo_cache(peer, cached):
+    inet, _ = ipv6_destination_fixture(peer, cached)
+    assert network.inet_sock.get_dst_addr(inet) == peer
+
+
+def test_ipv6_legacy_destination_without_common_member():
+    inet, common = ipv6_destination_fixture("::", "2001:db8::123")
+    del common.skc_v6_daddr
+    assert network.inet_sock.get_dst_addr(inet) == "2001:db8::123"
+
+
+def test_ipv6_unreadable_peer_does_not_fall_back_to_cached_address():
+    inet, common = ipv6_destination_fixture("::1", "2001:db8::9")
+    common.skc_v6_daddr.vol.offset = 0x1000
+    assert network.inet_sock.get_dst_addr(inet) is None
+
+
+def test_ipv6_modern_peer_does_not_dereference_pinfo():
+    inet, _ = ipv6_destination_fixture("::1", "::")
+
+    class UnreadablePinfo:
+        @property
+        def daddr(self):
+            raise exceptions.InvalidAddressException("memory", 0xDEAD)
+
+    inet.pinet6 = UnreadablePinfo()
+    assert network.inet_sock.get_dst_addr(inet) == "::1"
+
+
+def test_ipv6_no_known_destination_member():
+    inet, common = ipv6_destination_fixture("::1", "::")
+    del common.skc_v6_daddr
+    del inet.pinet6.daddr
+    assert network.inet_sock.get_dst_addr(inet) is None

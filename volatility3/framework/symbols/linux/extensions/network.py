@@ -590,10 +590,15 @@ class inet_sock(objects.StructType):
             addr_size = 4
         elif family == "AF_INET6":
             host_family = socket_module.AF_INET6
-            if hasattr(self.pinet6, "daddr"):
+            # The common socket field is the connected peer address. Newer
+            # kernels also have an ipv6_pinfo.daddr cache/union member, which
+            # must not be mistaken for the legacy destination field.
+            if hasattr(sk_common, "skc_v6_daddr"):
+                daddr = sk_common.skc_v6_daddr
+            elif hasattr(self.pinet6, "daddr"):
                 daddr = self.pinet6.daddr
             else:
-                daddr = sk_common.skc_v6_daddr
+                return None
             addr_size = 16
         else:
             return None
