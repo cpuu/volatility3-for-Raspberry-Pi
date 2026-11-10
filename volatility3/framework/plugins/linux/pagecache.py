@@ -439,7 +439,7 @@ class InodePages(plugins.PluginInterface):
 
     _required_framework_version = (2, 0, 0)
 
-    _version = (3, 0, 0)
+    _version = (3, 0, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -447,7 +447,7 @@ class InodePages(plugins.PluginInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=architectures.LINUX_ARCHS,
+                architectures=[*architectures.LINUX_ARCHS, "AArch64"],
             ),
             requirements.VersionRequirement(
                 name="files", component=Files, version=(1, 0, 0)
