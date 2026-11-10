@@ -30,7 +30,7 @@ Reference checks used capture-time process listings, socket endpoints, kernel sy
 |---|---|
 | Processes | Bash address scanning recovered all six known history entries. PsScan's corrected PID bound recovered all 144 stable reference processes. Kthreads attribution matched all 125 returned handler/module pairs. ARM64 kernel-stack traversal was added to PsCallStack. |
 | Symbols and tracing | Kallsyms core/module/BPF records matched live references. Check_syscall recovered 462 native and 462 compat entries. Ftrace recovered all three configured filter entries after traversal and symbol-resolution fixes. |
-| File and module recovery | ARM64 sparse-memory page conversion enabled InodePages to restore a known 2,135-byte file exactly. RecoverFs produced a tmpfs archive. ModuleExtract reconstructed two ARM64 module ELFs, with 1,884 symbol records and 582 function byte ranges checked against memory. |
+| File and module recovery | ARM64 sparse-memory page conversion enabled InodePages to restore a known 2,135-byte file exactly. RecoverFs produced a tmpfs archive and completed a full run on the fresh Pi capture. ModuleExtract reconstructed two ARM64 module ELFs, with 1,884 symbol records and 582 function byte ranges checked against memory. |
 | Sockets and terminals | Sockscan recovered all ten controlled IPv4/IPv6 TCP/UDP endpoints after candidate-handling and address-layer fixes. Tty_Check recovered driver devices and a Unix98 PTY pair. |
 | Kernel objects | Corrected notifier pointer traversal recovered the registered callback at its known address. Sysfs module discovery returned the correct struct addresses for all 110 reference modules. |
 | Memory and graphics | Malfind detected controlled executable mappings and dirty pages, with exact page extraction. Fbdev's corrected color conversion matched all 2,073,600 reference pixels. |
@@ -41,14 +41,14 @@ Declaration-only additions include LibraryList, Ptrace, PerfEvents and CheckTrac
 
 The Pi was rebooted into the same 1064 kernel and a fresh AVML capture was analyzed with the existing ISF. Kernel addresses and PIDs changed; all 48 applicable plugins completed. Selected reference checks matched for 41 plugins. Fbdev matched the dump's raw pixels exactly, although 16 pixels differed from live screen references, consistent with a cursor change during acquisition. Kmsg omitted the final message (see below). Five detectors had no positive fixture in this capture, so their runs establish execution only.
 
-All 145 stable PID/parent-PID pairs, ten controlled sockets and six Bash history entries were recovered. The new test file was restored exactly by both InodePages and tmpfs RecoverFs.
+All 145 stable PID/parent-PID pairs, ten controlled sockets and six Bash history entries were recovered. The new test file was restored exactly by both InodePages and RecoverFs. A default full RecoverFs run completed in 95 seconds, producing a readable 123 MB gzip archive with 18,447 entries; the known 2,075-byte file matched its reference hash.
 
 **Kthreads clarification:** PID 2 (`kthreadd`) is an expected exclusion from function enumeration: its readable `struct kthread` has a NULL `threadfn`. It is present in the task list. All 132 eligible tasks matched Kthreads output, including all 112 stable eligible tasks; counting PID 2 as a missing function was incorrect.
 
 ## Remaining limits
 
 - **Kmsg:** the reboot capture reproduced 535 of 536 stable reference message texts. The missing message is present in the finalized head descriptor; the current loop stops before processing it. This off-by-one remains unfixed, and Intel reproduction is pending.
-- **RecoverFs:** tmpfs recovery was verified. A full-filesystem run reached the 600-second limit without completing. Two cached pages were skipped because their address spaces did not match the inode; complete recovery of every file is not established.
+- **RecoverFs:** the fresh Pi capture completed a full run, but recovery remains limited to cached file contents. It logged 89 out-of-file-bounds page skips; complete recovery of every file is not established. The earlier capture exceeded the external 600-second limit while processing a much larger cache, including a 4.79 GB AVML file.
 - **PerfEvents:** the inherited algorithm reports BPF-attached events and skips ordinary non-BPF events.
 - **Detection controls:** Check_afinfo, Check_creds, Check_modules and Hidden_modules were tested with simulated pointer/list changes during analysis of real Pi memory. Neither the stored dumps nor the live kernel were modified for those controls; these were not live rootkit captures.
 - **Completeness:** ModuleExtract produces analysis ELFs, not reloadable `.ko` files. Matching selected references does not establish exhaustive discovery.
