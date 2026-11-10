@@ -74,7 +74,7 @@ class ModuleGathererInterface(
 class Modules(interfaces.configuration.VersionableInterface):
     """Kernel modules related utilities."""
 
-    _version = (3, 0, 4)
+    _version = (3, 0, 5)
     _required_framework_version = (2, 0, 0)
 
     framework.require_interface_version(*_required_framework_version)
@@ -548,21 +548,32 @@ class Modules(interfaces.configuration.VersionableInterface):
         for kobj in module_kset.list.to_list(
             vmlinux.symbol_table_name + constants.BANG + "kobject", "entry"
         ):
-            mod_kobj = vmlinux.object(
-                object_type="module_kobject",
-                offset=kobj.vol.offset - kobj_off,
-                absolute=True,
-            )
-
-            mod = mod_kobj.mod
-
             try:
+                if not kobj.name or kobj.reference_count() <= 0:
+                    continue
+
+                mod_kobj = vmlinux.object(
+                    object_type="module_kobject",
+                    offset=kobj.vol.offset - kobj_off,
+                    absolute=True,
+                )
+                mod = mod_kobj.mod
+                # Built-in module kobjects have no associated struct module.
+                if not mod or not mod.is_readable():
+                    continue
+
+                module = mod.dereference()
+                # The number of references varies with kernel implementation.
+                # Verify the owning module's embedded kobject instead of
+                # assuming that a live module must have at least three refs.
+                if module.mkobj.kobj.vol.offset != kobj.vol.offset:
+                    continue
+
                 name = utility.pointer_to_string(kobj.name, 32)
+                if name:
+                    ret[name] = module
             except exceptions.InvalidAddressException:
                 continue
-
-            if kobj.name and kobj.reference_count() > 2 and mod and mod.is_readable():
-                ret[name] = mod.dereference()
 
         return ret
 
