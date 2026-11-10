@@ -100,7 +100,7 @@ class LinuxKernelIntermedSymbols(intermed.IntermediateSymbolTable):
 class LinuxUtilities(interfaces.configuration.VersionableInterface):
     """Class with multiple useful linux functions."""
 
-    _version = (2, 4, 0)
+    _version = (2, 4, 1)
     _required_framework_version = (2, 0, 0)
     deleted = "(deleted)"
     smear = "<potentially smeared>"
@@ -489,33 +489,30 @@ class LinuxUtilities(interfaces.configuration.VersionableInterface):
 
         count = 0
         seen = set()
-
-        while list_start:
-            if list_start.vol.offset in seen:
-                vollog.debug(
-                    "walk_internal_list: Repeat entry found. Stopping enumeration"
+        while list_start and count < max_count:
+            try:
+                # Pointer.vol.offset is the address of the pointer slot, not
+                # the address of the node it references.
+                address = (
+                    int(list_start)
+                    if isinstance(list_start, objects.Pointer)
+                    else list_start.vol.offset
                 )
-                break
-            seen.add(list_start.vol.offset)
-
-            if not (list_start and list_start.is_readable()):
-                break
-
-            list_struct = vmlinux.object(
-                object_type=struct_name, offset=list_start.vol.offset, absolute=True
-            )
-
-            yield list_struct
-
-            list_start = getattr(list_struct, list_member)
-
-            if count == max_count:
-                vollog.debug(
-                    f"walk_internal_list: Breaking list enumeration at maximum allowed count of {count}"
+                if address in seen:
+                    vollog.debug("walk_internal_list: repeated node; stopping")
+                    break
+                if not list_start.is_readable():
+                    break
+                seen.add(address)
+                list_struct = vmlinux.object(
+                    object_type=struct_name, offset=address, absolute=True
                 )
+                yield list_struct
+                count += 1
+                list_start = getattr(list_struct, list_member)
+            except exceptions.InvalidAddressException:
+                vollog.debug("walk_internal_list: unreadable node; stopping")
                 break
-
-            count += 1
 
     @classmethod
     def container_of(
