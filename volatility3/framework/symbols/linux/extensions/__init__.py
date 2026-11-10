@@ -3156,7 +3156,7 @@ class kernel_symbol(objects.StructType):
     def _offset_to_ptr(self, off) -> int:
         layer = self._context.layers[self.vol.layer_name]
         long_mask = (1 << layer.bits_per_register) - 1
-        return (self.vol.offset + off) & long_mask
+        return (off.vol.offset + int(off)) & long_mask
 
     def _do_get_name(self) -> str:
         if self.has_member("name_offset"):
@@ -3169,8 +3169,12 @@ class kernel_symbol(objects.StructType):
         else:
             raise AttributeError("Unsupported kernel_symbol type implementation")
 
-        return utility.pointer_to_string(
-            name_offset, linux_constants.KSYM_NAME_LEN, errors="ignore"
+        return utility.address_to_string(
+            context=self._context,
+            layer_name=self.vol.layer_name,
+            address=name_offset,
+            count=linux_constants.KSYM_NAME_LEN,
+            errors="ignore",
         )
 
     def get_name(self) -> Optional[str]:
@@ -3207,8 +3211,12 @@ class kernel_symbol(objects.StructType):
         else:
             raise AttributeError("Unsupported kernel_symbol type implementation")
 
-        return utility.pointer_to_string(
-            namespace_offset, linux_constants.KSYM_NAME_LEN, errors="ignore"
+        return utility.address_to_string(
+            context=self._context,
+            layer_name=self.vol.layer_name,
+            address=namespace_offset,
+            count=linux_constants.KSYM_NAME_LEN,
+            errors="ignore",
         )
 
     def get_namespace(self) -> Optional[str]:

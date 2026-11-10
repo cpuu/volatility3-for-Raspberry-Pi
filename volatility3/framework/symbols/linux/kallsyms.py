@@ -222,7 +222,7 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
     """Kallsyms API class"""
 
     _required_framework_version = (2, 19, 0)
-    _version = (1, 0, 0)
+    _version = (1, 1, 0)
 
     # Internal kernel core constants
     _CORE_SUBSYSTEM_NAME = "core"
@@ -374,6 +374,55 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
             for index in range(256)
         ]
 
+        self._absolute_percpu = None
+        if self._kallsyms_offsets_address:
+            self._absolute_percpu = self._detect_absolute_percpu()
+
+    def _detect_absolute_percpu(self) -> bool:
+        """Identify the relative-offset encoding using the known _stext address.
+
+        CONFIG_KALLSYMS_ABSOLUTE_PERCPU changes the interpretation of the
+        same offsets array. Do not infer this kernel configuration from the
+        CPU architecture or silently choose a mode when evidence is missing.
+        """
+        layer = self._context.layers[self._layer_name]
+        if self._kas_config._stext is None or self._kallsyms_relative_base is None:
+            raise exceptions.VolatilityException(
+                "Cannot determine kallsyms offset encoding without _stext and relative base"
+            )
+        expected = self._kas_config._stext & layer.address_mask
+        offset = 0
+        for index in range(self._kallsyms_num_syms):
+            symbol, length = self._expand_symbol(offset)
+            if length is None:
+                break
+            offset += length + 1
+            if symbol is None or symbol.name != "_stext":
+                continue
+            value = self._read_int(self._kallsyms_offsets_address + index * 4, 4)
+            if value is None:
+                break
+            unsigned_address = (
+                self._kallsyms_relative_base + value
+            ) & layer.address_mask
+            signed_value = value if value < (1 << 31) else value - (1 << 32)
+            percpu_address = (
+                self._kallsyms_relative_base - 1 - signed_value
+                if signed_value < 0
+                else signed_value
+            ) & layer.address_mask
+            unsigned_matches = unsigned_address == expected
+            percpu_matches = percpu_address == expected
+            if unsigned_matches != percpu_matches:
+                vollog.debug(
+                    "Detected kallsyms absolute-percpu encoding: %s", percpu_matches
+                )
+                return percpu_matches
+            break
+        raise exceptions.VolatilityException(
+            "Cannot determine kallsyms offset encoding from _stext"
+        )
+
     def _get_symbol(
         self,
         offset,
@@ -523,16 +572,22 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
         layer = self._context.layers[self._layer_name]
         if self._kallsyms_offsets_address:
             # kernels >= 4.6 - Addresses are relative to kallsyms_relative_base
-            # It assumes: CONFIG_KALLSYMS_BASE_RELATIVE=y and CONFIG_KALLSYMS_ABSOLUTE_PERCPU=y
             signed_int_size = 4
             sym_offset_ptr = self._kallsyms_offsets_address + (index * signed_int_size)
             sym_addr = self._read_int(sym_offset_ptr, signed_int_size, signed=True)
             if sym_addr is None:
                 return None
 
+            if not self._absolute_percpu:
+                return (
+                    self._kallsyms_relative_base + (sym_addr & 0xFFFFFFFF)
+                ) & layer.address_mask
+
             if sym_addr < 0:
                 # Negative offsets are relative to kallsyms_relative_base - 1
-                return self._kallsyms_relative_base - 1 - sym_addr
+                return (
+                    self._kallsyms_relative_base - 1 - sym_addr
+                ) & layer.address_mask
 
             # Positive offsets are absolute values
             return sym_addr & layer.address_mask

@@ -25,7 +25,7 @@ class Kallsyms(plugins.PluginInterface):
 
     _required_framework_version = (2, 19, 0)
 
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -33,10 +33,10 @@ class Kallsyms(plugins.PluginInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=architectures.LINUX_ARCHS,
+                architectures=[*architectures.LINUX_ARCHS, "AArch64"],
             ),
             requirements.VersionRequirement(
-                name="Kallsyms", component=kallsyms.Kallsyms, version=(1, 0, 0)
+                name="Kallsyms", component=kallsyms.Kallsyms, version=(1, 1, 0)
             ),
             requirements.BooleanRequirement(
                 name="core",
