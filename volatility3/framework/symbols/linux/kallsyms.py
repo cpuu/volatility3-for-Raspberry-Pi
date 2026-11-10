@@ -222,7 +222,7 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
     """Kallsyms API class"""
 
     _required_framework_version = (2, 19, 0)
-    _version = (1, 1, 0)
+    _version = (1, 2, 0)
 
     # Internal kernel core constants
     _CORE_SUBSYSTEM_NAME = "core"
@@ -351,14 +351,16 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
 
         if self._kas_config.relative_base_address:
             # kernels >= 4.6
-            self._kallsyms_relative_base = (
-                self._read_int(
-                    self._kas_config.relative_base_address,
-                    self._long_size,
-                    signed=False,
-                )
-                & layer.address_mask
+            relative_base = self._read_int(
+                self._kas_config.relative_base_address,
+                self._long_size,
+                signed=False,
             )
+            if relative_base is None:
+                raise exceptions.VolatilityException(
+                    "Cannot determine kallsyms offset encoding: unreadable relative base"
+                )
+            self._kallsyms_relative_base = relative_base & layer.address_mask
 
         self._kallsyms_offsets_address = self._kas_config.offsets_address
         self._kallsyms_token_index_address = self._kas_config.token_index_address
@@ -375,8 +377,43 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
         ]
 
         self._absolute_percpu = None
+        self._relative_to_entry = False
         if self._kallsyms_offsets_address:
-            self._absolute_percpu = self._detect_absolute_percpu()
+            if self._kas_config.relative_base_address is None:
+                self._relative_to_entry = self._detect_relative_to_entry()
+            else:
+                self._absolute_percpu = self._detect_absolute_percpu()
+
+    def _detect_relative_to_entry(self) -> bool:
+        """Verify signed per-entry displacements against the relocated _stext.
+
+        A missing global base alone is insufficient: an incomplete ISF for an
+        older kernel must not silently select this encoding. Both the table
+        address and _stext already include the kernel's virtual displacement.
+        """
+        layer = self._context.layers[self._layer_name]
+        if self._kas_config._stext is not None:
+            expected = self._kas_config._stext & layer.address_mask
+            offset = 0
+            for index in range(self._kallsyms_num_syms):
+                symbol, length = self._expand_symbol(offset)
+                if length is None:
+                    break
+                offset += length + 1
+                if symbol is None or symbol.name != "_stext":
+                    continue
+                entry = self._kallsyms_offsets_address + index * 4
+                displacement = self._read_int(entry, 4, signed=True)
+                if (
+                    displacement is not None
+                    and ((entry + displacement) & layer.address_mask) == expected
+                ):
+                    vollog.debug("Detected kallsyms per-entry relative encoding")
+                    return True
+                break
+        raise exceptions.VolatilityException(
+            "Cannot determine kallsyms per-entry offset encoding from _stext"
+        )
 
     def _detect_absolute_percpu(self) -> bool:
         """Identify the relative-offset encoding using the known _stext address.
@@ -571,12 +608,15 @@ class Kallsyms(interfaces.configuration.VersionableInterface):
         """
         layer = self._context.layers[self._layer_name]
         if self._kallsyms_offsets_address:
-            # kernels >= 4.6 - Addresses are relative to kallsyms_relative_base
+            # Relative addresses use either a global base or their own entry.
             signed_int_size = 4
             sym_offset_ptr = self._kallsyms_offsets_address + (index * signed_int_size)
             sym_addr = self._read_int(sym_offset_ptr, signed_int_size, signed=True)
             if sym_addr is None:
                 return None
+
+            if self._relative_to_entry:
+                return (sym_offset_ptr + sym_addr) & layer.address_mask
 
             if not self._absolute_percpu:
                 return (
