@@ -6,7 +6,7 @@ Results as of 2026-11-10: **48 of 49 distinct Linux plugins verified** on Raspbe
 
 - Raspberry Pi 4 Model B Rev 1.4, 8 GB RAM
 - Ubuntu 24.04.5 LTS, AArch64, 4 KB pages, 48-bit virtual addresses
-- Tested kernels: `6.8.0-1064-raspi`, `6.8.0-1068-raspi`, `6.17.0-1021-raspi`, `7.0.0-1023-raspi`
+- Tested kernels: `6.8.0-1068-raspi`, `6.17.0-1021-raspi`, `7.0.0-1023-raspi`
 - AVML 0.21.0 compressed captures; matching [kernel ISFs](symbols/linux)
 - Analysis on Apple Silicon macOS with Python 3.12.14 and `uv sync --locked --extra full`
 
@@ -37,14 +37,6 @@ Reference checks used capture-time process listings, socket endpoints, kernel sy
 | Memory and graphics | Malfind detected controlled executable mappings and dirty pages, with exact page extraction. Fbdev's corrected color conversion matched all 2,073,600 reference pixels. |
 
 Declaration-only additions include LibraryList, Ptrace, PerfEvents and CheckTracepoints. LibraryList matched nine library load addresses; the tracing fixture supplied a known tracer/tracee pair, a BPF-attached perf event and registered tracepoint callbacks.
-
-## Reboot check (2026-11-10)
-
-The Pi was rebooted into the same 1064 kernel and a fresh AVML capture was analyzed with the existing ISF. Kernel addresses and PIDs changed; all 48 applicable plugins completed. Selected reference checks matched for 41 plugins. Fbdev matched the dump's raw pixels exactly, although 16 pixels differed from live screen references, consistent with a cursor change during acquisition. Kmsg omitted the final message (see below). Five detectors had no positive fixture in this capture, so their runs establish execution only.
-
-All 145 stable PID/parent-PID pairs, ten controlled sockets and six Bash history entries were recovered. The new test file was restored exactly by both InodePages and RecoverFs. A default full RecoverFs run completed in 95 seconds, producing a readable 123 MB gzip archive with 18,447 entries; the known 2,075-byte file matched its reference hash.
-
-**Kthreads clarification:** PID 2 (`kthreadd`) is an expected exclusion from function enumeration: its readable `struct kthread` has a NULL `threadfn`. It is present in the task list. All 132 eligible tasks matched Kthreads output, including all 112 stable eligible tasks; counting PID 2 as a missing function was incorrect.
 
 ## Remaining limits
 
