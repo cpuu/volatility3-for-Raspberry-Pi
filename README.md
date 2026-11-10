@@ -88,20 +88,18 @@ The [generated ISF](symbols/linux/ubuntu-6.8.0-1064-raspi-arm64.json) passed sch
 
 ## Validation scope
 
-Initial hardware evidence: Raspberry Pi 4, Ubuntu 24.04.5 LTS, kernel `6.8.0-1064-raspi`, 4 KB pages, 48-bit virtual addresses. Eight Linux plugins are enabled for AArch64; not every Linux plugin is supported.
+**48 of 49 distinct Linux plugins have been validated** using physical Raspberry Pi 4 memory captures in the environment described above. The remaining plugin, `Check_idt`, examines the x86 Interrupt Descriptor Table and is not applicable to AArch64.
 
-| Plugin | Observations from the existing capture |
-|---|---|
-| pslist | 158 rows; all 132 PIDs stable across acquisition were present |
-| lsmod | 108 module names matched |
-| iomem | 61 regions matched |
-| kmsg | 624 of 625 reference message texts matched |
-| proc.Maps | Test process: 29 ranges and core fields matched; three path labels differed |
-| psaux | Test process command line matched; another row contained a replacement character |
-| mountinfo | 24 reference mounts represented; detailed option differences and one extra entry |
-| sockstat | 568 rows; after the now-upstream IPv6 fix, 11/11 stable local TCP/UDP endpoint tuples matched |
+Of the 48 validated plugins, 23 required only an AArch64 declaration at plugin level on the corrected core, 16 required plugin or shared-core fixes, and 9 worked with the existing implementation.
 
-These are bounded checks on one live, non-atomic capture, not a guarantee of complete forensic correctness. Real Linux Intel end-to-end discovery, other Raspberry Pi models, other kernels/page sizes and all-plugin compatibility remain unverified. Synthetic Intel tests do not replace real Linux Intel captures. See [VALIDATION.md](VALIDATION.md) for this repository's initial verification.
+Major contributions beyond architecture declarations include:
+
+- **Process analysis:** corrected Bash address scanning, PsScan PID limits, kernel-thread attribution and ARM64 stack traversal.
+- **Symbols and tracing:** fixed kallsyms decoding, syscall-table bounds, ftrace filter traversal and notifier pointer handling.
+- **Memory recovery:** implemented ARM64 page-address conversion and improved resident kernel-module ELF reconstruction.
+- **Sockets and devices:** corrected physical socket scanning, IPv6 address reads, PTY discovery and framebuffer rendering.
+
+Validation covers the documented fixtures and options: RecoverFs was verified for tmpfs, PerfEvents for BPF-attached events, and four detectors used simulated positive controls over real Pi memory. See [VALIDATION.md](VALIDATION.md) for results, references and remaining limitations.
 
 ## Credits and license
 
