@@ -25,12 +25,13 @@ uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime li
 | Component | Environment |
 |---|---|
 | Hardware | Raspberry Pi 4 Model B Rev 1.4, 8 GB RAM |
-| OS / kernel | Ubuntu 24.04.5 LTS, AArch64 / `6.8.0-1064-raspi` (`6.8.0-1064.68`) |
+| OS | Ubuntu 24.04.5 LTS, AArch64 |
+| Tested kernels | `6.8.0-1068-raspi`, `6.17.0-1021-raspi`, `7.0.0-1023-raspi` |
 | Memory | 4 KB pages, 48-bit virtual addresses |
 | Acquisition | AVML 0.21.0, root access to `/proc/kcore` |
 | Analysis / ISF generation | Apple Silicon Mac, Python 3.12.14, dwarf2json 0.9.0 |
 
-Tested memory-image inputs include LiME and Snappy-compressed AVML acquired on a physical Raspberry Pi 4, and ELF64 acquired from a QEMU AArch64 VM.
+Tested memory-image inputs include LiME and Snappy-compressed AVML acquired on a physical Raspberry Pi 4, and ELF64 acquired from a QEMU AArch64 VM. The listed kernel comparisons used LiME conversions; direct compressed-AVML reading remains limited by a framing issue.
 
 ## Memory acquisition
 
@@ -67,24 +68,24 @@ The recorded LiME capture (2026-10-12) was 8,443,150,080 bytes; transfer hashes 
 
 ## ISF generation
 
-Generate an ISF from the captured kernel's matching debug `vmlinux`. Our Pi used `linux-image-6.8.0-1064-raspi-dbgsym_6.8.0-1064.68_arm64.ddeb`; its GNU Build ID matched `/sys/kernel/notes` on the Pi. For Ubuntu, available Raspberry Pi kernel debug package versions can be found in the [Ubuntu debug symbol archive](https://ddebs.ubuntu.com/pool/main/l/linux-raspi/). Run the following from the repository root on the Mac, with Go installed:
+Generate an ISF from the captured kernel's matching debug `vmlinux`. The 6.8 example uses `linux-image-6.8.0-1068-raspi-dbgsym_6.8.0-1068.72_arm64.ddeb`; its GNU Build ID matched `/sys/kernel/notes` on the Pi. For Ubuntu, available Raspberry Pi kernel debug package versions can be found in the [Ubuntu debug symbol archive](https://ddebs.ubuntu.com/pool/main/l/linux-raspi/). Run the following from the repository root on the Mac, with Go installed:
 
 ```sh
 set -eu
 mkdir -p symbol-input/extracted symbols/linux tools
-curl -fL https://ddebs.ubuntu.com/pool/main/l/linux-raspi/linux-image-6.8.0-1064-raspi-dbgsym_6.8.0-1064.68_arm64.ddeb -o symbol-input/kernel-dbgsym.ddeb
-printf '%s  %s\n' 0e2e9c888c07fef3a9c61c014573b492fe126efd1062367f5406a2dbcf688aff symbol-input/kernel-dbgsym.ddeb | shasum -a 256 -c -
+curl -fL https://ddebs.ubuntu.com/pool/main/l/linux-raspi/linux-image-6.8.0-1068-raspi-dbgsym_6.8.0-1068.72_arm64.ddeb -o symbol-input/kernel-dbgsym.ddeb
+printf '%s  %s\n' db7a57bdc9abc1b037beea417aea73bba7008b8e7276f778134f5d9b4d6f34f3 symbol-input/kernel-dbgsym.ddeb | shasum -a 256 -c -
 ar -p symbol-input/kernel-dbgsym.ddeb data.tar.xz > symbol-input/kernel-debug-data.tar.xz
-tar -xJf symbol-input/kernel-debug-data.tar.xz -C symbol-input/extracted ./usr/lib/debug/boot/vmlinux-6.8.0-1064-raspi
+tar -xJf symbol-input/kernel-debug-data.tar.xz -C symbol-input/extracted ./usr/lib/debug/boot/vmlinux-6.8.0-1068-raspi
 
 git clone https://github.com/volatilityfoundation/dwarf2json.git tools/dwarf2json
 git -C tools/dwarf2json checkout 9f14607e0d339d463ea725fbd5c08aa7b7d40f75
 (cd tools/dwarf2json && go build -o dwarf2json .)
-tools/dwarf2json/dwarf2json linux --elf symbol-input/extracted/usr/lib/debug/boot/vmlinux-6.8.0-1064-raspi > symbols/linux/ubuntu-6.8.0-1064-raspi-arm64.json.partial
-mv symbols/linux/ubuntu-6.8.0-1064-raspi-arm64.json.partial symbols/linux/ubuntu-6.8.0-1064-raspi-arm64.json
+tools/dwarf2json/dwarf2json linux --elf symbol-input/extracted/usr/lib/debug/boot/vmlinux-6.8.0-1068-raspi > symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json.partial
+mv symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json.partial symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json
 ```
 
-The [generated ISF](symbols/linux/ubuntu-6.8.0-1064-raspi-arm64.json) passed schema 6.2.0 validation and contains 170,389 symbols and 11,151 user types. For another kernel build, use its corresponding debug package and ISF.
+The [generated ISF](symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json) passed schema 6.2.0 validation and contains 170,879 symbols and 11,184 user types. Matching ISFs for all listed kernels are included in [symbols/linux](symbols/linux). For another build, use its corresponding debug package and ISF.
 
 ## Validation scope
 
@@ -95,11 +96,11 @@ Of the 48 validated plugins, 23 required only an AArch64 declaration at plugin l
 Major contributions beyond architecture declarations include:
 
 - **Process analysis:** corrected Bash address scanning, PsScan PID limits, kernel-thread attribution and ARM64 stack traversal.
-- **Symbols and tracing:** fixed kallsyms decoding, syscall-table bounds, ftrace filter traversal and notifier pointer handling.
+- **Symbols and tracing:** fixed kallsyms decoding (including per-entry relative offsets), syscall-table bounds, ftrace filter traversal and notifier pointer handling.
 - **Memory recovery:** implemented ARM64 page-address conversion and improved resident kernel-module ELF reconstruction.
-- **Sockets and devices:** corrected physical socket scanning, IPv6 address reads, PTY discovery and framebuffer rendering.
+- **Sockets and devices:** corrected physical socket scanning, IPv6 peer-address selection, PTY discovery and framebuffer rendering.
 
-Validation covers the documented fixtures and options: RecoverFs was verified for tmpfs, PerfEvents for BPF-attached events, and four detectors used simulated positive controls over real Pi memory. See [TESTING.md](TESTING.md) for results, references and remaining limitations.
+Validation covers the documented fixtures and options. RecoverFs completed both tmpfs and full recovery runs, with recovery limited to cached contents. PerfEvents covers BPF-attached events, and four detectors used simulated positive controls over real Pi memory. Kmsg still has a final-message off-by-one. See [TESTING.md](TESTING.md) for results, references and remaining limitations.
 
 ## Credits and license
 
