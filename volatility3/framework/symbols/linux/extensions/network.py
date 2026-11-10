@@ -563,7 +563,9 @@ class inet_sock(objects.StructType):
             saddr = self.pinet6.saddr
         else:
             return None
-        parent_layer = self._context.layers[self.vol.layer_name]
+        # A pointer-backed IPv6 field may belong to the native virtual layer
+        # even when the socket itself was constructed on physical memory.
+        parent_layer = self._context.layers[saddr.vol.layer_name]
         try:
             addr_bytes = parent_layer.read(saddr.vol.offset, addr_size)
         except exceptions.InvalidAddressException:
@@ -595,7 +597,7 @@ class inet_sock(objects.StructType):
             addr_size = 16
         else:
             return None
-        parent_layer = self._context.layers[self.vol.layer_name]
+        parent_layer = self._context.layers[daddr.vol.layer_name]
         try:
             addr_bytes = parent_layer.read(daddr.vol.offset, addr_size)
         except exceptions.InvalidAddressException:

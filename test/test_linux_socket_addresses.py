@@ -11,6 +11,7 @@ from volatility3.framework.layers import physical
 from volatility3.framework.symbols.linux.extensions import network
 
 
+@pytest.mark.parametrize("field_layer", ["memory", "native"])
 @pytest.mark.parametrize("host_ipv6", [10, 23, 30], ids=["linux", "windows", "macos"])
 @pytest.mark.parametrize("direction", ["src", "dst"])
 @pytest.mark.parametrize("legacy_destination", [False, True], ids=["common", "legacy"])
@@ -20,15 +21,34 @@ from volatility3.framework.symbols.linux.extensions import network
     ids=["ipv4", "ipv6"],
 )
 def test_inet_socket_address_host_family(
-    monkeypatch, host_ipv6, direction, legacy_destination, dump_family, address
+    monkeypatch,
+    host_ipv6,
+    direction,
+    legacy_destination,
+    dump_family,
+    address,
+    field_layer,
 ):
     """Decode Linux family 10 using the host's own IPv6 conversion constant."""
     packed = ipaddress.ip_address(address).packed
     context = contexts.Context()
     context.layers.add_layer(
-        physical.BufferDataLayer(context, "memory", "memory", packed)
+        physical.BufferDataLayer(
+            context,
+            "memory",
+            "memory",
+            packed if field_layer == "memory" else bytes(len(packed)),
+        )
     )
-    field = SimpleNamespace(vol=SimpleNamespace(offset=0))
+    context.layers.add_layer(
+        physical.BufferDataLayer(
+            context,
+            "native",
+            "native",
+            packed if field_layer == "native" else bytes(len(packed)),
+        )
+    )
+    field = SimpleNamespace(vol=SimpleNamespace(offset=0, layer_name=field_layer))
     common = SimpleNamespace(
         skc_family=dump_family,
         skc_rcv_saddr=field,
