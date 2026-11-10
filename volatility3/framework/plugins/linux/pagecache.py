@@ -660,7 +660,7 @@ class RecoverFs(plugins.PluginInterface):
     Troubleshooting: to fix extraction errors related to long paths, please consider using https://github.com/mxmlnkn/ratarmount.
     """
 
-    _version = (1, 0, 1)
+    _version = (1, 0, 2)
     _required_framework_version = (2, 21, 0)
 
     @classmethod
@@ -669,7 +669,7 @@ class RecoverFs(plugins.PluginInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=architectures.LINUX_ARCHS,
+                architectures=[*architectures.LINUX_ARCHS, "AArch64"],
             ),
             requirements.VersionRequirement(
                 name="files", component=Files, version=(1, 1, 0)
