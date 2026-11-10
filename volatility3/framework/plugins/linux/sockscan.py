@@ -24,7 +24,7 @@ class Sockscan(plugins.PluginInterface):
     """Scans for network connections found in memory layer."""
 
     _required_framework_version = (2, 6, 0)
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
 
     @classmethod
     def get_requirements(cls):
@@ -32,7 +32,7 @@ class Sockscan(plugins.PluginInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=["Intel32", "Intel64"],
+                architectures=["Intel32", "Intel64", "AArch64"],
             ),
             requirements.VersionRequirement(
                 name="SockHandlers", component=sockstat.SockHandlers, version=(4, 0, 0)
@@ -253,6 +253,13 @@ class Sockscan(plugins.PluginInterface):
             socket_alloc = linux.LinuxUtilities.container_of(
                 d_inode, "socket_alloc", "vfs_inode", vmlinux
             )
+            if socket_alloc is None:
+                vollog.log(
+                    constants.LOGLEVEL_VVVV,
+                    "Skipping file at %#x: socket_alloc could not be resolved",
+                    needle_addr,
+                )
+                return None
             socket = socket_alloc.socket
             if not (socket and socket.sk):
                 vollog.log(
@@ -446,11 +453,15 @@ class Sockscan(plugins.PluginInterface):
                     kernel_module_name, memory_layer_name, needle_addr, f_op_offset
                 )
 
-            if psock is not None and sock_physical_addr not in seen_sock_physical_addr:
-                seen_sock_physical_addr.add(sock_physical_addr)
-
+            if psock is not None:
+                # Both discovery methods must deduplicate the actual socket,
+                # not the None placeholder used before following a file.
+                sock_physical_addr = psock.vol.offset
+                if sock_physical_addr in seen_sock_physical_addr:
+                    continue
                 fields = self._extract_sock_fields(psock, sock_handler)
                 if fields:
+                    seen_sock_physical_addr.add(sock_physical_addr)
                     yield (0, fields)
 
     def run(self):
