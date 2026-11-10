@@ -25,7 +25,7 @@ from typing import (
 from volatility3.framework import constants, exceptions, objects, interfaces, symbols
 from volatility3.framework.renderers import conversion
 from volatility3.framework.constants import linux as linux_constants
-from volatility3.framework.layers import linear, intel
+from volatility3.framework.layers import linear, intel, arm
 from volatility3.framework.objects import utility
 from volatility3.framework.symbols import generic, linux, intermed
 from volatility3.framework.symbols.linux.extensions import elf
@@ -2787,6 +2787,118 @@ class page(objects.StructType):
 
         return page_paddr
 
+    @staticmethod
+    @functools.lru_cache(maxsize=32)
+    def _arm64_section_mappings(
+        context: interfaces.context.ContextInterface, kernel_name: str
+    ) -> Tuple[Tuple[int, int, int], ...]:
+        """Read sparsemem's encoded page arrays rather than guess VMEMMAP_START.
+
+        sparse_encode_mem_map() subtracts the section's starting PFN from
+        its struct page pointer. This also accounts for ARM64's randomized
+        (potentially negative) memstart_addr and configured VA width.
+        """
+        kernel = context.modules[kernel_name]
+        layer = context.layers[kernel.layer_name]
+        if layer.page_shift not in (12, 14, 16):
+            raise exceptions.VolatilityException("Unsupported ARM64 page size")
+        # arch/arm64/include/asm/sparsemem.h: 128 MiB, or 512 MiB for 64K pages.
+        section_shift = 29 if layer.page_shift == 16 else 27
+        pfn_shift = section_shift - layer.page_shift
+        page_size = kernel.get_type("page").size
+        section_size = kernel.get_type("mem_section").size
+        max_pfn = int(kernel.object_from_symbol("max_pfn"))
+        if max_pfn <= 0 or section_size <= 0 or page_size <= 0:
+            raise exceptions.VolatilityException("Invalid sparse-memory geometry")
+        last_section = (max_pfn - 1) >> pfn_shift
+        if kernel.has_symbol("__highest_present_section_nr"):
+            highest = int(kernel.object_from_symbol("__highest_present_section_nr"))
+            if highest < 0 or highest > last_section:
+                raise exceptions.VolatilityException("Invalid highest memory section")
+            last_section = highest
+
+        # Older kernels use preprocessor defines rather than an enum. The
+        # sparsemem encoding reserves at least six low bits on all architectures.
+        flag_bits = 6
+        table = context.symbol_space[kernel.symbol_table_name]
+        for name in table.enumerations:
+            choices = table.get_enumeration(name).choices
+            if "SECTION_MAP_LAST_BIT" in choices:
+                flag_bits = choices["SECTION_MAP_LAST_BIT"]
+                break
+        if not 2 <= flag_bits <= pfn_shift:
+            raise exceptions.VolatilityException("Invalid sparse-memory flag mask")
+        flag_mask = (1 << flag_bits) - 1
+        sections = kernel.object_from_symbol("mem_section")
+        extreme = isinstance(sections, objects.Pointer)
+        if extreme:
+            per_root = layer.page_size // section_size
+            roots = utility.array_of_pointers(
+                sections.dereference(),
+                count=last_section // per_root + 1,
+                subtype=kernel.symbol_table_name + constants.BANG + "mem_section",
+                context=context,
+            )
+        elif isinstance(sections, objects.Array):
+            # Older SPARSEMEM_EXTREME: static array of root pointers.
+            extreme = isinstance(sections[0], objects.Pointer)
+            per_root = layer.page_size // section_size if extreme else 1
+            roots = sections
+        else:
+            raise exceptions.VolatilityException("Unsupported mem_section layout")
+
+        mappings = []
+        for nr in range(last_section + 1):
+            try:
+                root = roots[nr // per_root]
+                if extreme:
+                    if not root:
+                        continue
+                    address = int(root) + (nr % per_root) * section_size
+                    section = kernel.object(
+                        "mem_section", offset=address, absolute=True
+                    )
+                else:
+                    section = root[0]
+                encoded = int(section.section_mem_map)
+                # SECTION_MARKED_PRESENT | SECTION_HAS_MEM_MAP
+                if encoded & 3 != 3:
+                    continue
+                base = encoded & ~flag_mask
+                pfn = nr << pfn_shift
+                start = (base + pfn * page_size) & ((1 << 64) - 1)
+                end = start + (1 << pfn_shift) * page_size
+                if not base or not start or end > (1 << 64):
+                    raise exceptions.VolatilityException(
+                        "Invalid sparse-memory page array"
+                    )
+                mappings.append((start, end, pfn))
+            except exceptions.InvalidAddressException:
+                vollog.debug("Unreadable memory section %d", nr)
+        if not mappings:
+            raise exceptions.VolatilityException(
+                "No readable populated memory sections"
+            )
+        mappings.sort()
+        if any(a[1] > b[0] for a, b in zip(mappings, mappings[1:])):
+            raise exceptions.VolatilityException(
+                "Overlapping sparse-memory page arrays"
+            )
+        return tuple(mappings)
+
+    def _arm64_to_paddr(self) -> int:
+        kernel = linux.LinuxUtilities.get_module_from_volobj_type(self._context, self)
+        layer = self._context.layers[kernel.layer_name]
+        address = layer.canonicalize(self.vol.offset)
+        page_size = kernel.get_type("page").size
+        for start, end, pfn in self._arm64_section_mappings(self._context, kernel.name):
+            if start <= address < end:
+                index, remainder = divmod(address - start, page_size)
+                if remainder:
+                    return -1
+                return (pfn + index) * layer.page_size
+        return -1
+
     def to_paddr(self) -> int:
         """Converts a page's virtual address to its physical address using the current CPU memory model.
 
@@ -2797,6 +2909,8 @@ class page(objects.StructType):
         vmlinux_layer = vmlinux.context.layers[vmlinux.layer_name]
         if isinstance(vmlinux_layer, intel.Intel):
             page_paddr = self._intel_to_paddr()
+        elif isinstance(vmlinux_layer, arm.LinuxAArch64):
+            page_paddr = self._arm64_to_paddr()
         else:
             raise exceptions.LayerException(
                 f"Architecture {type(vmlinux_layer)} vmemmap_start calculation isn't currently supported."
