@@ -99,7 +99,7 @@ Major contributions beyond architecture declarations include:
 - **Memory recovery:** implemented ARM64 page-address conversion and improved resident kernel-module ELF reconstruction.
 - **Sockets and devices:** corrected physical socket scanning, IPv6 address reads, PTY discovery and framebuffer rendering.
 
-Validation covers the documented fixtures and options: RecoverFs was verified for tmpfs, PerfEvents for BPF-attached events, and four detectors used simulated positive controls over real Pi memory. See [VALIDATION.md](VALIDATION.md) for results, references and remaining limitations.
+Validation covers the documented fixtures and options: RecoverFs was verified for tmpfs, PerfEvents for BPF-attached events, and four detectors used simulated positive controls over real Pi memory. See [TESTING.md](TESTING.md) for results, references and remaining limitations.
 
 ## Credits and license
 
