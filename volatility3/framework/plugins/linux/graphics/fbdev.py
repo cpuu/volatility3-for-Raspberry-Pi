@@ -10,7 +10,6 @@ from volatility3.framework import constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
 from volatility3.framework.renderers import format_hints
 from volatility3.framework.objects import utility
-from volatility3.framework.constants import architectures
 from volatility3.framework.symbols import linux
 
 # Image manipulation functions are kept in the plugin,
@@ -44,7 +43,7 @@ class Framebuffer:
 class Fbdev(interfaces.plugins.PluginInterface):
     """Extract framebuffers from the fbdev graphics subsystem"""
 
-    _version = (1, 0, 0)
+    _version = (1, 0, 1)
     _required_framework_version = (2, 11, 0)
 
     @classmethod
@@ -53,7 +52,7 @@ class Fbdev(interfaces.plugins.PluginInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=architectures.LINUX_ARCHS,
+                architectures=["Intel32", "Intel64", "AArch64"],
             ),
             requirements.VersionRequirement(
                 name="linuxutils", component=linux.LinuxUtilities, version=(2, 2, 0)
@@ -136,6 +135,7 @@ class Fbdev(interfaces.plugins.PluginInterface):
         # This is not designed to be extremely fast (numpy isn't available),
         # but convenient and dynamic for any color field layout.
         for y in range(fb.yres_virtual):
+            raw_pixels.seek(y * fb.line_length)
             for x in range(fb.xres_virtual):
                 raw_pixel = int.from_bytes(raw_pixels.read(bytes_per_pixel), "little")
                 pixel = [0, 0, 0, 255]
@@ -151,7 +151,10 @@ class Fbdev(interfaces.plugins.PluginInterface):
                         color_value = int(
                             "{:0{length}b}".format(color_value, length=length)[::-1], 2
                         )
-                    pixel[i] = color_value
+                    # PNG channels are eight bits, irrespective of the source
+                    # channel width. Round to the nearest representable value.
+                    maximum = (1 << length) - 1
+                    pixel[i] = (color_value * 255 + maximum // 2) // maximum
                 image.putpixel((x, y), tuple(pixel))
 
         return image
