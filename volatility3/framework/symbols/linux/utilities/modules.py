@@ -824,7 +824,7 @@ class Modules(interfaces.configuration.VersionableInterface):
 class ModuleExtract(interfaces.configuration.VersionableInterface):
     """Extracts Linux kernel module structures into an analyzable ELF file"""
 
-    _version = (1, 0, 2)
+    _version = (1, 1, 0)
     _required_framework_version = (2, 25, 0)
 
     framework.require_interface_version(*_required_framework_version)
@@ -863,6 +863,10 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
 
         Spec: https://refspecs.linuxbase.org/elf/gabi4+/ch4.symtab.html
         """
+        # Modern module kallsyms preserves ELF st_info; its nm-style type is
+        # kept in a separate array. Preserve local/mapping/weak symbol metadata.
+        if 0 <= int(sym.st_info) < 0x30:
+            return struct.pack("B", int(sym.st_info))
         if sym.st_name > 0:
             # Global symbol
             bind = linux_constants.STB_GLOBAL
@@ -932,7 +936,7 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
         if sect_name:
             st_shndx = struct.pack("<H", sect_index)
         else:
-            st_shndx = struct.pack("<H", sym.st_shndx)
+            st_shndx = struct.pack("<H", 0xFFF1 if sym_address else 0)
 
         return sect_name, st_value, st_info, st_shndx
 
@@ -1027,154 +1031,105 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
         return sym_table_data
 
     @classmethod
-    def _parse_sections(
-        cls,
-        context: interfaces.context.ContextInterface,
-        vmlinux_name: str,
-        module: extensions.module,
-    ) -> Optional[Tuple[List, int, int]]:
-        """
-        This function first parses the sections as maintained by the kernel
-        It then orders the sections by load address, and then gathers the data of each section
-        We also track the file_offset to correctly have alignment in the output file
+    def _parse_sections(cls, context, vmlinux_name, module):
+        """Recover resident sections bounded by this module's actual allocations.
 
-        .symtab requires special handling as its so broken in memory as described in `_fix_sym_table`
-        The data of .strtab is read directly off the module structure and not its section
-        as the section from the original module has no meaning after loading as the kernel does not reference it.
+        Init-section addresses in sect_attrs can outlive their allocations.
+        Symbol/string tables must be taken from the live kallsyms pointers.
         """
         kernel = context.modules[vmlinux_name]
-        kernel_layer = context.layers[kernel.layer_name]
-        modules_addr_min, modules_addr_max = Modules.get_modules_memory_boundaries(
-            context, vmlinux_name
+        layer = context.layers[kernel.layer_name]
+        if module.has_member("mem"):
+            regions = [
+                (int(r.base), int(r.base) + int(r.size))
+                for r in module.mem
+                if r.base and r.size
+            ]
+        else:
+            regions = []
+            for base, size in [
+                (module.get_module_core(), module.get_core_size()),
+                (module.get_module_init(), module.get_init_size()),
+            ]:
+                if base and size:
+                    regions.append((int(base), int(base) + int(size)))
+
+        def region_end(address):
+            return next((end for start, end in regions if start <= address < end), None)
+
+        is_64 = symbols.symbol_table_is_64bit(context, kernel.symbol_table_name)
+        sym_type = "Elf64_Sym" if is_64 else "Elf32_Sym"
+        header_type = "Elf64_Ehdr" if is_64 else "Elf32_Ehdr"
+        st_fmt = "<Q" if is_64 else "<I"
+        sym_addr, str_addr = int(module.section_symtab), int(module.section_strtab)
+        count = int(module.num_symtab)
+        sym_end, str_end = region_end(sym_addr), region_end(str_addr)
+        if not sym_end or not str_end or count <= 0:
+            return None
+        if sym_addr + count * kernel.get_type(sym_type).size > sym_end:
+            return None
+        syms = kernel.object(
+            "array",
+            subtype=kernel.get_type(sym_type),
+            offset=sym_addr,
+            count=count,
+            absolute=True,
         )
-        modules_addr_min &= kernel_layer.address_mask
-        modules_addr_max &= kernel_layer.address_mask
-        original_sections = {}
-        for index, section in enumerate(module.get_sections()):
-            # Extra sanity check, to prevent OOM on heavily smeared samples at line
-            # "size = next_address - address"
-            if not (
-                modules_addr_min
-                <= section.address & kernel_layer.address_mask
-                < modules_addr_max
-            ):
-                continue
-
-            name = section.get_name()
-            original_sections[section.address] = name
-
-        if not original_sections:
+        max_name = max(int(sym.st_name) for sym in syms)
+        if max_name >= str_end - str_addr:
             return None
+        strings = layer.read(str_addr, str_end - str_addr)
+        terminator = strings.find(b"\x00", max_name)
+        if terminator < 0:
+            return None
+        strings = strings[: terminator + 1]
 
-        if symbols.symbol_table_is_64bit(context, kernel.symbol_table_name):
-            sym_type = "Elf64_Sym"
-            elf_hdr_type = "Elf64_Ehdr"
-            st_fmt = "<Q"
-        else:
-            sym_type = "Elf32_Sym"
-            elf_hdr_type = "Elf32_Ehdr"
-            st_fmt = "<I"
-
-        # At this point, we have the sections starting addresses and names,
-        # but the kernel does not track the size
-        # To recover the size, we sort by address and then use the next section as the boundary to calculate size
-        # .symtab (the symbol table) and .strtab (the strings table) require special handling.
-        # All others can be read with padding
-
-        # get the addresses in sorted order, can index into `original_sections` for names
-        sorted_addresses = sorted(original_sections.keys())
-
-        # We need to track where .symtab is for symbol name offsets
-        symtab_address = None
-        strtab_index = None
-
-        # Section data starts after the file header
-        file_offset = kernel.get_type(elf_hdr_type).vol.size
-
-        # The ordered set of sections along with their fixed data
-        updated_sections: List[Tuple[str, int, int, bytes]] = []
-
-        # A mapping of section start addresses to sizes
-        # original_sections does not have this information for reasons explained above
-        section_sizes: Dict[int, int] = {}
-
-        for index, address in enumerate(sorted_addresses):
-            sect_name = original_sections[address]
-
-            # Read out the string table. The full size is not kept, so we give each symbol's string up to 256 bytes
-            if sect_name == ".strtab":
-                # Read out symbol strings, giving up to 256 bytes per symbol
-                data = kernel_layer.read(
-                    module.section_strtab, module.num_symtab * 256, pad=True
-                )
-
-                # The string table should end with two NULLs, but the kernel does not enforce this
-                end_index = data.find(b"\x00\x00")
-                if end_index != -1:
-                    data = data[: end_index + 1]
-
-                strtab_index = index
-
-            # The symbol table in memory is completely transformed and broken from how it appears on disk
-            # We need to process it last to fix the symbol table entries back to their correct values
-            elif sect_name == ".symtab":
-                symtab_address = address
+        original = {}
+        for section in module.get_sections():
+            name, address = section.get_name(), int(section.address)
+            if name in (".symtab", ".strtab"):
                 continue
-            else:
-                # Compute based on the boundary of the next address-sorted section
-                try:
-                    # Get the next section in order
-                    next_address = sorted_addresses[index + 1]
-                    size = next_address - address
-                except IndexError:
-                    ## We are at the last section so we need to pick a size
-                    size = 0x10000
-                    vollog.debug(f"Defaulting section {sect_name} to size {size:#x}")
-
-                # Read the section normally..
-                data = kernel_layer.read(address, size, pad=True)
-
-            # store the section information in order
-            updated_sections.append((sect_name, address, file_offset, data))
-
-            # Track sizes of each section
-            section_sizes[address] = len(data)
-
-            file_offset += len(data)
-
-        if symtab_address:
-            # Perform the painful demangling of symbol table structures
-            data = cls._fix_sym_table(
-                context,
-                vmlinux_name,
-                original_sections,
-                section_sizes,
-                sym_type,
-                st_fmt,
-                module,
-            )
-            if not data:
+            if region_end(address) is None:
                 vollog.debug(
-                    f"Could not construct a symbol table for module at {module.vol.offset}. Cannot recover."
+                    "Skipping nonresident module section %s at %#x", name, address
                 )
-                return None
-
-            symtab_index = len(updated_sections)
-
-            # Manually add symtab with the correct data
-            updated_sections.append((".symtab", symtab_address, file_offset, data))
-
-        else:
-            vollog.debug(
-                f"Did not find a .symtab section for module at {module.vol.offset:#x}. Cannot recover."
+                continue
+            original[address] = name
+        # Live tables also bound any preceding data section in their allocation.
+        boundaries = sorted(set(original) | {sym_addr, str_addr})
+        updated, sizes = [], {}
+        file_offset = kernel.get_type(header_type).size
+        for address in sorted(original):
+            end = min(
+                region_end(address),
+                next((x for x in boundaries if x > address), region_end(address)),
             )
+            data = layer.read(address, end - address)
+            updated.append((original[address], address, file_offset, data))
+            sizes[address] = len(data)
+            file_offset += len(data)
+        strtab_index = len(updated) + 1  # ELF index 0 is the null section.
+        updated.append((".strtab", str_addr, file_offset, strings))
+        file_offset += len(strings)
+        sizes[str_addr] = len(strings)
+        # Rebuild st_shndx against FINAL output ordering, not kernel sysfs order.
+        ordered = {address: name for name, address, _, _ in updated}
+        data = cls._fix_sym_table(
+            context, vmlinux_name, ordered, sizes, sym_type, st_fmt, module
+        )
+        if not data:
             return None
-
-        return updated_sections, strtab_index, symtab_index
+        symtab_index = len(updated) + 1
+        updated.append((".symtab", sym_addr, file_offset, data))
+        return updated, strtab_index, symtab_index
 
     @classmethod
     def _make_elf_header(
-        cls, bits: int, sect_hdr_offset: int, num_sections: int
+        cls,
+        bits: int,
+        sect_hdr_offset: int,
+        num_sections: int,
+        architecture: Optional[str] = None,
     ) -> Optional[bytes]:
         """
         Creates a `bits` bit ELF header for the file based on recovered values
@@ -1200,6 +1155,13 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
             e_ehsize_int = 64
             e_shentsize_int = 64
             header_size = 64
+
+        if architecture == "AArch64":
+            if bits != 64:
+                raise ValueError("AArch64 requires ELF64")
+            e_machine_int = 183  # EM_AARCH64
+        elif architecture not in (None, "Intel32", "Intel64"):
+            raise ValueError(f"Unsupported ELF architecture: {architecture}")
 
         e_type = struct.pack("<H", 1)  # relocatable
         e_machine = struct.pack("<H", e_machine_int)
@@ -1287,9 +1249,18 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
         and breaks initial analysis by the tool
         """
         # All sections in memory are allocated (`A` in readelf -S)
+        if name in (".symtab", ".strtab", ".shstrtab"):
+            return 0
         flags = linux_constants.SHF_ALLOC
 
-        if name in [".text", ".init.text", ".exit.text", ".static_call.text"]:
+        if name in [
+            ".text",
+            ".init.text",
+            ".exit.text",
+            ".static_call.text",
+            ".plt",
+            ".init.plt",
+        ] or name.startswith((".text.", ".init.text.", ".exit.text.")):
             flags = flags | linux_constants.SHF_EXECINSTR
 
         elif name in [
@@ -1492,7 +1463,25 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
                 vollog.debug(f"make_section_header failed for section {name}")
                 return None
 
-            # ndex into the string table
+            if name == ".symtab":
+                symbol_size = 24 if bits == 64 else 16
+                info_offset = 4 if bits == 64 else 12
+                first_nonlocal = next(
+                    (
+                        i
+                        for i in range(len(section_data) // symbol_size)
+                        if section_data[i * symbol_size + info_offset] >> 4
+                    ),
+                    len(section_data) // symbol_size,
+                )
+                info_field = 44 if bits == 64 else 28
+                header_bytes = (
+                    header_bytes[:info_field]
+                    + struct.pack("<I", first_nonlocal)
+                    + header_bytes[info_field + 4 :]
+                )
+
+            # index into the string table
             name_index += len(name) + 1
 
             # concatenate the header and section bytes
@@ -1530,6 +1519,7 @@ class ModuleExtract(interfaces.configuration.VersionableInterface):
             bits,
             header_type_size + len(sections_data),
             num_sections,
+            architecture=context.layers[kernel.layer_name].metadata.get("architecture"),
         )
 
         if not header:

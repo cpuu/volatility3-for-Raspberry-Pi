@@ -17,7 +17,7 @@ vollog = logging.getLogger(__name__)
 class ModuleExtract(interfaces.plugins.PluginInterface):
     """Recreates an ELF file from a specific address in the kernel"""
 
-    _version = (1, 0, 1)
+    _version = (1, 1, 0)
     _required_framework_version = (2, 25, 0)
 
     framework.require_interface_version(*_required_framework_version)
@@ -28,8 +28,8 @@ class ModuleExtract(interfaces.plugins.PluginInterface):
         return [
             requirements.ModuleRequirement(
                 name="kernel",
-                description="Windows kernel",
-                architectures=["Intel32", "Intel64"],
+                description="Linux kernel",
+                architectures=["Intel32", "Intel64", "AArch64"],
             ),
             requirements.IntRequirement(
                 name="base",
@@ -38,7 +38,7 @@ class ModuleExtract(interfaces.plugins.PluginInterface):
             ),
             requirements.VersionRequirement(
                 name="linux_utilities_modules_module_extract",
-                version=(1, 0, 2),
+                version=(1, 1, 0),
                 component=linux_utilities_modules.ModuleExtract,
             ),
         ]
