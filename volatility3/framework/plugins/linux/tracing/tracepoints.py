@@ -11,7 +11,6 @@ from typing import Iterable, List, Optional
 import volatility3.framework.symbols.linux.utilities.modules as linux_utilities_modules
 from volatility3.framework import constants, exceptions, interfaces, renderers
 from volatility3.framework.configuration import requirements
-from volatility3.framework.constants import architectures
 from volatility3.framework.objects import utility
 from volatility3.framework.renderers import format_hints
 
@@ -47,7 +46,7 @@ class CheckTracepoints(interfaces.plugins.PluginInterface):
             requirements.ModuleRequirement(
                 name="kernel",
                 description="Linux kernel",
-                architectures=architectures.LINUX_ARCHS,
+                architectures=["Intel32", "Intel64", "AArch64"],
             ),
             requirements.VersionRequirement(
                 name="linux_utilities_modules",
