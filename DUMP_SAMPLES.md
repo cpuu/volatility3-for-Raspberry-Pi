@@ -16,11 +16,11 @@ Due to their size, these dumps are not hosted directly in this repository. To re
 
 ## Analyzing a sample
 
-The example below uses the Fedora sample. On Linux, use the [AVML 0.21.0 binary](https://github.com/microsoft/avml/releases/tag/v0.21.0) for your host architecture, saved as `./avml`. Verify the compressed original, then [convert it to LiME](https://github.com/microsoft/avml/tree/v0.21.0#to-decompress-an-avml-compressed-image):
+The example below uses the Ubuntu `7.0.0-1023-raspi` sample. On Linux, use the [AVML 0.21.0 binary](https://github.com/microsoft/avml/releases/tag/v0.21.0) for your host architecture, saved as `./avml`. Verify the compressed original, then [convert it to LiME](https://github.com/microsoft/avml/tree/v0.21.0#to-decompress-an-avml-compressed-image):
 
 ```sh
 set -eu
-printf '%s  %s\n' 10ce77b5acad954d65f0466aab6906913198cd5e6720831954955273365b9a49 memory.avml | sha256sum -c -
+printf '%s  %s\n' c99672c9b85fbe26884080f6ad40029d1b7d628860b0b49b7624b58c3e9a95e7 memory.avml | sha256sum -c -
 chmod +x ./avml
 ./avml convert memory.avml memory.lime
 ```
