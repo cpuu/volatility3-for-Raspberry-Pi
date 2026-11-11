@@ -68,7 +68,7 @@ cd samples/pi4/capture-directory
 shasum -a 256 -c memory.lime.sha256
 ```
 
-The recorded LiME capture (2026-10-12) was 8,443,150,080 bytes; transfer hashes matched and all three System RAM ranges were present.
+Details of seven representative memory dumps used in these experiments are available in [Memory dump samples](DUMP_SAMPLES.md).
 
 ## ISF generation
 
