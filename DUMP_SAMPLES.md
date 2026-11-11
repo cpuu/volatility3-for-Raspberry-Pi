@@ -32,4 +32,4 @@ uv sync --locked --extra full
 uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.pslist.PsList
 ```
 
-Matching ISFs are included in [symbols/linux](symbols/linux); Volatility selects the matching kernel symbols automatically. Other samples use the same commands with their own checksum and file path. The conversion step follows the LiME-based validation workflow and avoids the current compressed-AVML reader framing issue.
+Matching ISFs are included in [symbols/linux](symbols/linux); Volatility selects the matching kernel symbols automatically. Other samples use the same commands with their own checksum and file path.
