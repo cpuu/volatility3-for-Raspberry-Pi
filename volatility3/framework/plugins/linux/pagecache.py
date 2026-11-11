@@ -116,7 +116,7 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
 
     _required_framework_version = (2, 0, 0)
 
-    _version = (1, 1, 0)
+    _version = (1, 1, 1)
 
     @classmethod
     def get_requirements(cls) -> List[interfaces.configuration.RequirementInterface]:
@@ -170,9 +170,14 @@ class Files(plugins.PluginInterface, timeliner.TimeLinerInterface):
             and inode.has_member("i_link")
             and inode.i_link
             and inode.i_link.is_readable()
+            and inode.i_size > 0
         ):
+            # i_size bounds the target; a fixed read can cross an unmapped page.
             symlink_dest = inode.i_link.dereference().cast(
-                "string", max_length=255, encoding="utf-8", errors="replace"
+                "string",
+                max_length=min(int(inode.i_size), 255),
+                encoding="utf-8",
+                errors="replace",
             )
             symlink_path = InodeUser.format_symlink(symlink_path, symlink_dest)
 
@@ -660,7 +665,7 @@ class RecoverFs(plugins.PluginInterface):
     Troubleshooting: to fix extraction errors related to long paths, please consider using https://github.com/mxmlnkn/ratarmount.
     """
 
-    _version = (1, 0, 2)
+    _version = (1, 0, 3)
     _required_framework_version = (2, 21, 0)
 
     @classmethod
@@ -882,9 +887,13 @@ class RecoverFs(plugins.PluginInterface):
                 and inode_in.inode.has_member("i_link")
                 and inode_in.inode.i_link
                 and inode_in.inode.i_link.is_readable()
+                and inode_in.inode.i_size > 0
             ):
                 symlink_dest = inode_in.inode.i_link.dereference().cast(
-                    "string", max_length=255, encoding="utf-8", errors="replace"
+                    "string",
+                    max_length=min(int(inode_in.inode.i_size), 255),
+                    encoding="utf-8",
+                    errors="replace",
                 )
                 self._tar_add_lnk(tar, inode_in.path, symlink_dest, prefix, mtime)
                 # Set path to a user friendly representation before yielding
