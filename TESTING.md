@@ -6,7 +6,7 @@ A regression run tested 48 plugins across six environments: three Ubuntu kernels
 
 ## Raspberry Pi OS
 
-Ubuntu is recommended for normal use: matching kernel debug packages provide the DWARF-enabled `vmlinux` needed for ISF generation without rebuilding the kernel. See the [Ubuntu environment below](#ubuntu) and the [ISF generation guide](README.md#isf-generation).
+[Ubuntu](#ubuntu) and [Fedora](#fedora) are recommended for normal use: matching kernel debug packages provide the DWARF-enabled `vmlinux` needed for ISF generation without rebuilding the kernel. See the [ISF generation guide](README.md#isf-generation).
 
 Raspberry Pi OS 64-bit was also tested on 2026-11-11, using a custom-built `6.18.60-rpt-rpi-v8-volab` kernel. The official 6.18.50 and 6.18.60 debug packages we inspected contained `vmlinux`, but lacked the DWARF type information required by dwarf2json. This required the following preparation:
 
@@ -46,9 +46,11 @@ Like Raspberry Pi OS, Kali Linux required a custom kernel build with DWARF debug
 | Existing implementation, no additional change | 9 |
 | Not applicable: x86 `Check_idt` | 1 |
 
-Reference checks used capture-time process listings, socket endpoints, kernel symbols and known file contents where available. A successful exit or an empty result alone was not counted as validation. The 2026-11-09 rerun of all 48 applicable plugins reproduced their earlier checked JSON results. The 236 tests in the added or modified test files also passed, along with lint and formatting checks.
+Reference checks used capture-time process listings, socket endpoints, kernel symbols and known file contents where available. A successful exit or an empty result alone was not counted as validation. The 2026-11-09 rerun of all 48 applicable plugins reproduced their earlier checked JSON results. At that time, the 236 tests in the added or modified test files also passed, along with lint and formatting checks.
 
 ## Main fixes and checks
+
+Representative checks from the earlier Ubuntu captures:
 
 | Area | Changes and representative results |
 |---|---|

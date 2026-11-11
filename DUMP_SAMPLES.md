@@ -32,4 +32,6 @@ uv sync --locked --extra full
 uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.pslist.PsList
 ```
 
+For this exact Ubuntu `7.0.0-1023-raspi` sample, the command above should list **167 processes** (167 data rows, excluding the header), matching the recorded PsList result.
+
 Matching ISFs are included in [symbols/linux](symbols/linux); Volatility selects the matching kernel symbols automatically. Other samples use the same commands with their own checksum and file path.

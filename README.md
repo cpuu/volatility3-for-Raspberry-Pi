@@ -16,7 +16,7 @@ git clone https://github.com/cpuu/volatility3-for-Raspberry-Pi.git
 cd volatility3-for-Raspberry-Pi
 uv sync --locked --extra full
 mkdir -p symbols/linux
-# Add an ISF matching the captured kernel build to symbols/linux.
+# Use an included ISF, or add one matching the captured kernel build to symbols/linux.
 uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.pslist.PsList
 ```
 
@@ -25,6 +25,8 @@ uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime li
 [Raspberry Pi OS](TESTING.md#raspberry-pi-os) and [Kali Linux](TESTING.md#kali-linux) were also tested, but required custom kernel builds.
 
 [Ubuntu](TESTING.md#ubuntu) and [Fedora](TESTING.md#fedora) were tested and are generally recommended because matching debug `vmlinux` files are readily available from their official packages.
+
+Ubuntu reference environment:
 
 | Component | Environment |
 |---|---|
@@ -87,7 +89,7 @@ git -C tools/dwarf2json checkout 9f14607e0d339d463ea725fbd5c08aa7b7d40f75
 (cd tools/dwarf2json && go build -o dwarf2json .)
 tools/dwarf2json/dwarf2json linux --elf symbol-input/extracted/usr/lib/debug/boot/vmlinux-7.0.0-1023-raspi > symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.partial
 mv symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.partial symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json
-xz symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json
+xz -f symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json
 ```
 
 The [generated ISF](symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.xz) passed schema 6.2.0 validation and contains 211,075 symbols and 12,826 user types. Matching ISFs for all listed kernels are included in [symbols/linux](symbols/linux) as `.json.xz` files, which Volatility reads directly. For another build, use its corresponding debug package and ISF.
