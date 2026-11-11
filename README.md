@@ -72,25 +72,25 @@ Details of seven representative memory dumps used in these experiments are avail
 
 ## ISF generation
 
-Generate an ISF from the captured kernel's matching debug `vmlinux`. The 6.8 example uses `linux-image-6.8.0-1068-raspi-dbgsym_6.8.0-1068.72_arm64.ddeb`; its GNU Build ID matched `/sys/kernel/notes` on the Pi. For Ubuntu, available Raspberry Pi kernel debug package versions can be found in the [Ubuntu debug symbol archive](https://ddebs.ubuntu.com/pool/main/l/linux-raspi/). With Go installed, you can run the following from the repository root. I used a Mac for this experiment; macOS is not required:
+Generate an ISF from the captured kernel's matching debug `vmlinux`. The 7.0 example uses `linux-image-7.0.0-1023-raspi-dbgsym_7.0.0-1023.23_arm64.ddeb`; its GNU Build ID matched `/sys/kernel/notes` on the Pi. For Ubuntu, available Raspberry Pi kernel debug package versions can be found in the [Ubuntu debug symbol archive](https://ddebs.ubuntu.com/pool/main/l/linux-raspi/). With Go installed, you can run the following from the repository root. I used a Mac for this experiment; macOS is not required:
 
 ```sh
 set -eu
 mkdir -p symbol-input/extracted symbols/linux tools
-curl -fL https://ddebs.ubuntu.com/pool/main/l/linux-raspi/linux-image-6.8.0-1068-raspi-dbgsym_6.8.0-1068.72_arm64.ddeb -o symbol-input/kernel-dbgsym.ddeb
-printf '%s  %s\n' db7a57bdc9abc1b037beea417aea73bba7008b8e7276f778134f5d9b4d6f34f3 symbol-input/kernel-dbgsym.ddeb | shasum -a 256 -c -
+curl -fL https://ddebs.ubuntu.com/pool/main/l/linux-raspi/linux-image-7.0.0-1023-raspi-dbgsym_7.0.0-1023.23_arm64.ddeb -o symbol-input/kernel-dbgsym.ddeb
+printf '%s  %s\n' 81570d982b3223ce19420d4aa5678224016e74b32fccdad3e23a5f39262bf0a4 symbol-input/kernel-dbgsym.ddeb | shasum -a 256 -c -
 ar -p symbol-input/kernel-dbgsym.ddeb data.tar.xz > symbol-input/kernel-debug-data.tar.xz
-tar -xJf symbol-input/kernel-debug-data.tar.xz -C symbol-input/extracted ./usr/lib/debug/boot/vmlinux-6.8.0-1068-raspi
+tar -xJf symbol-input/kernel-debug-data.tar.xz -C symbol-input/extracted ./usr/lib/debug/boot/vmlinux-7.0.0-1023-raspi
 
 git clone https://github.com/volatilityfoundation/dwarf2json.git tools/dwarf2json
 git -C tools/dwarf2json checkout 9f14607e0d339d463ea725fbd5c08aa7b7d40f75
 (cd tools/dwarf2json && go build -o dwarf2json .)
-tools/dwarf2json/dwarf2json linux --elf symbol-input/extracted/usr/lib/debug/boot/vmlinux-6.8.0-1068-raspi > symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json.partial
-mv symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json.partial symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json
-xz symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json
+tools/dwarf2json/dwarf2json linux --elf symbol-input/extracted/usr/lib/debug/boot/vmlinux-7.0.0-1023-raspi > symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.partial
+mv symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.partial symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json
+xz symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json
 ```
 
-The [generated ISF](symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json.xz) passed schema 6.2.0 validation and contains 170,879 symbols and 11,184 user types. Matching ISFs for all listed kernels are included in [symbols/linux](symbols/linux) as `.json.xz` files, which Volatility reads directly. For another build, use its corresponding debug package and ISF.
+The [generated ISF](symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.xz) passed schema 6.2.0 validation and contains 211,075 symbols and 12,826 user types. Matching ISFs for all listed kernels are included in [symbols/linux](symbols/linux) as `.json.xz` files, which Volatility reads directly. For another build, use its corresponding debug package and ISF.
 
 ## Validation scope
 
