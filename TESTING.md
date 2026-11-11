@@ -2,7 +2,7 @@
 
 Results as of 2026-11-11: **48 of 49 distinct Linux plugins verified** on Raspberry Pi 4 for the cases described here. `Check_idt` is excluded because it inspects the x86 Interrupt Descriptor Table, which has no AArch64 equivalent for this plugin to inspect.
 
-A regression run at [`eee8e39b`](https://github.com/cpuu/volatility3-for-Raspberry-Pi/commit/eee8e39bb57ad913906ce21250712ecfc2252ed3) tested 48 plugins across six environments: three Ubuntu kernels, Raspberry Pi OS, Kali Linux and Fedora. All **288 runs completed normally and matched the previous results**.
+A regression run tested 48 plugins across six environments: three Ubuntu kernels, Raspberry Pi OS, Kali Linux and Fedora. All **288 runs completed normally and matched the previous results**.
 
 ## Raspberry Pi OS
 
