@@ -4,7 +4,7 @@ Results as of 2026-11-10: **48 of 49 distinct Linux plugins verified** on Raspbe
 
 ## Raspberry Pi OS
 
-Ubuntu is recommended for routine use: matching kernel debug packages provide the DWARF-enabled `vmlinux` needed for ISF generation without rebuilding the kernel. See the [Ubuntu environment below](#environment) and the [ISF generation guide](README.md#isf-generation).
+Ubuntu is recommended for normal use: matching kernel debug packages provide the DWARF-enabled `vmlinux` needed for ISF generation without rebuilding the kernel. See the [Ubuntu environment below](#environment) and the [ISF generation guide](README.md#isf-generation).
 
 Raspberry Pi OS 64-bit was also tested on 2026-11-11, using a custom-built `6.18.60-rpt-rpi-v8-volab` kernel. The official 6.18.50 and 6.18.60 debug packages we inspected contained `vmlinux`, but lacked the DWARF type information required by dwarf2json. This required the following preparation:
 
@@ -13,7 +13,7 @@ Raspberry Pi OS 64-bit was also tested on 2026-11-11, using a custom-built `6.18
 3. Install that kernel and its matching modules, DTBs and overlays on the Pi, generate its initramfs on Raspberry Pi OS, and boot it while retaining the original kernel as a fallback.
 4. Generate the ISF with dwarf2json from the same build's unstripped `vmlinux` and `System.map`, verify the running kernel's Build ID and banner, then acquire memory. Rebuilding the same version alone does not establish a match to the stock kernel binary.
 
-All 48 applicable plugins completed on a verified LiME conversion of the AVML 0.21.0 capture. Independent references matched for 42 plugins; five initially empty detectors subsequently passed controlled checks (four analysis simulations and one live no-op notifier). The known Kmsg omission remains. Bluetooth required additional module DWARF types, and HCI NULL-device handling remains unresolved.
+All 48 applicable plugins completed on a verified LiME conversion of the AVML 0.21.0 capture. Independent references matched for 42 plugins; five initially empty detectors subsequently passed controlled checks (four analysis simulations and one live no-op notifier).
 
 ## Environment
 
