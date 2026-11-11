@@ -27,7 +27,7 @@ The tests used several captures from the same Pi configuration, including contro
 
 ## Fedora
 
-Fedora 45 Server was tested on Raspberry Pi 4 with the official `7.2.11-300.fc45.aarch64` kernel (4 KB pages, 48-bit virtual addresses). The matching [official kernel-debuginfo package](https://kojipkgs.fedoraproject.org/packages/kernel/7.2.11/300.fc45/aarch64/) provided the DWARF-enabled `vmlinux` for ISF generation without a custom kernel build. Testing used a verified LiME conversion of an AVML 0.21.0 compressed capture. All 48 applicable plugins were run.
+Fedora 45 Server was tested on Raspberry Pi 4 with the official `7.2.11-300.fc45.aarch64` kernel (4 KB pages, 48-bit virtual addresses). The matching [official kernel-debuginfo package](https://kojipkgs.fedoraproject.org/packages/kernel/7.2.11/300.fc45/aarch64/) provided the DWARF-enabled `vmlinux` to generate the [matching ISF](symbols/linux/fedora-7.2.11-300.fc45-arm64.json.xz) without a custom kernel build. Testing used a verified LiME conversion of an AVML 0.21.0 compressed capture. All 48 applicable plugins were run.
 
 ## Kali Linux
 
