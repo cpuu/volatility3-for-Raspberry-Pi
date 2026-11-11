@@ -4,7 +4,7 @@ Results as of 2026-11-10: **48 of 49 distinct Linux plugins verified** on Raspbe
 
 ## Raspberry Pi OS
 
-Ubuntu is recommended for normal use: matching kernel debug packages provide the DWARF-enabled `vmlinux` needed for ISF generation without rebuilding the kernel. See the [Ubuntu environment below](#environment) and the [ISF generation guide](README.md#isf-generation).
+Ubuntu is recommended for normal use: matching kernel debug packages provide the DWARF-enabled `vmlinux` needed for ISF generation without rebuilding the kernel. See the [Ubuntu environment below](#ubuntu) and the [ISF generation guide](README.md#isf-generation).
 
 Raspberry Pi OS 64-bit was also tested on 2026-11-11, using a custom-built `6.18.60-rpt-rpi-v8-volab` kernel. The official 6.18.50 and 6.18.60 debug packages we inspected contained `vmlinux`, but lacked the DWARF type information required by dwarf2json. This required the following preparation:
 
@@ -15,7 +15,11 @@ Raspberry Pi OS 64-bit was also tested on 2026-11-11, using a custom-built `6.18
 
 All 48 applicable plugins completed on a verified LiME conversion of the AVML 0.21.0 capture. Independent references matched for 42 plugins; five initially empty detectors subsequently passed controlled checks (four analysis simulations and one live no-op notifier).
 
-## Environment
+## Kali Linux
+
+Like Raspberry Pi OS, Kali Linux required a custom kernel build with DWARF debug information and `CONFIG_PROC_KCORE` enabled. Testing used Kali Linux 2026.3 on Raspberry Pi 4 with kernel `6.12.34-kali-rpi-v8` and its [matching ISF](symbols/linux/kali-6.12.34-kali-rpi-v8-arm64.json.xz).
+
+## Ubuntu
 
 - Raspberry Pi 4 Model B Rev 1.4, 8 GB RAM
 - Ubuntu 24.04.5 LTS, AArch64, 4 KB pages, 48-bit virtual addresses
