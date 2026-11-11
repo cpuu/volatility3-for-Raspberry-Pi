@@ -85,9 +85,10 @@ git -C tools/dwarf2json checkout 9f14607e0d339d463ea725fbd5c08aa7b7d40f75
 (cd tools/dwarf2json && go build -o dwarf2json .)
 tools/dwarf2json/dwarf2json linux --elf symbol-input/extracted/usr/lib/debug/boot/vmlinux-6.8.0-1068-raspi > symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json.partial
 mv symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json.partial symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json
+xz symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json
 ```
 
-The [generated ISF](symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json) passed schema 6.2.0 validation and contains 170,879 symbols and 11,184 user types. Matching ISFs for all listed kernels are included in [symbols/linux](symbols/linux). For another build, use its corresponding debug package and ISF.
+The [generated ISF](symbols/linux/ubuntu-6.8.0-1068-raspi-arm64.json.xz) passed schema 6.2.0 validation and contains 170,879 symbols and 11,184 user types. Matching ISFs for all listed kernels are included in [symbols/linux](symbols/linux) as `.json.xz` files, which Volatility reads directly. For another build, use its corresponding debug package and ISF.
 
 ## Validation scope
 
