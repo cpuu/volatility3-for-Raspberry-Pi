@@ -895,7 +895,7 @@ class AggregateType(interfaces.objects.ObjectInterface):
         ) -> None:
             """Replace a child elements within the arguments handed to the
             template."""
-            for member in template.vol.members.get("members", {}):
+            for member in template.vol.members:
                 relative_offset, member_template = template.vol.members[member]
                 if member_template == old_child:
                     # Members will give access to the mutable members list,
