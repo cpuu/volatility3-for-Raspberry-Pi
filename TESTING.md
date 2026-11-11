@@ -25,6 +25,10 @@ All 48 applicable plugins completed on a verified LiME conversion of the AVML 0.
 
 The tests used several captures from the same Pi configuration, including controlled processes, sockets, tracing events and a no-op kernel notifier. The QEMU and image-format experiments are separate from this plugin validation.
 
+## Fedora
+
+Fedora 45 Server was tested on Raspberry Pi 4 with the official `7.2.11-300.fc45.aarch64` kernel (4 KB pages, 48-bit virtual addresses). The matching [official kernel-debuginfo package](https://kojipkgs.fedoraproject.org/packages/kernel/7.2.11/300.fc45/aarch64/) provided the DWARF-enabled `vmlinux` for ISF generation without a custom kernel build. Testing used a verified LiME conversion of an AVML 0.21.0 compressed capture. All 48 applicable plugins were run.
+
 ## Kali Linux
 
 Like Raspberry Pi OS, Kali Linux required a custom kernel build with DWARF debug information and `CONFIG_PROC_KCORE` enabled. Testing used Kali Linux 2026.3 on Raspberry Pi 4 with kernel `6.12.34-kali-rpi-v8` and its [matching ISF](symbols/linux/kali-6.12.34-kali-rpi-v8-arm64.json.xz).
