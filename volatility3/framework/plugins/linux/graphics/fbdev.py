@@ -43,7 +43,7 @@ class Framebuffer:
 class Fbdev(interfaces.plugins.PluginInterface):
     """Extract framebuffers from the fbdev graphics subsystem"""
 
-    _version = (1, 0, 1)
+    _version = (1, 0, 2)
     _required_framework_version = (2, 11, 0)
 
     @classmethod
@@ -298,12 +298,15 @@ You can try using ffmpeg to decode the raw buffer. Example usage:
                     )
                     file_output = renderers.UnreadableValue()
 
-            try:
-                fb_device_name = utility.pointer_to_string(
-                    fb.fb_info.dev.kobj.name, 256
-                )
-            except exceptions.InvalidAddressException:
-                fb_device_name = renderers.NotAvailableValue()
+            fb_device_name = renderers.NotAvailableValue()
+            # The fbdev class device is absent when CONFIG_FB_DEVICE is disabled.
+            if fb.fb_info.has_member("dev"):
+                try:
+                    fb_device_name = utility.pointer_to_string(
+                        fb.fb_info.dev.kobj.name, 256
+                    )
+                except exceptions.InvalidAddressException:
+                    pass
 
             yield (
                 0,
