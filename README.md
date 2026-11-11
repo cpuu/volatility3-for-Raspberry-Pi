@@ -72,7 +72,7 @@ Details of seven representative memory dumps used in these experiments are avail
 
 ## ISF generation
 
-Generate an ISF from the captured kernel's matching debug `vmlinux`. The 6.8 example uses `linux-image-6.8.0-1068-raspi-dbgsym_6.8.0-1068.72_arm64.ddeb`; its GNU Build ID matched `/sys/kernel/notes` on the Pi. For Ubuntu, available Raspberry Pi kernel debug package versions can be found in the [Ubuntu debug symbol archive](https://ddebs.ubuntu.com/pool/main/l/linux-raspi/). Run the following from the repository root on the Mac, with Go installed:
+Generate an ISF from the captured kernel's matching debug `vmlinux`. The 6.8 example uses `linux-image-6.8.0-1068-raspi-dbgsym_6.8.0-1068.72_arm64.ddeb`; its GNU Build ID matched `/sys/kernel/notes` on the Pi. For Ubuntu, available Raspberry Pi kernel debug package versions can be found in the [Ubuntu debug symbol archive](https://ddebs.ubuntu.com/pool/main/l/linux-raspi/). With Go installed, you can run the following from the repository root. I used a Mac for this experiment; macOS is not required:
 
 ```sh
 set -eu
