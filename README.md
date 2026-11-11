@@ -22,7 +22,7 @@ uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime li
 
 ## Test environment
 
-Raspberry Pi OS was also validated, but required a custom kernel build; Ubuntu is generally recommended because matching debug `vmlinux` files are easier to obtain (see [Raspberry Pi OS validation](TESTING.md#raspberry-pi-os)).
+Raspberry Pi OS was also validated, but required a custom kernel build(see [Raspberry Pi OS validation](TESTING.md#raspberry-pi-os)); Ubuntu is generally recommended because matching debug `vmlinux` files are easier to obtain.
 
 | Component | Environment |
 |---|---|
