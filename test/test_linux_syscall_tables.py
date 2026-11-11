@@ -190,7 +190,7 @@ def test_dispatch_count_must_fit_address_upper_bound(count, bound, valid):
             Check_syscall._get_table_info(plugin, module, "sys_call_table", 8)
 
 
-def specialized_context(count=470, guard_changes=None, common_prefix=(), table=0x8040):
+def specialized_context(count=470, guard_changes=None, common_prefix=(), table=0x8040, invoke_prefix=()):
     # GCC's specialized array_index_nospec path, with two consistent bounds.
     words = [
         0x7100003F | ((count - 1) << 10),  # cmp w1, last index
@@ -215,7 +215,7 @@ def specialized_context(count=470, guard_changes=None, common_prefix=(), table=0
         {
             0x1000: [0xF0000022, 0x91010042, branch(0x1008, 0x2000)],
             0x2000: common,
-            0x3000: words,
+            0x3000: list(invoke_prefix) + words,
             0x4000: [0xB0000022, 0x91020042, branch(0x4008, 0x2000)],
         },
         {
@@ -266,3 +266,70 @@ def test_specialized_dispatch_requires_requested_table_in_entry():
 def test_specialized_dispatch_rejects_clobbered_common_table_argument(prefix):
     plugin, module = specialized_context(common_prefix=prefix)
     assert Check_syscall._get_arm64_table_size(plugin, module, "sys_call_table") == 0
+
+
+def spilled_prefix():
+    return [
+        0xA9BD7BFD,  # stp x29,x30,[sp,#-48]!
+        0x910003FD,  # mov x29,sp
+        0xF90013A2,  # str x2,[x29,#32]
+        0xB9002FA1,  # str w1,[x29,#44]
+        branch(0x3010, 0x9000),
+        0xF94013A2,  # ldr x2,[x29,#32]
+        0xB9402FA1,  # ldr w1,[x29,#44]
+    ]
+
+
+@pytest.mark.parametrize('count', [470, 472, 490])
+def test_specialized_dispatch_restores_both_arguments_across_calls(count):
+    plugin, module = specialized_context(count=count, invoke_prefix=spilled_prefix())
+    assert Check_syscall._get_arm64_table_size(plugin, module, 'sys_call_table') == count
+
+
+@pytest.mark.parametrize('index,replacement', [
+    (5, 0xD503201F),  # no table restore
+    (6, 0xD503201F),  # no index restore
+    (5, 0xF94017A2),  # load table from a different stack slot
+    (2, 0xF90013A3),  # save unrelated x3 instead of the table
+    (3, 0xB9002FA3),  # save unrelated w3 instead of the index
+])
+def test_specialized_dispatch_rejects_lost_or_wrong_spills(index, replacement):
+    prefix=spilled_prefix();prefix[index]=replacement
+    plugin,module=specialized_context(invoke_prefix=prefix)
+    assert Check_syscall._get_arm64_table_size(plugin,module,'sys_call_table') == 0
+
+
+def test_specialized_dispatch_rejects_argument_clobbered_after_restore():
+    plugin,module=specialized_context(invoke_prefix=spilled_prefix()+[0xAA0303E2])
+    assert Check_syscall._get_arm64_table_size(plugin,module,'sys_call_table') == 0
+
+
+def test_specialized_dispatch_rejects_conditional_path_without_restore():
+    prefix=spilled_prefix()
+    # cbnz w0 skips both restores and enters guard; fallthrough restores them.
+    prefix.insert(5, 0x35000060)
+    plugin,module=specialized_context(invoke_prefix=prefix)
+    assert Check_syscall._get_arm64_table_size(plugin,module,'sys_call_table') == 0
+
+
+@pytest.mark.parametrize('store', [0x390083A3, 0x790043A3, 0xF80203A3])
+def test_specialized_dispatch_rejects_partial_or_unhandled_spill_overwrites(store):
+    prefix=spilled_prefix();prefix.insert(5,store)  # strb, strh, or stur into saved x2
+    plugin,module=specialized_context(invoke_prefix=prefix)
+    assert Check_syscall._get_arm64_table_size(plugin,module,'sys_call_table') == 0
+
+
+def test_specialized_dispatch_rejects_stack_pointer_escaping_to_callee():
+    prefix=spilled_prefix();prefix.insert(4,0x910083A0)  # add x0,x29,#32
+    prefix[5]=branch(0x3014,0x9000)
+    plugin,module=specialized_context(invoke_prefix=prefix)
+    assert Check_syscall._get_arm64_table_size(plugin,module,'sys_call_table') == 0
+
+
+def test_specialized_dispatch_rejects_simd_store_overlapping_index_spill():
+    prefix=spilled_prefix()
+    prefix[2]=0xF9000BA2  # str x2,[x29,#16], separate from vector store
+    prefix[5]=0xF9400BA2  # ldr x2,[x29,#16]
+    prefix.insert(5,0x3D800BA0)  # str q0,[x29,#32], overwrites index at44
+    plugin,module=specialized_context(invoke_prefix=prefix)
+    assert Check_syscall._get_arm64_table_size(plugin,module,'sys_call_table') == 0
