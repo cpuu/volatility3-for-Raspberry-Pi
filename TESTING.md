@@ -15,10 +15,6 @@ Raspberry Pi OS 64-bit was also tested on 2026-11-11, using a custom-built `6.18
 
 All 48 applicable plugins completed on a verified LiME conversion of the AVML 0.21.0 capture. Independent references matched for 42 plugins; five initially empty detectors subsequently passed controlled checks (four analysis simulations and one live no-op notifier).
 
-## Kali Linux
-
-Like Raspberry Pi OS, Kali Linux required a custom kernel build with DWARF debug information and `CONFIG_PROC_KCORE` enabled. Testing used Kali Linux 2026.3 on Raspberry Pi 4 with kernel `6.12.34-kali-rpi-v8` and its [matching ISF](symbols/linux/kali-6.12.34-kali-rpi-v8-arm64.json.xz).
-
 ## Ubuntu
 
 - Raspberry Pi 4 Model B Rev 1.4, 8 GB RAM
@@ -28,6 +24,10 @@ Like Raspberry Pi OS, Kali Linux required a custom kernel build with DWARF debug
 - Analysis on Apple Silicon macOS with Python 3.12.14 and `uv sync --locked --extra full`
 
 The tests used several captures from the same Pi configuration, including controlled processes, sockets, tracing events and a no-op kernel notifier. The QEMU and image-format experiments are separate from this plugin validation.
+
+## Kali Linux
+
+Like Raspberry Pi OS, Kali Linux required a custom kernel build with DWARF debug information and `CONFIG_PROC_KCORE` enabled. Testing used Kali Linux 2026.3 on Raspberry Pi 4 with kernel `6.12.34-kali-rpi-v8` and its [matching ISF](symbols/linux/kali-6.12.34-kali-rpi-v8-arm64.json.xz).
 
 ## Coverage
 
