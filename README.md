@@ -7,7 +7,7 @@ My contributions in this repository include:
 - **Integration and broader plugin support:** updated the original AArch64 implementation for newer Volatility 3 code, enabled 23 Linux plugins through architecture declarations, and made plugin or shared-core fixes for 16 others.
 - **Bug fixes:** corrected Bash history scanning, PsScan PID limits, kernel-thread attribution, kallsyms decoding, syscall-table analysis, socket scanning and framebuffer rendering.
 - **ARM64 analysis enhancements:** added ARM64 kernel-stack traversal and sparse-memory page-address handling, and improved reconstruction of resident kernel modules as analysis ELF files.
-- **New Raspberry Pi-specific plugins:** developed seven plugins for board identification, boot configuration, interfaces, console settings, firmware metadata and Device Tree analysis; see the [plugin registry](RPI_PLUGINS.md).
+- **New Raspberry Pi-specific plugins:** developed eight plugins for board identification, boot configuration, interfaces, console settings, firmware metadata, GPIO ownership and Device Tree analysis; see the [plugin catalog](RPI_PLUGINS.md).
 - **Hardware validation:** tested 48 applicable Linux plugins on physical Raspberry Pi 4 captures across Ubuntu 24.04/26.04, Raspberry Pi OS, Kali Linux and Fedora, using capture-time references, controlled fixtures and regression runs.
 - **Reproducible samples and symbols:** generated and verified matching kernel ISFs, published them as compressed `.json.xz` files, and documented acquisition steps and sample checksums.
 
@@ -26,6 +26,7 @@ cd volatility3-for-Raspberry-Pi
 uv sync --locked --extra full
 mkdir -p symbols/linux
 # Use an included ISF, or add one matching the captured kernel build to symbols/linux.
+uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
 uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.pslist.PsList
 ```
 
