@@ -125,21 +125,17 @@ Offset      Banner
 0x15502d0   Linux version 7.0.0-1023-raspi (buildd@bos03-arm64-076) (aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0, GNU ld (GNU Binutils for Ubuntu) 2.46) #23-Ubuntu SMP PREEMPT_DYNAMIC Sat Oct 31 00:19:11 UTC 2026 (Ubuntu 7.0.0-1023.23-raspi 7.0.14)
 ```
 
-Then list the processes (first five rows, selected columns):
+Display the board model, revision, serial number, RAM capacity and board manufacturer:
 
-```console
-$ uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.pslist.PsList
-
-PID  PPID  COMM
-1    0     systemd
-2    0     kthreadd
-3    2     pool_workqueue_
-4    2     kworker/R-rcu_g
-5    2     kworker/R-sync_
-...
+```sh
+uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
 ```
 
-For this exact Ubuntu `7.0.0-1023-raspi` sample, PsList should list **167 processes** (167 data rows, excluding the header), matching the recorded result.
+Display GPIO line names, consumers, request state and cached direction/ActiveLow configuration, including unrequested lines:
+
+```sh
+uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.gpio.Gpio --all
+```
 
 ## Validation scope
 
