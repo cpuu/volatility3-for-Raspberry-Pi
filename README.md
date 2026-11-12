@@ -94,6 +94,47 @@ xz -f symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json
 
 The [generated ISF](symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.xz) passed schema 6.2.0 validation and contains 211,075 symbols and 12,826 user types. Matching ISFs for all listed kernels are included in [symbols/linux](symbols/linux) as `.json.xz` files, which Volatility reads directly. For another build, use its corresponding debug package and ISF.
 
+## Analyzing a sample
+
+This example uses the Ubuntu 24.04.5 LTS `7.0.0-1023-raspi` capture listed in [Memory dump samples](DUMP_SAMPLES.md). If using its compressed AVML original, convert it to LiME on Linux with AVML 0.21.0 for that host's architecture:
+
+```sh
+./avml convert memory.avml memory.lime
+```
+
+Use the converted `memory.lime` on the analysis host. From this repository's root, identify the kernel banner first:
+
+```sh
+uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime banners.Banners
+```
+
+Example output (one matching banner shown):
+
+```text
+Offset      Banner
+0x15502d0   Linux version 7.0.0-1023-raspi (buildd@bos03-arm64-076) (aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0, GNU ld (GNU Binutils for Ubuntu) 2.46) #23-Ubuntu SMP PREEMPT_DYNAMIC Sat Oct 31 00:19:11 UTC 2026 (Ubuntu 7.0.0-1023.23-raspi 7.0.14)
+```
+
+Then list the processes:
+
+```sh
+uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.pslist.PsList
+```
+
+Output excerpt (first five rows, selected columns):
+
+```text
+PID  PPID  COMM
+1    0     systemd
+2    0     kthreadd
+3    2     pool_workqueue_
+4    2     kworker/R-rcu_g
+5    2     kworker/R-sync_
+...
+```
+
+For this exact Ubuntu `7.0.0-1023-raspi` sample, PsList should list **167 processes** (167 data rows, excluding the header), matching the recorded result.
+
 ## Validation scope
 
 **48 of 49 distinct Linux plugins have been validated** using physical Raspberry Pi 4 memory captures in the environment described above. The remaining plugin, `Check_idt`, examines the x86 Interrupt Descriptor Table and is not applicable to AArch64.
