@@ -49,7 +49,7 @@ Ubuntu reference environment:
 
 Tested memory-image inputs include LiME and Snappy-compressed AVML acquired on a physical Raspberry Pi 4, and ELF64 acquired from a QEMU AArch64 VM. The listed kernel comparisons used LiME conversions; direct compressed-AVML reading remains limited by a framing issue.
 
-Although the Raspberry Pi 5 became available in [October 2023](https://www.raspberrypi.com/news/raspberry-pi-5-available-now/), **skyrocketing hardware prices** have made expanding this research difficult. The prices I have encountered in South Korea are approximately KRW 300,000 (USD 225) for the 8 GB model and KRW 600,000 (USD 450) for the 16 GB model. As an independent researcher without dedicated research funding or hardware sponsorship, these costs currently exceed this project's budget. I hope to extend validation to the Raspberry Pi 5 in 2027, subject to funding availability; hardware donations or research support would help make this possible.
+Although the Raspberry Pi 5 became available in [October 2023](https://www.raspberrypi.com/news/raspberry-pi-5-available-now/), **skyrocketing hardware prices** have made expanding this research difficult. The prices I have encountered in South Korea are approximately KRW 300,000 (USD 225) for the 8 GB model and KRW 600,000 (USD 450) for the 16 GB model. As an independent researcher without dedicated research funding or hardware sponsorship, these costs currently exceed this project's budget; hardware donations or research support would help make this work possible. I plan to extend validation to the Raspberry Pi 5 in 2027 and, if successful, submit the findings to conferences and journals.
 
 ## Memory acquisition
 
