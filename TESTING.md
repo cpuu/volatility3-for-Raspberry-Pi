@@ -1,8 +1,8 @@
 # Linux plugin validation
 
-Results as of 2026-11-11: **48 of 49 distinct Linux plugins verified** on Raspberry Pi 4 for the cases described here. `Check_idt` is excluded because it inspects the x86 Interrupt Descriptor Table, which has no AArch64 equivalent for this plugin to inspect.
+Updated 2026-11-12: **48 of the 49 originally evaluated Linux plugins** were validated on Raspberry Pi 4 for the cases described here. `Check_idt` is excluded because it inspects the x86 Interrupt Descriptor Table, which has no AArch64 equivalent for this plugin to inspect.
 
-A regression run tested 48 plugins across six environments: three Ubuntu kernels, Raspberry Pi OS, Kali Linux and Fedora. All **288 runs completed normally and matched the previous results**.
+The earlier six-environment regression covered three Ubuntu 24.04 kernels, Raspberry Pi OS, Kali Linux and Fedora: **288 runs (48 plugins × 6 environments) completed normally and matched the previous results**. The Ubuntu 26.04 follow-up runs below are separate from that count.
 
 ## Raspberry Pi OS
 
@@ -20,13 +20,15 @@ All 48 applicable plugins completed on a verified LiME conversion of the AVML 0.
 ## Ubuntu
 
 - Raspberry Pi 4 Model B Rev 1.4, 8 GB RAM
-- Ubuntu 24.04.5 LTS, AArch64, 4 KB pages, 48-bit virtual addresses
-- Tested kernels: `6.8.0-1068-raspi`, `6.17.0-1021-raspi`, `7.0.0-1023-raspi`
-- Ubuntu 26.04.1 LTS (AArch64) was also tested on the same Raspberry Pi 4 with kernel `7.0.0-1017-raspi`.
+- AArch64, 4 KB pages, 48-bit virtual addresses
+- Ubuntu 24.04.5 LTS: `6.8.0-1068-raspi`, `6.17.0-1021-raspi`, `7.0.0-1023-raspi`
+- Ubuntu 26.04.1 LTS: `7.0.0-1017-raspi`, `7.0.0-1023-raspi`
 - AVML 0.21.0 compressed captures; matching [kernel ISFs](symbols/linux)
 - Analysis on Apple Silicon macOS with Python 3.12.14 and `uv sync --locked --extra full`
 
 The tests used several captures from the same Pi configuration, including controlled processes, sockets, tracing events and a no-op kernel notifier. The QEMU and image-format experiments are separate from this plugin validation.
+
+Both Ubuntu 26.04 captures completed all 48 plugin runs. In each capture, selected-field checks matched for 41 of 43 plugins checked; Kmsg and MountInfo retained the known discrepancies listed below. The other five detector outputs were empty without positive fixtures in those captures. The README and catalog examples use the Ubuntu 24.04.5 / `7.0.0-1023-raspi` capture.
 
 ## Fedora
 
@@ -38,7 +40,7 @@ Like Raspberry Pi OS, Kali Linux required a custom kernel build with DWARF debug
 
 ## Coverage
 
-`vol.py --help` lists 60 Linux entries. Eleven are compatibility aliases, leaving 49 implementations.
+The original evaluation covered 60 Linux CLI entries, including 11 compatibility aliases, leaving 49 implementations. The **eight newly developed [Raspberry Pi plugins](RPI_PLUGINS.md)** are separate from that evaluation; the current CLI lists 68 Linux entries in total.
 
 | Change needed | Plugins |
 |---|---:|
@@ -67,6 +69,7 @@ Declaration-only additions include LibraryList, Ptrace, PerfEvents and CheckTrac
 ## Remaining limits
 
 - **Kmsg:** a confirmed off-by-one can omit the final message. The fix and Intel reproduction remain pending.
+- **MountInfo:** the Ubuntu 26.04 captures include nsfs mounts whose `ROOT` field is rendered as `/` instead of the namespace identifier; the mounts themselves are present.
 - **RecoverFs:** full recovery runs complete, but only cached file contents are recoverable; unavailable pages may be skipped.
 - **PerfEvents:** reports BPF-attached events only.
 - **Detection controls:** Check_afinfo, Check_creds, Check_modules and Hidden_modules were checked with simulated changes during analysis, not live rootkit captures.
