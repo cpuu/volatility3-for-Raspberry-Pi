@@ -2,6 +2,14 @@
 
 Raspberry Pi / AArch64 Linux memory analysis, maintained independently by [cpuu](https://github.com/cpuu), based on [Volatility 3](https://github.com/volatilityfoundation/volatility3) and [Abyss-W4tcher's AArch64 implementation (#1088)](https://github.com/volatilityfoundation/volatility3/pull/1088).
 
+My contributions in this repository include:
+
+- **Integration and broader plugin support:** updated the original AArch64 implementation for newer Volatility 3 code, enabled 23 Linux plugins through architecture declarations, and made plugin or shared-core fixes for 16 others.
+- **Bug fixes:** corrected Bash history scanning, PsScan PID limits, kernel-thread attribution, kallsyms decoding, syscall-table analysis, socket scanning and framebuffer rendering.
+- **Additional implementation:** added ARM64 kernel-stack traversal and sparse-memory page-address handling, and improved reconstruction of resident kernel modules as analysis ELF files.
+- **Hardware validation:** tested 48 applicable Linux plugins on physical Raspberry Pi 4 captures across Ubuntu 24.04/26.04, Raspberry Pi OS, Kali Linux and Fedora, using capture-time references, controlled fixtures and regression runs.
+- **Reproducible samples and symbols:** generated and verified matching kernel ISFs, published them as compressed `.json.xz` files, and documented acquisition steps and sample checksums.
+
 ## Basis
 
 - Upstream `develop`: [77ff0b1932d77527f850c8ced01d85805ea7bf97](https://github.com/volatilityfoundation/volatility3/commit/77ff0b1932d77527f850c8ced01d85805ea7bf97) (2026-11-06), including development changes after the official [v2.28.2 release](https://github.com/volatilityfoundation/volatility3/releases/tag/v2.28.2).
