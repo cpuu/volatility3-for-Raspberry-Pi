@@ -23,11 +23,11 @@ Use Python 3.12 and [uv](https://docs.astral.sh/uv/). Collect memory on the Pi a
 ```sh
 git clone https://github.com/cpuu/volatility3-for-Raspberry-Pi.git
 cd volatility3-for-Raspberry-Pi
-uv sync --locked --extra full
+uv sync --extra full
 mkdir -p symbols/linux
 # Use an included ISF, or add one matching the captured kernel build to symbols/linux.
-uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
-uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.pslist.PsList
+uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
+uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.pslist.PsList
 ```
 
 ## Test environment
@@ -119,7 +119,7 @@ This example uses the Ubuntu 24.04.5 LTS `7.0.0-1023-raspi` capture listed in [M
 Use the converted `memory.lime` on the analysis host. From this repository's root, identify the kernel banner first (one matching result shown):
 
 ```console
-$ uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime banners.Banners
+$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime banners.Banners
 
 Offset      Banner
 0x15502d0   Linux version 7.0.0-1023-raspi (buildd@bos03-arm64-076) (aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0, GNU ld (GNU Binutils for Ubuntu) 2.46) #23-Ubuntu SMP PREEMPT_DYNAMIC Sat Oct 31 00:19:11 UTC 2026 (Ubuntu 7.0.0-1023.23-raspi 7.0.14)
@@ -128,13 +128,13 @@ Offset      Banner
 Display the board model, revision, serial number, RAM capacity and board manufacturer:
 
 ```sh
-uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
+uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
 ```
 
 Display GPIO line names, consumers, request state and cached direction/ActiveLow configuration, including unrequested lines:
 
 ```sh
-uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.gpio.Gpio --all
+uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.gpio.Gpio --all
 ```
 
 ## Validation scope

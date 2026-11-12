@@ -20,15 +20,15 @@ All eight plugins are bundled with this repository; no extra `-p` plugin directo
 From a checkout of this repository:
 
 ```sh
-uv sync --locked --extra full
-uv run --locked --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.model.Model
-uv run --locked --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.boot.Boot
-uv run --locked --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.interfaces.Interfaces
-uv run --locked --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.console.Console
-uv run --locked --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.firmware.Firmware
-uv run --locked --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.dtchanges.DtChanges
-uv run --locked --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.gpio.Gpio
-uv run --locked --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.rpi.Rpi
+uv sync --extra full
+uv run --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.model.Model
+uv run --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.boot.Boot
+uv run --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.interfaces.Interfaces
+uv run --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.console.Console
+uv run --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.firmware.Firmware
+uv run --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.dtchanges.DtChanges
+uv run --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.gpio.Gpio
+uv run --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.rpi.Rpi
 ```
 
 Use Python 3.12 and replace the paths with your memory capture and **matching kernel ISF** directory. See [README](README.md) for acquisition and symbol preparation.
@@ -48,8 +48,8 @@ Use Python 3.12 and replace the paths with your memory capture and **matching ke
 Place global flags before the plugin name and plugin-specific options after it:
 
 ```sh
-uv run --locked --extra full python vol.py -r json -s /path/to/symbols -f /path/to/memory.lime linux.rpi.firmware.Firmware --details
-uv run --locked --extra full python vol.py linux.rpi.dtchanges.DtChanges -h
+uv run --extra full python vol.py -r json -s /path/to/symbols -f /path/to/memory.lime linux.rpi.firmware.Firmware --details
+uv run --extra full python vol.py linux.rpi.dtchanges.DtChanges -h
 ```
 
 `linux.rpi.gpio.Gpio` uses separate bounds (`--max-chips`, `--max-lines`, `--max-string`) and supports `--all`, `--details`, `--chip gpiochipN`, and an explicit `--allow-generic` for non-Pi Linux simulator dumps. See [GPIO usage](RPI_GPIO.md).
