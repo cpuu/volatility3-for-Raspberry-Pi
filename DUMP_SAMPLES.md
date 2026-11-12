@@ -29,9 +29,16 @@ Use the converted `memory.lime` on the analysis host. From this repository's roo
 
 ```sh
 uv sync --locked --extra full
+uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime banners.Banners
 uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.pslist.PsList
 ```
 
-For this exact Ubuntu `7.0.0-1023-raspi` sample, the command above should list **167 processes** (167 data rows, excluding the header), matching the recorded PsList result.
+One detected banner exactly matches the sample's kernel ISF:
+
+```text
+Linux version 7.0.0-1023-raspi (buildd@bos03-arm64-076) (aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0, GNU ld (GNU Binutils for Ubuntu) 2.46) #23-Ubuntu SMP PREEMPT_DYNAMIC Sat Oct 31 00:19:11 UTC 2026 (Ubuntu 7.0.0-1023.23-raspi 7.0.14)
+```
+
+For this exact Ubuntu `7.0.0-1023-raspi` sample, PsList should list **167 processes** (167 data rows, excluding the header), matching the recorded PsList result.
 
 Matching ISFs are included in [symbols/linux](symbols/linux); Volatility selects the matching kernel symbols automatically. Other samples use the same commands with their own checksum and file path.
