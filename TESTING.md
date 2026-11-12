@@ -40,7 +40,19 @@ Like Raspberry Pi OS, Kali Linux required a custom kernel build with DWARF debug
 
 ## Coverage
 
-The original evaluation covered 60 Linux CLI entries, including 11 compatibility aliases, leaving 49 implementations. The **eight newly developed [Raspberry Pi plugins](RPI_PLUGINS.md)** are separate from that evaluation; the current CLI lists 68 Linux entries in total.
+Plugin implementations and CLI command names are counted separately:
+
+| Count | Meaning |
+|---|---|
+| 49 | Distinct plugins in the original evaluation; 48 validated, with the x86-only `Check_idt` excluded |
+| 8 | Newly developed [Raspberry Pi plugins](RPI_PLUGINS.md), separate from the original evaluation |
+| **57** | **Total distinct implementations: 49 + 8** |
+| 11 | Compatibility aliases that retain older command names for existing implementations |
+| **68** | **Linux CLI command names: 57 implementations + 11 aliases** |
+
+For example, `linux.check_creds.Check_creds` redirects to `linux.malware.check_creds.Check_creds`; these are two CLI names for one implementation. The original CLI count was similarly 60 names (49 implementations + 11 aliases). Aliases do not add plugins or independent validation coverage.
+
+The original 49 implementations break down as follows:
 
 | Change needed | Plugins |
 |---|---:|

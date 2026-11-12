@@ -154,7 +154,7 @@ gpiochip0  pinctrl-bcm2711  42      -          STATUS_LED_G_CLK  ACT       Yes  
 
 ## Validation scope
 
-**48 of the 49 originally evaluated Linux plugins** were validated on Raspberry Pi 4; the x86-only `Check_idt` is not applicable. The **eight newly developed [Raspberry Pi plugins](RPI_PLUGINS.md)** are separate from that original evaluation. See [TESTING.md](TESTING.md) for test conditions, results and limitations.
+**48 of the 49 originally evaluated Linux plugins** were validated on Raspberry Pi 4; the x86-only `Check_idt` is not applicable. The **eight newly developed [Raspberry Pi plugins](RPI_PLUGINS.md)** bring the total to **57 distinct plugins (49 + 8)**, separate from that original evaluation. The CLI lists **68 Linux command names**, including **11 compatibility aliases** for existing plugins. See [TESTING.md](TESTING.md) for test conditions, results and limitations.
 
 ## Credits and license
 

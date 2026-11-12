@@ -11,7 +11,7 @@
 | [linux.rpi.dtchanges.DtChanges](volatility3/framework/plugins/linux/rpi/dtchanges.py) | 1.0.0 | Node/property differences between retained FDT and live DT, with generated-name filtering |
 | [linux.rpi.gpio.Gpio](volatility3/framework/plugins/linux/rpi/gpio.py) | 1.0.0 | GPIO consumers, request state, cached configuration and Pi 4 header mapping |
 
-These eight plugins were developed in this repository to recover Raspberry Pi identity, boot configuration, peripheral settings and GPIO ownership from memory captures. Start with Model for a board summary, then choose the plugin for the information you need.
+These eight distinct plugins add to the original 49 Linux plugins, bringing the Linux total to 57 implementations; compatibility aliases are counted separately in [TESTING.md](TESTING.md#coverage). They were developed in this repository to recover Raspberry Pi identity, boot configuration, peripheral settings and GPIO ownership from memory captures. Start with Model for a board summary, then choose the plugin for the information you need.
 
 ## Getting started
 
