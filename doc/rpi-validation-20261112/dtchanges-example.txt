@@ -1,0 +1,5 @@
+Volatility 3 Framework 2.28.3
+
+Change	Path	Property	BootValue	LiveValue	Status
+
+No changes					boot=1754; live=2077; unchanged=1754; generated-name=323
