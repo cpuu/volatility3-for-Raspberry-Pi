@@ -102,28 +102,20 @@ This example uses the Ubuntu 24.04.5 LTS `7.0.0-1023-raspi` capture listed in [M
 ./avml convert memory.avml memory.lime
 ```
 
-Use the converted `memory.lime` on the analysis host. From this repository's root, identify the kernel banner first:
+Use the converted `memory.lime` on the analysis host. From this repository's root, identify the kernel banner first (one matching result shown):
 
-```sh
-uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime banners.Banners
-```
+```console
+$ uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime banners.Banners
 
-Example output (one matching banner shown):
-
-```text
 Offset      Banner
 0x15502d0   Linux version 7.0.0-1023-raspi (buildd@bos03-arm64-076) (aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0, GNU ld (GNU Binutils for Ubuntu) 2.46) #23-Ubuntu SMP PREEMPT_DYNAMIC Sat Oct 31 00:19:11 UTC 2026 (Ubuntu 7.0.0-1023.23-raspi 7.0.14)
 ```
 
-Then list the processes:
+Then list the processes (first five rows, selected columns):
 
-```sh
-uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.pslist.PsList
-```
+```console
+$ uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.pslist.PsList
 
-Output excerpt (first five rows, selected columns):
-
-```text
 PID  PPID  COMM
 1    0     systemd
 2    0     kthreadd
