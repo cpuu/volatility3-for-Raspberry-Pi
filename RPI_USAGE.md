@@ -1,6 +1,6 @@
 # Raspberry Pi plugins
 
-The seven plugins in [volatility3/framework/plugins/linux/rpi](volatility3/framework/plugins/linux/rpi) are bundled with this repository. No extra `-p` plugin directory or plugin download is required.
+The eight plugins in [volatility3/framework/plugins/linux/rpi](volatility3/framework/plugins/linux/rpi) are bundled with this repository. No extra `-p` plugin directory or plugin download is required.
 
 ## Layout and command names
 
@@ -13,11 +13,12 @@ volatility3/framework/plugins/linux/rpi/
 ├── boot.py
 ├── interfaces.py
 ├── console.py
+├── gpio.py
 ├── firmware.py
 └── dtchanges.py
 ```
 
-`common.py` provides shared bounded DT traversal and interface decoding. Each other module defines its corresponding plugin. For example, `model.py` defines `Model`, discovered as `linux.rpi.model.Model`. These are the canonical bundled command names; the earlier standalone research commands such as `rpi.Model` are not installed as aliases.
+`common.py` provides shared bounded DT traversal and interface decoding. Each analysis module defines its corresponding plugin. For example, `model.py` defines `Model`, discovered as `linux.rpi.model.Model`. These are the canonical bundled command names; the earlier standalone research commands such as `rpi.Model` are not installed as aliases.
 
 ## Run
 
@@ -31,12 +32,13 @@ uv run --locked --extra full python vol.py -s /path/to/symbols -f /path/to/memor
 uv run --locked --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.console.Console
 uv run --locked --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.firmware.Firmware
 uv run --locked --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.dtchanges.DtChanges
+uv run --locked --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.gpio.Gpio
 uv run --locked --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.rpi.Rpi
 ```
 
 Replace the paths with your capture and the symbol directory containing the **matching kernel ISF**. Use Python 3.12 and the repository's ARM64 support. Capture acquisition and symbol preparation are described in [README](README.md) and [TESTING](TESTING.md). Memory dumps are not bundled with the plugin code.
 
-`linux.rpi.model.Model` is the compact starting point. `linux.rpi.rpi.Rpi` returns the full Device Tree and EEPROM configuration recovery diagnostics. The [registry](RPI_PLUGINS.md) summarizes each plugin and its validation limits.
+`linux.rpi.model.Model` is the compact starting point. `linux.rpi.rpi.Rpi` returns the full Device Tree and EEPROM configuration recovery diagnostics. The [catalog](RPI_PLUGINS.md) summarizes each plugin and its validation limits.
 
 ## Options
 
@@ -45,7 +47,7 @@ Replace the paths with your capture and the symbol directory containing the **ma
 - `linux.rpi.firmware.Firmware --details`: full firmware version, UEFI table address and warning bytes.
 - `linux.rpi.dtchanges.DtChanges --details`: full raw values and kernel virtual value addresses from both trees.
 - `linux.rpi.dtchanges.DtChanges --include-generated`: show live-only `name` properties matching kernel synthesis. Can be combined with `--details`.
-- All plugins accept `--max-nodes`, `--max-properties` and `--max-value` traversal/read limits.
+- The original seven plugins accept `--max-nodes`, `--max-properties` and `--max-value` traversal/read limits.
 - `linux.rpi.rpi.Rpi --max-eeprom`: maximum EEPROM configuration region size. `--allow-generic` bypasses the Pi identity gate for research only.
 
 Place global flags before the plugin name and plugin-specific options after it:
@@ -54,6 +56,8 @@ Place global flags before the plugin name and plugin-specific options after it:
 uv run --locked --extra full python vol.py -r json -s /path/to/symbols -f /path/to/memory.lime linux.rpi.firmware.Firmware --details
 uv run --locked --extra full python vol.py linux.rpi.dtchanges.DtChanges -h
 ```
+
+`linux.rpi.gpio.Gpio` uses separate bounds (`--max-chips`, `--max-lines`, `--max-string`) and supports `--all`, `--details`, `--chip gpiochipN`, and an explicit `--allow-generic` for non-Pi Linux simulator dumps. See [GPIO usage](RPI_GPIO.md).
 
 ## Interpretation
 
@@ -73,7 +77,7 @@ Run the self-contained tests (no dumps required):
 uv run --locked --extra full python -m unittest discover -s test/rpi -v
 ```
 
-The integration rerun exercises all seven bundled plugins against all eight existing captures, **without `-p`**, and compares every JSON row with previously validated research output. This checks integration regressions; it is not a new independent ground-truth measurement.
+The original integration rerun exercises the first seven bundled plugins against all eight existing captures, **without `-p`**, and compares every JSON row with previously validated research output. This checks integration regressions; it is not a new independent ground-truth measurement.
 
 The [regression script](development/rpi_regression.py) requires the original local research workspace, including `rpi-runs.json`, captures, symbols and baseline JSON files. Its manifest contains local paths; update those when relocating the data. Raw logs and actual commands are written to the chosen output directory.
 
