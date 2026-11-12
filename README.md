@@ -23,7 +23,7 @@ Use Python 3.12 and [uv](https://docs.astral.sh/uv/). Collect memory on the Pi a
 ```sh
 git clone https://github.com/cpuu/volatility3-for-Raspberry-Pi.git
 cd volatility3-for-Raspberry-Pi
-uv sync --extra full
+uv sync --python 3.12 --extra full
 mkdir -p symbols/linux
 # Use an included ISF, or add one matching the captured kernel build to symbols/linux.
 uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
@@ -84,7 +84,7 @@ cd samples/pi4/capture-directory
 shasum -a 256 -c memory.lime.sha256
 ```
 
-Details of seven representative memory dumps used in these experiments are available in [Memory dump samples](DUMP_SAMPLES.md).
+Details of eight representative memory dumps used in these experiments are available in [Memory dump samples](DUMP_SAMPLES.md).
 
 ## ISF generation
 
@@ -154,7 +154,9 @@ gpiochip0  pinctrl-bcm2711  42      -          STATUS_LED_G_CLK  ACT       Yes  
 
 ## Validation scope
 
-**48 of 49 distinct Linux plugins have been validated** using physical Raspberry Pi 4 memory captures in the environment described above. The remaining plugin, `Check_idt`, examines the x86 Interrupt Descriptor Table and is not applicable to AArch64.
+**48 of the 49 originally evaluated Linux plugins have been validated** using physical Raspberry Pi 4 memory captures in the environment described above. The remaining plugin, `Check_idt`, examines the x86 Interrupt Descriptor Table and is not applicable to AArch64.
+
+Separately, I developed **eight new Raspberry Pi-specific plugins** for board identification, boot settings, interfaces, consoles, firmware, Device Tree analysis and GPIO ownership. These are listed in the [plugin catalog](RPI_PLUGINS.md) and are not included in the original 49-plugin evaluation.
 
 Of the 48 validated plugins, 23 required only an AArch64 declaration at plugin level on the corrected core, 16 required plugin or shared-core fixes, and 9 worked with the existing implementation.
 

@@ -20,7 +20,7 @@ All eight plugins are bundled with this repository; no extra `-p` plugin directo
 From a checkout of this repository:
 
 ```sh
-uv sync --extra full
+uv sync --python 3.12 --extra full
 uv run --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.model.Model
 uv run --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.boot.Boot
 uv run --extra full python vol.py -s /path/to/symbols -f /path/to/memory.lime linux.rpi.interfaces.Interfaces
@@ -52,7 +52,7 @@ uv run --extra full python vol.py -r json -s /path/to/symbols -f /path/to/memory
 uv run --extra full python vol.py linux.rpi.dtchanges.DtChanges -h
 ```
 
-`linux.rpi.gpio.Gpio` uses separate bounds (`--max-chips`, `--max-lines`, `--max-string`) and supports `--all`, `--details`, `--chip gpiochipN`, and an explicit `--allow-generic` for non-Pi Linux simulator dumps. See [GPIO usage](RPI_GPIO.md).
+`linux.rpi.gpio.Gpio` uses separate bounds (`--max-chips`, `--max-lines`, `--max-string`) and supports `--all`, `--details`, `--chip gpiochipN`, and an explicit `--allow-generic` for non-Pi Linux simulator dumps. Default output includes requested lines and diagnostics; `--all` also shows unrequested lines. `--details` adds raw flags and descriptor addresses.
 
 ### Interpretation
 
@@ -62,3 +62,6 @@ uv run --extra full python vol.py linux.rpi.dtchanges.DtChanges -h
 - Firmware timestamps describe EEPROM build/update metadata, not the system boot time. UEFI metadata does not establish Secure Boot or firmware authenticity.
 - EEPROM configuration recovery requires the relevant reserved memory to be present in the capture.
 - DtChanges compares the retained `initial_boot_params` FDT with the live `of_root` tree. It requires both structures to be readable. Incomplete acquisition is not reported as “No changes.” Changes do not establish their time, actor or cause. The retained blob is not an immutable baseline, and changes shared by both trees may be invisible.
+
+- GPIO `Consumer` is a kernel label, not a PID or authenticated owner. Unrequested lines show `Not requested` for direction and ActiveLow; this does not prove the pin is unused.
+- GPIO chip numbers can change between boots, and offsets are controller-local. `HeaderPin` maps only a confirmed Pi 4 Model B BCM2711 controller; other controllers show `-`.
