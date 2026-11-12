@@ -29,17 +29,6 @@ mkdir -p symbols/linux
 uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.pslist.PsList
 ```
 
-## Raspberry Pi-specific plugins
-
-Seven bundled plugins summarize board identity, boot settings, interfaces, consoles, firmware and Device Tree changes. No extra plugin directory is required:
-
-```sh
-uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
-uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.dtchanges.DtChanges
-```
-
-See the [plugin registry](RPI_PLUGINS.md), [usage and interpretation guide](RPI_USAGE.md), and [integration validation results](RPI_VALIDATION.md).
-
 ## Test environment
 
 All hardware validation reported here was completed on a Raspberry Pi 4.
