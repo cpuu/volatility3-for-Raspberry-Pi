@@ -22,6 +22,7 @@ All 48 applicable plugins completed on a verified LiME conversion of the AVML 0.
 - Raspberry Pi 4 Model B Rev 1.4, 8 GB RAM
 - Ubuntu 24.04.5 LTS, AArch64, 4 KB pages, 48-bit virtual addresses
 - Tested kernels: `6.8.0-1068-raspi`, `6.17.0-1021-raspi`, `7.0.0-1023-raspi`
+- Ubuntu 26.04.1 LTS (AArch64) was also tested on the same Raspberry Pi 4 with kernel `7.0.0-1017-raspi`.
 - AVML 0.21.0 compressed captures; matching [kernel ISFs](symbols/linux)
 - Analysis on Apple Silicon macOS with Python 3.12.14 and `uv sync --locked --extra full`
 
