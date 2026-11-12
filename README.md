@@ -31,8 +31,8 @@ Ubuntu reference environment:
 | Component | Environment |
 |---|---|
 | Hardware | Raspberry Pi 4 Model B Rev 1.4, 8 GB RAM |
-| OS | Ubuntu 24.04.5 LTS, AArch64 |
-| Tested kernels | `6.8.0-1068-raspi`, `6.17.0-1021-raspi`, `7.0.0-1023-raspi` |
+| Ubuntu 26.04.1 LTS, AArch64 | `7.0.0-1017-raspi`, `7.0.0-1023-raspi` |
+| Ubuntu 24.04.5 LTS, AArch64 | `6.8.0-1068-raspi`, `6.17.0-1021-raspi`, `7.0.0-1023-raspi` |
 | Memory | 4 KB pages, 48-bit virtual addresses |
 | Acquisition | AVML 0.21.0, root access to `/proc/kcore` |
 | Analysis / ISF generation | Apple Silicon Mac, Python 3.12.14, dwarf2json 0.9.0 |
