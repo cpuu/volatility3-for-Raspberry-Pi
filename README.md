@@ -154,20 +154,7 @@ gpiochip0  pinctrl-bcm2711  42      -          STATUS_LED_G_CLK  ACT       Yes  
 
 ## Validation scope
 
-**48 of the 49 originally evaluated Linux plugins have been validated** using physical Raspberry Pi 4 memory captures in the environment described above. The remaining plugin, `Check_idt`, examines the x86 Interrupt Descriptor Table and is not applicable to AArch64.
-
-Separately, I developed **eight new Raspberry Pi-specific plugins** for board identification, boot settings, interfaces, consoles, firmware, Device Tree analysis and GPIO ownership. These are listed in the [plugin catalog](RPI_PLUGINS.md) and are not included in the original 49-plugin evaluation.
-
-Of the 48 validated plugins, 23 required only an AArch64 declaration at plugin level on the corrected core, 16 required plugin or shared-core fixes, and 9 worked with the existing implementation.
-
-Major contributions beyond architecture declarations include:
-
-- **Process analysis:** corrected Bash address scanning, PsScan PID limits, kernel-thread attribution and ARM64 stack traversal.
-- **Symbols and tracing:** fixed kallsyms decoding (including per-entry relative offsets), syscall-table bounds, ftrace filter traversal and notifier pointer handling.
-- **Memory recovery:** implemented ARM64 page-address conversion and improved resident kernel-module ELF reconstruction.
-- **Sockets and devices:** corrected physical socket scanning, IPv6 peer-address selection, PTY discovery and framebuffer rendering.
-
-Validation covers the documented fixtures and options. RecoverFs completed both tmpfs and full recovery runs, with recovery limited to cached contents. PerfEvents covers BPF-attached events, and four detectors used simulated positive controls over real Pi memory. Kmsg still has a final-message off-by-one. See [TESTING.md](TESTING.md) for results, references and remaining limitations.
+**48 of the 49 originally evaluated Linux plugins** were validated on Raspberry Pi 4; the x86-only `Check_idt` is not applicable. The **eight newly developed [Raspberry Pi plugins](RPI_PLUGINS.md)** are separate from that original evaluation. See [TESTING.md](TESTING.md) for test conditions, results and limitations.
 
 ## Credits and license
 
