@@ -127,14 +127,29 @@ Offset      Banner
 
 Display the board model, revision, serial number, RAM capacity and board manufacturer:
 
-```sh
-uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
+```console
+$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
+
+Volatility 3 Framework 2.28.3
+
+Board                   Model                  Revision  Serial            RevisionCode  RAM   BoardManufacturer  SoC      Status
+Raspberry Pi 4 Model B  raspberrypi,4-model-b  1.4       1000000015089641  0x00d03114    8 GB  Sony UK            BCM2711  ok
 ```
 
-Display GPIO line names, consumers, request state and cached direction/ActiveLow configuration, including unrequested lines:
+Display GPIO line names, consumers, request state and cached direction/ActiveLow configuration, including unrequested lines (three selected rows shown):
 
-```sh
-uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.gpio.Gpio --all
+```console
+$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.gpio.Gpio --all
+
+Volatility 3 Framework 2.28.3
+
+Chip       Controller       Offset  HeaderPin  LineName          Consumer  Requested  KernelDirection  ActiveLow      Status
+gpiochip0  pinctrl-bcm2711  0       27         ID_SDA            (none)    No         Not requested    Not requested  ok
+...
+gpiochip0  pinctrl-bcm2711  7       26         GPIO7             spi0 CS1  Yes        Output           Yes            ok
+...
+gpiochip0  pinctrl-bcm2711  42      -          STATUS_LED_G_CLK  ACT       Yes        Output           No             ok
+...
 ```
 
 ## Validation scope
