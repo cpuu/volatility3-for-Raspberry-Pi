@@ -74,7 +74,7 @@ Details of seven representative memory dumps used in these experiments are avail
 
 ## ISF generation
 
-Generate an ISF from the captured kernel's matching debug `vmlinux`. The 7.0 example uses `linux-image-7.0.0-1023-raspi-dbgsym_7.0.0-1023.23_arm64.ddeb`; its GNU Build ID matched `/sys/kernel/notes` on the Pi. For Ubuntu, available Raspberry Pi kernel debug package versions can be found in the [Ubuntu debug symbol archive](https://ddebs.ubuntu.com/pool/main/l/linux-raspi/). With Go installed, you can run the following from the repository root. I used a Mac for this experiment; macOS is not required:
+Generate an ISF from the captured kernel's matching debug `vmlinux`. The 7.0 example uses `linux-image-7.0.0-1023-raspi-dbgsym_7.0.0-1023.23_arm64.ddeb`; its GNU Build ID matched `/sys/kernel/notes` on the Pi. For Ubuntu, available Raspberry Pi kernel debug package versions can be found in the [Ubuntu debug symbol archive](https://ddebs.ubuntu.com/pool/main/l/linux-raspi/). For Fedora, matching `kernel-debuginfo` packages are available in the [Fedora Koji kernel package archive](https://kojipkgs.fedoraproject.org/packages/kernel/). With Go installed, you can run the following from the repository root. I used a Mac for this experiment; macOS is not required:
 
 ```sh
 set -eu
