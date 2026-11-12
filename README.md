@@ -30,6 +30,8 @@ uv run --locked --extra full python vol.py -s symbols -f /path/to/memory.lime li
 
 ## Test environment
 
+All hardware validation reported here was completed on a Raspberry Pi 4.
+
 [Raspberry Pi OS](TESTING.md#raspberry-pi-os) and [Kali Linux](TESTING.md#kali-linux) were also tested, but required custom kernel builds.
 
 [Ubuntu](TESTING.md#ubuntu) and [Fedora](TESTING.md#fedora) were tested and are generally recommended because matching debug `vmlinux` files are readily available from their official packages.
@@ -46,6 +48,8 @@ Ubuntu reference environment:
 | Analysis / ISF generation | Apple Silicon Mac, Python 3.12.14, dwarf2json 0.9.0 |
 
 Tested memory-image inputs include LiME and Snappy-compressed AVML acquired on a physical Raspberry Pi 4, and ELF64 acquired from a QEMU AArch64 VM. The listed kernel comparisons used LiME conversions; direct compressed-AVML reading remains limited by a framing issue.
+
+Although the Raspberry Pi 5 became available in [October 2023](https://www.raspberrypi.com/news/raspberry-pi-5-available-now/), **skyrocketing hardware prices** have made expanding this research difficult. The prices I have encountered in South Korea are approximately KRW 300,000 (USD 225) for the 8 GB model and KRW 600,000 (USD 450) for the 16 GB model. As an independent researcher without dedicated research funding or hardware sponsorship, these costs currently exceed this project's budget. I hope to extend validation to the Raspberry Pi 5 in 2027, subject to funding availability; hardware donations or research support would help make this possible.
 
 ## Memory acquisition
 
