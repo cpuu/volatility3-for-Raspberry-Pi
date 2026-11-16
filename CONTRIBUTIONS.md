@@ -2,7 +2,7 @@
 
 This fork is maintained by [Jaeyou Park (cpuu)](https://github.com/cpuu). It builds on Volatility 3 and Abyss-W4tcher's experimental AArch64 support. The contribution is the integration, analysis fixes, Raspberry Pi artifacts and validation described below; the underlying framework and original AArch64 implementation are not new work by this project.
 
-Scope: committed source at `1df974ca` (2026-11-16). Local, uncommitted AVML changes are outside this account. Setup and examples remain in [README](README.md); test conditions and known limitations remain in [TESTING](TESTING.md).
+Setup and examples remain in [README](README.md); test conditions and known limitations remain in [TESTING](TESTING.md).
 
 ## Inherited foundations
 
@@ -21,14 +21,12 @@ Scope: committed source at `1df974ca` (2026-11-16). Local, uncommitted AVML chan
 
 Four representative fixes provide focused before/after comparison points:
 
-| Existing capability | Change introduced here | Commit |
-| --- | --- | --- |
-| Bash history recovery | Preserve full configured ARM64 user-address ranges and enable the existing Bash plugin. | [`c1e71ae0`](https://github.com/cpuu/volatility3-for-Raspberry-Pi/commit/c1e71ae03420db472039783c2cab70499055bdb8) |
-| Process scanning | Correct PID bounds and enable AArch64 scanning. | [`9f6a9567`](https://github.com/cpuu/volatility3-for-Raspberry-Pi/commit/9f6a95674d47017915fd160fba3d003d50ec033a) |
-| Socket scanning | Reject unresolved candidates and deduplicate actual socket addresses rather than a placeholder; enable AArch64. | [`2a689f87`](https://github.com/cpuu/volatility3-for-Raspberry-Pi/commit/2a689f879114e8202bd28090beadf6cc317017d4) |
-| Cached-file recovery | Resolve ARM64 sparse-memory `struct page` addresses, enabling existing InodePages/RecoverFs code to recover resident file contents. | [`6890b9fd`](https://github.com/cpuu/volatility3-for-Raspberry-Pi/commit/6890b9fd4e282058b7a5ce4efd66c6e9836290db) |
-
-The Pi plugin family was introduced in [`33f58b51`](https://github.com/cpuu/volatility3-for-Raspberry-Pi/commit/33f58b5185eff00ce71e3fbd4f8b8be122b993e0), followed by GPIO in [`56a01b48`](https://github.com/cpuu/volatility3-for-Raspberry-Pi/commit/56a01b48020a3e4f8ea3e6af6a58c03dffa00785). Commit links identify the changes, not independent proof of their accuracy; the validation conditions are documented separately.
+| Existing capability | Change introduced here |
+| --- | --- |
+| Bash history recovery | Preserve full configured ARM64 user-address ranges and enable the existing Bash plugin. |
+| Process scanning | Correct PID bounds and enable AArch64 scanning. |
+| Socket scanning | Reject unresolved candidates and deduplicate actual socket addresses rather than a placeholder; enable AArch64. |
+| Cached-file recovery | Resolve ARM64 sparse-memory `struct page` addresses, enabling existing InodePages/RecoverFs code to recover resident file contents. |
 
 ## Boundaries
 
