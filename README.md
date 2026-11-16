@@ -156,6 +156,17 @@ gpiochip0  pinctrl-bcm2711  42      -          STATUS_LED_G_CLK  ACT       Yes  
 
 **48 of the 49 originally evaluated Linux plugins** were validated on Raspberry Pi 4; the x86-only `Check_idt` is not applicable. The **eight newly developed [Raspberry Pi plugins](RPI_PLUGINS.md)** bring the total to **57 distinct plugins (49 + 8)**, separate from that original evaluation. The CLI lists **68 Linux command names**, including **11 compatibility aliases** for existing plugins. See [TESTING.md](TESTING.md) for test conditions, results and limitations.
 
+On 2026-11-16, four fixes were rechecked against existing physical Pi 4 captures. Each comparison used the same dump and symbols: committed `1df974ca` versus that code with the relevant fix reverted (retaining AArch64 enablement), rather than a full historical checkout.
+
+| Check | Without the fix | Current implementation |
+| --- | --- | --- |
+| Bash history | 0/6 known commands | 6/6, including PID, process name and timestamp to the second |
+| PsScan | 105/144 stable reference PID/PPID pairs | 144/144, including previously missed PID 171671 |
+| Sockscan | Exception on an unresolved candidate | All 10 controlled IPv4/IPv6 TCP/UDP endpoints found exactly once |
+| InodePages | ARM64 page-conversion error; 0 bytes recovered | 2,135 bytes recovered, byte-for-byte and SHA256 match |
+
+These checks validate the selected references, not every output row or all ARM64 systems. Related address-range, PID-limit, socket and page-conversion unit tests also passed: **122 tests**, Python 3.12.14 / pytest 8.4.2.
+
 ## Credits and license
 
 Built on Volatility Foundation's framework and Abyss-W4tcher's AArch64 implementation; maintained by cpuu. Original history, copyright notices and the [Volatility Software License](LICENSE.txt) are retained. See also the [upstream README](README.upstream.md).
