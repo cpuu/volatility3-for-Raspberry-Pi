@@ -2,12 +2,12 @@
 
 Raspberry Pi / AArch64 Linux memory analysis, maintained independently by [cpuu](https://github.com/cpuu), based on [Volatility 3](https://github.com/volatilityfoundation/volatility3) and [Abyss-W4tcher's AArch64 implementation (#1088)](https://github.com/volatilityfoundation/volatility3/pull/1088).
 
-My contributions in this repository include:
+My contributions in this repository include (see [contribution details](CONTRIBUTIONS.md) for inherited work and supporting commits):
 
-- **Integration and broader plugin support:** updated the original AArch64 implementation for newer Volatility 3 code, enabled 23 Linux plugins through architecture declarations, and made plugin or shared-core fixes for 16 others.
+- **Integration and broader plugin support:** updated the original AArch64 implementation for newer Volatility 3 code, enabled 23 Linux plugins through architecture declarations, and made plugin or shared-core fixes for 16 others; nine existing plugins needed no additional changes.
 - **Bug fixes:** corrected Bash history scanning, PsScan PID limits, kernel-thread attribution, kallsyms decoding, syscall-table analysis, socket scanning and framebuffer rendering.
 - **ARM64 analysis enhancements:** added ARM64 kernel-stack traversal and sparse-memory page-address handling, and improved reconstruction of resident kernel modules as analysis ELF files.
-- **New Raspberry Pi-specific plugins:** developed eight plugins for board identification, boot configuration, interfaces, console settings, firmware metadata, GPIO ownership and Device Tree analysis; see the [plugin catalog](RPI_PLUGINS.md).
+- **New Raspberry Pi-specific plugins:** developed eight plugins for board identification, boot configuration, interfaces, console settings, firmware metadata, GPIO consumer labels and cached configuration, and Device Tree analysis; see the [plugin catalog](RPI_PLUGINS.md).
 - **Hardware validation:** tested 48 applicable Linux plugins on physical Raspberry Pi 4 captures across Ubuntu 24.04/26.04, Raspberry Pi OS, Kali Linux and Fedora, using capture-time references, controlled fixtures and regression runs.
 - **Reproducible samples and symbols:** generated and verified matching kernel ISFs, published them as compressed `.json.xz` files, and documented acquisition steps and sample checksums.
 
@@ -166,6 +166,8 @@ On 2026-11-16, four fixes were rechecked against existing physical Pi 4 captures
 | InodePages | ARM64 page-conversion error; 0 bytes recovered | 2,135 bytes recovered, byte-for-byte and SHA256 match |
 
 These checks validate the selected references, not every output row or all ARM64 systems. Related address-range, PID-limit, socket and page-conversion unit tests also passed: **122 tests**, Python 3.12.14 / pytest 8.4.2.
+
+Hardware evidence comes from one physical Pi 4 across the tested distributions; Pi 5 has not been verified. EEPROM recovery and substantive Device Tree-change positive cases have synthetic coverage only. See [validation boundaries](CONTRIBUTIONS.md#boundaries) for details.
 
 ## Credits and license
 
