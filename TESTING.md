@@ -28,7 +28,7 @@ All 48 applicable plugins completed on a verified LiME conversion of the AVML 0.
 
 The tests used several captures from the same Pi configuration, including controlled processes, sockets, tracing events and a no-op kernel notifier. The QEMU and image-format experiments are separate from this plugin validation.
 
-Both Ubuntu 26.04 captures completed all 48 plugin runs. In each capture, selected-field checks matched for 41 of 43 plugins checked; Kmsg and MountInfo retained the known discrepancies listed below. The other five detector outputs were empty without positive fixtures in those captures. The README and catalog examples use the Ubuntu 24.04.5 / `7.0.0-1023-raspi` capture.
+Both Ubuntu 26.04 captures completed all 48 plugin runs. In each capture, selected-field checks matched for 41 of 43 plugins checked; Kmsg and MountInfo retained discrepancies at the time of those runs; the subsequent Kmsg fix is documented below, while MountInfo remains unresolved. The other five detector outputs were empty without positive fixtures in those captures. The README and catalog examples use the Ubuntu 24.04.5 / `7.0.0-1023-raspi` capture.
 
 ## Fedora
 
@@ -78,9 +78,14 @@ Representative checks from the earlier Ubuntu captures:
 
 Declaration-only additions include LibraryList, Ptrace, PerfEvents and CheckTracepoints. LibraryList matched nine library load addresses; the tracing fixture supplied a known tracer/tracee pair, a BPF-attached perf event and registered tracepoint callbacks.
 
+## Kmsg follow-up (2026-11-16)
+
+Applied the fix and five unit tests by **ricardojrdez** from [upstream PR #2101](https://github.com/volatilityfoundation/volatility3/pull/2101), pinned to [`578c289`](https://github.com/volatilityfoundation/volatility3/commit/578c2896df2bc870da2b5f9e534ae41f03ce8833). **The PR was still open and unmerged when incorporated; this is a local adoption, not a merged upstream change.** The existing AArch64 declaration is retained. The fix reads the newest printk descriptor, bounds traversal by the ring size, and logs an unexpected early stop.
+
+Before/after comparisons on eight physical Pi captures across kernel series 6.8, 6.12, 6.17, 6.18, 7.0 and 7.2 recovered one missing final row per capture (6,233 → 6,241 rows total). All preceding rows were identical. Each added message and timestamp matched capture-time `dmesg`; its text also matched a direct read of the head descriptor. All five unit tests passed, and none of these dump runs hit the traversal bound. This resolves the observed final-message omission in these captures; the fix is credited to the PR author, while the Pi validation was performed here.
+
 ## Remaining limits
 
-- **Kmsg:** a confirmed off-by-one can omit the final message. The fix and Intel reproduction remain pending.
 - **MountInfo:** the Ubuntu 26.04 captures include nsfs mounts whose `ROOT` field is rendered as `/` instead of the namespace identifier; the mounts themselves are present.
 - **RecoverFs:** full recovery runs complete, but only cached file contents are recoverable; unavailable pages may be skipped.
 - **PerfEvents:** reports BPF-attached events only.

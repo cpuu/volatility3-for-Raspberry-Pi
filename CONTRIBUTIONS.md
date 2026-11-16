@@ -9,6 +9,7 @@ Setup and examples remain in [README](README.md); test conditions and known limi
 - [Volatility 3](https://github.com/volatilityfoundation/volatility3): framework, existing Linux plugins, object and symbol APIs. The integration basis is upstream commit [`77ff0b19`](https://github.com/volatilityfoundation/volatility3/commit/77ff0b1932d77527f850c8ced01d85805ea7bf97).
 - [Abyss-W4tcher's AArch64 implementation, PR #1088](https://github.com/volatilityfoundation/volatility3/pull/1088), based on [`5ee05ce7`](https://github.com/Abyss-W4tcher/volatility3/commit/5ee05ce7b440c0d6a0d45f7f9a343b702c7b38e4): original architecture support, which already included physical-device testing.
 - AVML and dwarf2json are external acquisition and symbol-generation tools, not tools authored by this project.
+- Kmsg newest-record recovery and its unit tests are adopted from **ricardojrdez**'s [PR #2101](https://github.com/volatilityfoundation/volatility3/pull/2101), still unmerged when incorporated on 2026-11-16. This project contributed the [Pi validation](TESTING.md#kmsg-follow-up-2026-11-16), not the original fix.
 
 ## Work added in this fork
 
