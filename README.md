@@ -156,7 +156,7 @@ gpiochip0  pinctrl-bcm2711  42      -          STATUS_LED_G_CLK  ACT       Yes  
 
 **48 of the 49 originally evaluated Linux plugins** were validated on Raspberry Pi 4; the x86-only `Check_idt` is not applicable. The **eight newly developed [Raspberry Pi plugins](RPI_PLUGINS.md)** bring the total to **57 distinct plugins (49 + 8)**, separate from that original evaluation. The CLI lists **68 Linux command names**, including **11 compatibility aliases** for existing plugins. See [TESTING.md](TESTING.md) for test conditions, results and limitations.
 
-On 2026-11-16, four fixes were rechecked against existing physical Pi 4 captures. Each comparison used the same dump and symbols: committed `1df974ca` versus that code with the relevant fix reverted (retaining AArch64 enablement), rather than a full historical checkout.
+On 2026-11-16, four fixes were rechecked against existing physical Pi 4 captures. Each comparison used the same dump and symbols, comparing the tested implementation with a copy in which only the relevant fix was reversed (retaining AArch64 enablement).
 
 | Check | Without the fix | Current implementation |
 | --- | --- | --- |
@@ -171,4 +171,4 @@ Hardware evidence comes from one physical Pi 4 across the tested distributions; 
 
 ## Credits and license
 
-Built on Volatility Foundation's framework and Abyss-W4tcher's AArch64 implementation; maintained by cpuu. Original history, copyright notices and the [Volatility Software License](LICENSE.txt) are retained. See also the [upstream README](README.upstream.md).
+Built on Volatility Foundation's framework and Abyss-W4tcher's AArch64 implementation; maintained by cpuu. Original copyright notices and the [Volatility Software License](LICENSE.txt) are retained; the source implementations are identified in [Basis](#basis). See also the [upstream README](README.upstream.md).
