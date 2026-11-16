@@ -30,4 +30,4 @@ Four representative fixes provide focused before/after comparison points:
 
 ## Boundaries
 
-Hardware evidence covers one physical Pi 4, not Pi 5 or all AArch64 configurations. GPIO reports consumer labels and cached request/configuration state, not process attribution or electrical levels; controlled userspace lifecycle experiments used gpio-sim on Pi and QEMU. EEPROM configuration recovery and substantive DT-change positive cases have synthetic coverage but were not demonstrated in the eight historical physical captures. A successful exit, an empty detector output or an unchanged regression result alone is not proof of forensic correctness.
+Hardware evidence covers one physical Pi 4, not Pi 5 or all AArch64 configurations. GPIO reports consumer labels and cached request/configuration state, not process attribution or electrical levels; controlled userspace lifecycle experiments used gpio-sim on Pi and QEMU. EEPROM configuration recovery and substantive DT-change positive cases have synthetic coverage.
