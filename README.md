@@ -110,30 +110,43 @@ The [generated ISF](symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.xz) passed 
 
 ## Analyzing a sample
 
-The representative demo uses the **2026-11-19 Ubuntu 26.04.1 LTS / `7.0.0-1023-raspi` capture**, an uncompressed LiME image. Use the included [1023 ISF](symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.xz); see [Memory dump samples](DUMP_SAMPLES.md#representative-gpio-and-linux-forensic-demo) for the dump checksum, kernel Build ID and tested commit.
+This example uses the Ubuntu 26.04.1 LTS `7.0.0-1023-raspi` capture listed in [Memory dump samples](DUMP_SAMPLES.md). The capture is already in uncompressed LiME format.
 
-From the repository root, set `DUMP` to your local copy:
+From this repository's root, identify the kernel banner first (one matching result shown):
 
-```sh
-DUMP=/absolute/path/to/pi4-demo-candidate-20261119/retry/capture/memory.lime
-vol() { uv run --extra full python vol.py -s symbols -f "$DUMP" "$@"; }
-vol linux.rpi.model.Model
-vol linux.rpi.gpio.Gpio
-vol linux.rpi.gpio.Gpio --all --details
-vol linux.pslist.PsList
-vol linux.sockstat.Sockstat
+```console
+$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime banners.Banners
+
+Offset      Banner
+0xffff0000015502d0   Linux version 7.0.0-1023-raspi (buildd@bos03-arm64-076) (aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0, GNU ld (GNU Binutils for Ubuntu) 2.46) #23-Ubuntu SMP PREEMPT_DYNAMIC Sat Oct 31 00:19:11 UTC 2026 (Ubuntu 7.0.0-1023.23-raspi 7.0.14)
 ```
 
-Observed results (summarized):
+Display the board model, revision, serial number, RAM capacity and board manufacturer:
 
-| Check | Result |
-|---|---|
-| Board | Raspberry Pi 4 Model B Rev 1.4, 8 GB, BCM2711 |
-| GPIO controller `volab-userspace-20261112` | 6 requested lines / 8 total; capture-time consumer, request and requested-line direction/ActiveLow matched |
-| Processes | 229 listed; demo Python PID 5905, GPIO helper PID 5920 |
-| Network | PID 5905: localhost port 48791 LISTEN and both ends of an ESTABLISHED connection to port 51386 |
+```console
+$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
 
-The GPIO fixture uses **gpio-sim**, not physical pin voltage measurements. The [detailed walkthrough](RPI_PLUGINS.md#representative-demo) includes all eight GPIO rows, process ancestry, sockets, open-file identification and SHA-256-verified recovery through `linux.proc.Maps`, with limitations.
+Volatility 3 Framework 2.28.3
+
+Board                   Model                  Revision  Serial            RevisionCode  RAM   BoardManufacturer  SoC      Status
+Raspberry Pi 4 Model B  raspberrypi,4-model-b  1.4       1000000015089641  0x00d03114    8 GB  Sony UK            BCM2711  ok
+```
+
+Display GPIO line names, consumers, request state and cached direction/ActiveLow configuration, including unrequested lines (three selected rows shown):
+
+```console
+$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.gpio.Gpio --all
+
+Volatility 3 Framework 2.28.3
+
+Chip       Controller       Offset  HeaderPin  LineName          Consumer  Requested  KernelDirection  ActiveLow      Status
+gpiochip0  pinctrl-bcm2711  0       27         ID_SDA            (none)    No         Not requested    Not requested  ok
+...
+gpiochip0  pinctrl-bcm2711  7       26         GPIO7             spi0 CS1  Yes        Output           Yes            ok
+...
+gpiochip0  pinctrl-bcm2711  42      -          STATUS_LED_G_CLK  ACT       Yes        Output           No             ok
+...
+```
 
 ## Validation scope
 
