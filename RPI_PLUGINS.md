@@ -28,7 +28,7 @@ DUMP=/absolute/path/to/pi4-demo-candidate-20261119/retry/capture/memory.lime
 vol() { uv run --extra full python vol.py -s symbols -f "$DUMP" "$@"; }
 ```
 
-All output examples below come from actual executions on the **2026-11-19 Ubuntu 26.04.1 LTS / `7.0.0-1023-raspi` representative capture**, using analysis commit `26cee65355d4ad441603969d34428786700553db`. See [sample metadata](DUMP_SAMPLES.md#representative-gpio-and-linux-forensic-demo) for the dump checksum, Build ID and matching ISF. The [representative demo walkthrough](#representative-demo) connects the GPIO rows with general Linux artifacts. Selected rows or columns are shown where the full output is long; `...` marks omitted content. Values are preserved from the command output, with spacing adjusted for readability.
+All output examples below come from actual executions on the **2026-11-19 Ubuntu 26.04.1 LTS / `7.0.0-1023-raspi` representative capture**, using analysis commit `26cee65355d4ad441603969d34428786700553db`. See [sample metadata](DUMP_SAMPLES.md#representative-gpio-and-linux-forensic-demo) for the dump checksum, Build ID and matching ISF. Selected rows or columns are shown where the full output is long; `...` marks omitted content. Values are preserved from the command output, with spacing adjusted for readability.
 
 ### Shared options
 
@@ -267,66 +267,4 @@ To select only this controller while retaining all detailed columns:
 vol linux.rpi.gpio.Gpio --chip gpiochip2 --all --details
 ```
 
-Consumer labels identify kernel registrations, not an owning PID by themselves. The following controlled scenario corroborates the helper process independently.
-
-## Representative demo
-
-Use the `DUMP` and `vol` helper defined in [Getting started](#getting-started). Start with Model for board identity and [Gpio](#8-gpio--line-consumers-and-cached-configuration) for the eight-line comparison. The same capture then supports the process → socket → open file → recovered content walkthrough below. Offsets 4 and 6 remain unrequested; all six requested-line configurations match the capture-time reference.
-
-### Linux processes and connections
-
-```sh
-vol linux.pslist.PsList
-vol linux.pstree.PsTree
-vol linux.psaux.PsAux
-vol linux.sockstat.Sockstat
-```
-
-PsList, PsTree and PsAux each returned **229 processes**. The controlled process chain and command arguments matched the live reference:
-
-```text
-sudo 5867
-└── python3 5905  python3 pi_demo.py capture /var/tmp/pi-demo-capture-pinned-20261119
-    ├── gpio-user 5920  /var/tmp/pi4-contest-demo-pinned-20261119/gpio-user /dev/gpiochip2
-    └── avml 5922       /var/tmp/pi4-contest-demo-pinned-20261119/avml acquire --source /proc/kcore /var/tmp/pi-demo-capture-pinned-20261119/memory.lime.partial
-```
-
-Sockstat matched the Python process's live PID, FD, addresses, ports and states before and after capture:
-
-| PID | FD | Source | Destination | State |
-|---|---|---|---|---|
-| 5905 | 8 | 127.0.0.1:48791 | 0.0.0.0:0 | LISTEN |
-| 5905 | 9 | 127.0.0.1:51386 | 127.0.0.1:48791 | ESTABLISHED |
-| 5905 | 10 | 127.0.0.1:48791 | 127.0.0.1:51386 | ESTABLISHED |
-
-As a separate ordinary Linux service example, `sshd` PID 1574 owns IPv4/IPv6 port 22 listeners at FD 3/4, shared with `systemd` PID 1 at FD 102/103. Sockstat's 2,574 rows include thread/FD duplication and are not a count of unique connections.
-
-Live `ps` listed 233 processes; 228 PIDs were shared with the dump and every shared PPID matched. Acquisition is not atomic, so transient process differences remain. PID 1 arguments were blank and sshd arguments truncated; this demo does not claim complete recovery of every process's arguments.
-
-### Open file and content recovery
-
-```sh
-FILE=/var/tmp/pi-demo-capture-pinned-20261119/station-status.txt
-vol linux.lsof.Lsof --pid 5905
-vol linux.proc.Maps --pid 5905
-```
-
-Lsof identifies the marker at **PID 5905, FD 4, device 179:2, inode 411295, size 39 bytes** (the mapping also retains a descriptor). Maps identifies the same file and inode at offset zero in VMA `0xffffa930e000–0xffffa930f000`. Recover that specific 4 KiB mapping:
-
-```sh
-mkdir -p demo-recovery
-vol -o demo-recovery linux.proc.Maps --pid 5905 --address 0xffffa930e000 --dump
-# Use the 39-byte size observed in Lsof, not the full page length.
-head -c 39 demo-recovery/pid.5905.vma.0xffffa930e000-0xffffa930f000.dmp > demo-recovery/station-status.recovered.txt
-shasum -a 256 demo-recovery/station-status.recovered.txt
-```
-
-Observed SHA-256, matching the original in both capture-time JSON records:
-
-```text
-4aecf752c1098b10e5db0a7e804867aa2ab5fd8e5ac427c761ca8da487d7b49c
-```
-
-The 4 KiB raw VMA dump is retained alongside the 39-byte derived file. This fixture holds a private file mapping with `mlock`; **successful content recovery here uses `linux.proc.Maps`**. `linux.pagecache.Files` reported `CachedPages=0`, and `linux.pagecache.InodePages --find "$FILE" --dump` did not recover content. Do not treat that command's zero exit code as a successful recovery. The cause of the unavailable page-cache content was not established.
-
-The capture and evidence remain local; listing the checksum does not publish the memory image. The Pi was left running 1023, with its original 1017 normal-boot configuration preserved and the temporary GPIO controller cleaned up.
+Consumer labels identify kernel registrations, not an owning PID by themselves.
