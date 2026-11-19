@@ -24,7 +24,7 @@ uv sync --python 3.12 --extra full
 Use a memory capture and its matching kernel ISF in `symbols/linux`; no extra `-p` plugin directory is needed. See [README](README.md#memory-acquisition) for acquisition and [ISF generation](README.md#isf-generation) for symbols. Set `DUMP` to your local copy of the representative capture:
 
 ```sh
-DUMP=/absolute/path/to/pi4-demo-candidate-20261119/retry/capture/memory.lime
+DUMP=/path/to/memory.lime
 vol() { uv run --extra full python vol.py -s symbols -f "$DUMP" "$@"; }
 ```
 
