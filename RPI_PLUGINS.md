@@ -21,9 +21,14 @@ From the repository root, prepare Python 3.12 and the optional dependencies:
 uv sync --python 3.12 --extra full
 ```
 
-Use a memory capture and its matching kernel ISF in `symbols/linux`; no extra `-p` plugin directory is needed. Replace `/path/to/memory.lime` in the examples with your capture. See [README](README.md#memory-acquisition) for acquisition and [ISF generation](README.md#isf-generation) for symbols.
+Use a memory capture and its matching kernel ISF in `symbols/linux`; no extra `-p` plugin directory is needed. See [README](README.md#memory-acquisition) for acquisition and [ISF generation](README.md#isf-generation) for symbols. Set `DUMP` to your local copy of the representative capture:
 
-All output examples below come from actual executions on the same Raspberry Pi 4 Model B capture running Ubuntu 24.04.5 LTS with kernel `7.0.0-1023-raspi`. Selected rows or columns are shown where the full output is long; `...` marks omitted content. Values are preserved from the command output, with spacing adjusted for readability.
+```sh
+DUMP=/absolute/path/to/pi4-demo-candidate-20261119/retry/capture/memory.lime
+vol() { uv run --extra full python vol.py -s symbols -f "$DUMP" "$@"; }
+```
+
+All output examples below come from actual executions on the **2026-11-19 Ubuntu 26.04.1 LTS / `7.0.0-1023-raspi` representative capture**, using analysis commit `26cee65355d4ad441603969d34428786700553db`. See [sample metadata](DUMP_SAMPLES.md#representative-gpio-and-linux-forensic-demo) for the dump checksum, Build ID and matching ISF. The [representative demo walkthrough](#representative-demo) connects the GPIO rows with general Linux artifacts. Selected rows or columns are shown where the full output is long; `...` marks omitted content. Values are preserved from the command output, with spacing adjusted for readability.
 
 ### Shared options
 
@@ -52,7 +57,7 @@ It also follows the Device Tree reference to the EEPROM bootloader configuration
 **Example — selected board and boot properties:**
 
 ```console
-$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.rpi.Rpi
+$ vol linux.rpi.rpi.Rpi
 
 Category            Path                Property        Value                           Status  ...
 ...
@@ -62,7 +67,7 @@ board-identity      /                   model           Raspberry Pi 4 Model B R
 ...
 board-identity      /system             linux,revision  0xd03114                        ok      ...
 ...
-boot-configuration  /chosen             os_prefix       volab-7.0.0-1023-raspi/         ok      ...
+boot-configuration  /chosen             os_prefix       current/         ok      ...
 ...
 boot-configuration  /chosen/bootloader  boot-mode       0x1: SD/eMMC                    ok      ...
 ...
@@ -85,7 +90,7 @@ Here the raw revision is `0xd03114`, the boot mode decodes to SD/eMMC, and the f
 **Example — complete result:**
 
 ```console
-$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
+$ vol linux.rpi.model.Model
 
 Board                   Model                  Revision  Serial            RevisionCode  RAM   BoardManufacturer  SoC      Status
 Raspberry Pi 4 Model B  raspberrypi,4-model-b  1.4       1000000015089641  0x00d03114    8 GB  Sony UK            BCM2711  ok
@@ -104,13 +109,13 @@ This capture identifies a Raspberry Pi 4 Model B revision 1.4 with 8 GB RAM, man
 **Example — complete result:**
 
 ```console
-$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.boot.Boot
+$ vol linux.rpi.boot.Boot
 
-BootMedia  Partition  TryBoot  OSPrefix                 RootFilesystem  Status
-SD/eMMC    1          Yes      volab-7.0.0-1023-raspi/  LABEL=writable  ok
+BootMedia  Partition  TryBoot  OSPrefix  RootFilesystem  Status
+SD/eMMC    1          Yes      current/  LABEL=writable  ok
 ```
 
-The firmware selected SD/eMMC partition 1 with tryboot enabled and the `volab-7.0.0-1023-raspi/` OS prefix; the kernel requested `LABEL=writable` as its root filesystem.
+The firmware selected SD/eMMC partition 1 with tryboot enabled and the `current/` OS prefix; the kernel requested `LABEL=writable` as its root filesystem.
 
 ## 4. Interfaces — UART, I2C, SPI and USB settings
 
@@ -124,7 +129,7 @@ The firmware selected SD/eMMC partition 1 with tryboot enabled and the `volab-7.
 **Example — selected controllers and columns from detailed output:**
 
 ```console
-$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.interfaces.Interfaces --details
+$ vol linux.rpi.interfaces.Interfaces --details
 
 Interface  Type  Controller             DTStatus         ParentStatus            USBMode  Status  ...
 i2c0       I2C   Not specified (alias)  okay (implicit)  disabled: /soc/i2c0mux  -        ok      ...
@@ -133,12 +138,12 @@ i2c, i2c1  I2C   BCM2711 I2C            okay             okay                   
 ...
 spi0       SPI   BCM2835 SPI            okay             okay                    -        ok      ...
 ...
-serial0    UART  BCM2835 mini UART      okay             okay                    -        ok      ...
+serial0    UART  BCM2835 mini UART      disabled         okay                    -        ok      ...
 ...
 usb        USB   BCM2835 USB            okay             okay                    otg      ok      ...
 ```
 
-The `i2c0` child has an implicit local status but a disabled parent mux. The I2C1, SPI0 and serial0 controllers are enabled in the tree, and the USB controller records `otg` mode. Use `--details` without excerpting the output to see each node's exact path and compatibility identifiers.
+The `i2c0` child has an implicit local status but a disabled parent mux. I2C1 and SPI0 are enabled, serial0 is disabled, and the USB controller records `otg` mode. Use `--details` without excerpting the output to see each node's exact path and compatibility identifiers.
 
 ## 5. Console — firmware output and kernel consoles
 
@@ -152,13 +157,13 @@ The `i2c0` child has an implicit local status but a disabled parent mux. The I2C
 **Example — complete detailed result:**
 
 ```console
-$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.console.Console --details
+$ vol linux.rpi.console.Console --details
 
-FirmwareOutput    Controller         DTStatus  ParentStatus  KernelConsoles       Status  Path                  StdoutSource
-serial0:115200n8  BCM2835 mini UART  okay      okay          ttyS0,115200 | tty1  ok      /soc/serial@7e215040  /chosen/stdout-path
+FirmwareOutput    Controller         DTStatus  ParentStatus  KernelConsoles  Status                           Path                  StdoutSource
+serial0:115200n8  BCM2835 mini UART  disabled  okay          tty1            stdout target unavailable in DT  /soc/serial@7e215040  /chosen/stdout-path
 ```
 
-The firmware routes output through `serial0:115200n8`, resolved to the BCM2835 mini UART. The kernel command line requests `ttyS0,115200` and `tty1`.
+The firmware records `serial0:115200n8`, but its resolved mini UART is disabled in the Device Tree. The plugin therefore reports `stdout target unavailable in DT`; the kernel requests only `tty1`. This is a captured configuration mismatch, not a successful serial-console availability check.
 
 ## 6. Firmware — EEPROM version and timestamps
 
@@ -174,7 +179,7 @@ The timestamps describe the EEPROM firmware's build and update metadata. The ver
 **Example — selected EEPROM fields from detailed output:**
 
 ```console
-$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.firmware.Firmware --details
+$ vol linux.rpi.firmware.Firmware --details
 
 BootloaderVersion                         EEPROMBuildUTC        EEPROMUpdateUTC       Status  ...
 69471177ba7e4cb7597cb2496f2a0b23f19c1113  2025-05-08 15:21:35Z  2025-09-09 08:38:40Z  ok      ...
@@ -195,16 +200,16 @@ The capture records an EEPROM build on 2025-05-08 and an update on 2025-09-09. T
 **Example — complete default result:**
 
 ```console
-$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.dtchanges.DtChanges
+$ vol linux.rpi.dtchanges.DtChanges
 
 Change      Path  Property  BootValue  LiveValue  Status
-No changes                                        boot=1790; live=2120; unchanged=1790; generated-name=330
+No changes                                        boot=1794; live=2125; unchanged=1794; generated-name=331
 ```
 
-This capture has 1,790 unchanged properties and 330 generated name properties, with no other differences reported. To inspect the generated entries as well:
+This capture has 1,794 unchanged properties and 331 generated name properties, with no other differences reported. To inspect the generated entries as well:
 
 ```console
-$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.dtchanges.DtChanges --include-generated
+$ vol linux.rpi.dtchanges.DtChanges --include-generated
 
 Change         Path      Property  BootValue  LiveValue  Status
 ...
@@ -234,24 +239,94 @@ The default output focuses on requested lines and diagnostics. `--all` adds unre
 | `--max-lines` | Maximum lines per device; default `4096` |
 | `--max-string` | Maximum bytes per label; default `256` |
 
-**Example — three selected lines and columns from detailed output:**
-
-```console
-$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.gpio.Gpio --all --details
-
-Chip       Offset  HeaderPin  LineName          Consumer  Requested  KernelDirection  ActiveLow      Flags                          ...
-gpiochip0  0       27         ID_SDA            (none)    No         Not requested    Not requested  (none)                         ...
-...
-gpiochip0  7       26         GPIO7             spi0 CS1  Yes        Output           Yes            requested, output, active-low  ...
-...
-gpiochip0  42      -          STATUS_LED_G_CLK  ACT       Yes        Output           No             requested, output              ...
-...
-```
-
-GPIO7 is requested by `spi0 CS1` as an active-low output and maps to header pin 26. Offset 42 is assigned to the `ACT` consumer, while offset 0 has no active gpiolib request. `Consumer` is the kernel's label; direction and polarity describe cached kernel configuration. Free lines display `Not requested` rather than reusing a stale configuration as current state.
-
-To focus on a controller and retain the full detailed output, use:
+**Example — the controlled gpio-sim fixture:**
 
 ```sh
-uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.gpio.Gpio --chip gpiochip0 --all --details
+vol linux.rpi.gpio.Gpio
+vol linux.rpi.gpio.Gpio --all --details
 ```
+
+For controller `volab-userspace-20261112` (`gpiochip2`), the default output contains **six requested lines** (0, 1, 2, 3, 5, 7); the detailed output contains **all eight lines**. Other controllers are also present in the full output. The selected controller's rows are shown below with columns omitted for readability; all eight have `Status=ok` and `ConsumerLayout=rcu-label`.
+
+| Offset | LineName | Consumer | Requested | KernelDirection | ActiveLow | RawFlags |
+|---|---|---|---|---|---|---|
+| 0 | VOLAB_USER_0 | volab-user-0 | Yes | Output | Yes | 0x43 |
+| 1 | VOLAB_USER_1 | volab-user-1 | Yes | Input | Yes | 0x41 |
+| 2 | VOLAB_USER_2 | volab-user-2 | Yes | Input | No | 0x1 |
+| 3 | VOLAB_USER_3 | volab-user-3 | Yes | Output | No | 0x3 |
+| 4 | VOLAB_USER_4 | (none) | No | Not requested | Not requested | 0x2 |
+| 5 | VOLAB_USER_5 | volab-user-5 | Yes | Input | No | 0x1 |
+| 6 | VOLAB_USER_6 | (none) | No | Not requested | Not requested | 0x0 |
+| 7 | VOLAB_USER_7 | volab-user-hog | Yes | Output | No | 0x803 |
+
+The capture's `before.json` and `after.json` agree on the controller, line names, consumers and request states. All six requested lines also agree on direction and ActiveLow. The live API retains Output/false at unrequested offset 4 and Input/false at offset 6; the plugin deliberately reports `Not requested` for these fields instead of implying an active request. These are **gpio-sim kernel records, not physical header voltage measurements**.
+
+To select only this controller while retaining all detailed columns:
+
+```sh
+vol linux.rpi.gpio.Gpio --chip gpiochip2 --all --details
+```
+
+Consumer labels identify kernel registrations, not an owning PID by themselves. The following controlled scenario corroborates the helper process independently.
+
+## Representative demo
+
+Use the `DUMP` and `vol` helper defined in [Getting started](#getting-started). Start with Model for board identity and [Gpio](#8-gpio--line-consumers-and-cached-configuration) for the eight-line comparison. The same capture then supports the process → socket → open file → recovered content walkthrough below. Offsets 4 and 6 remain unrequested; all six requested-line configurations match the capture-time reference.
+
+### Linux processes and connections
+
+```sh
+vol linux.pslist.PsList
+vol linux.pstree.PsTree
+vol linux.psaux.PsAux
+vol linux.sockstat.Sockstat
+```
+
+PsList, PsTree and PsAux each returned **229 processes**. The controlled process chain and command arguments matched the live reference:
+
+```text
+sudo 5867
+└── python3 5905  python3 pi_demo.py capture /var/tmp/pi-demo-capture-pinned-20261119
+    ├── gpio-user 5920  /var/tmp/pi4-contest-demo-pinned-20261119/gpio-user /dev/gpiochip2
+    └── avml 5922       /var/tmp/pi4-contest-demo-pinned-20261119/avml acquire --source /proc/kcore /var/tmp/pi-demo-capture-pinned-20261119/memory.lime.partial
+```
+
+Sockstat matched the Python process's live PID, FD, addresses, ports and states before and after capture:
+
+| PID | FD | Source | Destination | State |
+|---|---|---|---|---|
+| 5905 | 8 | 127.0.0.1:48791 | 0.0.0.0:0 | LISTEN |
+| 5905 | 9 | 127.0.0.1:51386 | 127.0.0.1:48791 | ESTABLISHED |
+| 5905 | 10 | 127.0.0.1:48791 | 127.0.0.1:51386 | ESTABLISHED |
+
+As a separate ordinary Linux service example, `sshd` PID 1574 owns IPv4/IPv6 port 22 listeners at FD 3/4, shared with `systemd` PID 1 at FD 102/103. Sockstat's 2,574 rows include thread/FD duplication and are not a count of unique connections.
+
+Live `ps` listed 233 processes; 228 PIDs were shared with the dump and every shared PPID matched. Acquisition is not atomic, so transient process differences remain. PID 1 arguments were blank and sshd arguments truncated; this demo does not claim complete recovery of every process's arguments.
+
+### Open file and content recovery
+
+```sh
+FILE=/var/tmp/pi-demo-capture-pinned-20261119/station-status.txt
+vol linux.lsof.Lsof --pid 5905
+vol linux.proc.Maps --pid 5905
+```
+
+Lsof identifies the marker at **PID 5905, FD 4, device 179:2, inode 411295, size 39 bytes** (the mapping also retains a descriptor). Maps identifies the same file and inode at offset zero in VMA `0xffffa930e000–0xffffa930f000`. Recover that specific 4 KiB mapping:
+
+```sh
+mkdir -p demo-recovery
+vol -o demo-recovery linux.proc.Maps --pid 5905 --address 0xffffa930e000 --dump
+# Use the 39-byte size observed in Lsof, not the full page length.
+head -c 39 demo-recovery/pid.5905.vma.0xffffa930e000-0xffffa930f000.dmp > demo-recovery/station-status.recovered.txt
+shasum -a 256 demo-recovery/station-status.recovered.txt
+```
+
+Observed SHA-256, matching the original in both capture-time JSON records:
+
+```text
+4aecf752c1098b10e5db0a7e804867aa2ab5fd8e5ac427c761ca8da487d7b49c
+```
+
+The 4 KiB raw VMA dump is retained alongside the 39-byte derived file. This fixture holds a private file mapping with `mlock`; **successful content recovery here uses `linux.proc.Maps`**. `linux.pagecache.Files` reported `CachedPages=0`, and `linux.pagecache.InodePages --find "$FILE" --dump` did not recover content. Do not treat that command's zero exit code as a successful recovery. The cause of the unavailable page-cache content was not established.
+
+The capture and evidence remain local; listing the checksum does not publish the memory image. The Pi was left running 1023, with its original 1017 normal-boot configuration preserved and the temporary GPIO controller cleaned up.
