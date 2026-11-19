@@ -55,7 +55,7 @@ Although the Raspberry Pi 5 became available in [October 2023](https://www.raspb
 
 ## Memory acquisition
 
-Run the official [AVML 0.21.0 AArch64 binary](https://github.com/microsoft/avml/releases/tag/v0.21.0) on the Pi. Allow about 8 GiB of free space for the recorded 8 GB model.
+Run the official [AVML 0.21.0 AArch64 binary](https://github.com/microsoft/avml/releases/tag/v0.21.0) on the Pi. Allow at least 10 GiB of free disk space for the recorded 8 GB model. The basic acquisition commands below do not create the controlled GPIO/process/file fixture used in the representative demo.
 
 ```sh
 set -eu
@@ -84,7 +84,7 @@ cd samples/pi4/capture-directory
 shasum -a 256 -c memory.lime.sha256
 ```
 
-Details of eight representative memory dumps used in these experiments are available in [Memory dump samples](DUMP_SAMPLES.md).
+Details of the representative GPIO/Linux forensic demo and eight earlier captures are available in [Memory dump samples](DUMP_SAMPLES.md).
 
 ## ISF generation
 
@@ -110,47 +110,105 @@ The [generated ISF](symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.xz) passed 
 
 ## Analyzing a sample
 
-This example uses the Ubuntu 24.04.5 LTS `7.0.0-1023-raspi` capture listed in [Memory dump samples](DUMP_SAMPLES.md). If using its compressed AVML original, convert it to LiME on Linux with AVML 0.21.0 for that host's architecture:
+The representative demo uses the **2026-11-19 Ubuntu 26.04.1 LTS / `7.0.0-1023-raspi` capture** in [Memory dump samples](DUMP_SAMPLES.md#representative-gpio-and-linux-forensic-demo). It is an original **uncompressed LiME** file; no AVML conversion is needed. This same dump connects GPIO configuration to process ancestry, network endpoints, an open file and recovered file content.
+
+The capture was analyzed with commit `26cee65355d4ad441603969d34428786700553db`. Its live kernel Build ID was `e1460768fbd96b9063864daf8330650751eb2f09`, with 4,096-byte pages. Use the included `symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.xz` (SHA-256 `07e46196ade1e3f73c5ca2c1a841db1f6f308007af02ea2314dcc6573972f708`). Existing uncommitted changes in the development checkout were excluded from this analysis.
+
+From the repository root, set `DUMP` to your local copy and verify its checksum:
 
 ```sh
-./avml convert memory.avml memory.lime
+DUMP=/absolute/path/to/pi4-demo-candidate-20261119/retry/capture/memory.lime
+printf '%s  %s\n' bc195a3b0232aa1020ddb396a45750cc30d5bddd249344e8d316dbc876c157d9 "$DUMP" | shasum -a 256 -c -
+vol() { uv run --extra full python vol.py -s symbols -f "$DUMP" "$@"; }
+vol linux.rpi.model.Model
 ```
 
-Use the converted `memory.lime` on the analysis host. From this repository's root, identify the kernel banner first (one matching result shown):
+Observed model output:
 
-```console
-$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime banners.Banners
-
-Offset      Banner
-0x15502d0   Linux version 7.0.0-1023-raspi (buildd@bos03-arm64-076) (aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0, GNU ld (GNU Binutils for Ubuntu) 2.46) #23-Ubuntu SMP PREEMPT_DYNAMIC Sat Oct 31 00:19:11 UTC 2026 (Ubuntu 7.0.0-1023.23-raspi 7.0.14)
+```text
+Board                   Model                 Revision  Serial            RevisionCode  RAM   BoardManufacturer  SoC      Status
+Raspberry Pi 4 Model B   raspberrypi,4-model-b  1.4       1000000015089641  0x00d03114    8 GB  Sony UK            BCM2711  ok
 ```
 
-Display the board model, revision, serial number, RAM capacity and board manufacturer:
+### GPIO: compare eight lines with capture-time observations
 
-```console
-$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
-
-Volatility 3 Framework 2.28.3
-
-Board                   Model                  Revision  Serial            RevisionCode  RAM   BoardManufacturer  SoC      Status
-Raspberry Pi 4 Model B  raspberrypi,4-model-b  1.4       1000000015089641  0x00d03114    8 GB  Sony UK            BCM2711  ok
+```sh
+vol linux.rpi.gpio.Gpio
+vol linux.rpi.gpio.Gpio --all --details
 ```
 
-Display GPIO line names, consumers, request state and cached direction/ActiveLow configuration, including unrequested lines (three selected rows shown):
+For controller `volab-userspace-20261112` (`gpiochip2`), the default output contains **six requested lines** (0, 1, 2, 3, 5, 7); the detailed output contains **all eight lines**. Other controllers are also present in the full output. The selected controller's rows are shown below with columns omitted for readability; all eight have `Status=ok` and `ConsumerLayout=rcu-label`.
 
-```console
-$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.gpio.Gpio --all
+| Offset | LineName | Consumer | Requested | KernelDirection | ActiveLow | RawFlags |
+|---|---|---|---|---|---|---|
+| 0 | VOLAB_USER_0 | volab-user-0 | Yes | Output | Yes | 0x43 |
+| 1 | VOLAB_USER_1 | volab-user-1 | Yes | Input | Yes | 0x41 |
+| 2 | VOLAB_USER_2 | volab-user-2 | Yes | Input | No | 0x1 |
+| 3 | VOLAB_USER_3 | volab-user-3 | Yes | Output | No | 0x3 |
+| 4 | VOLAB_USER_4 | (none) | No | Not requested | Not requested | 0x2 |
+| 5 | VOLAB_USER_5 | volab-user-5 | Yes | Input | No | 0x1 |
+| 6 | VOLAB_USER_6 | (none) | No | Not requested | Not requested | 0x0 |
+| 7 | VOLAB_USER_7 | volab-user-hog | Yes | Output | No | 0x803 |
 
-Volatility 3 Framework 2.28.3
+The capture's `before.json` and `after.json` agree on the controller, line names, consumers and request states. All six requested lines also agree on direction and ActiveLow. The live API retains Output/false at unrequested offset 4 and Input/false at offset 6; the plugin deliberately reports `Not requested` for these fields instead of implying an active request. These are **gpio-sim kernel records, not physical header voltage measurements**.
 
-Chip       Controller       Offset  HeaderPin  LineName          Consumer  Requested  KernelDirection  ActiveLow      Status
-gpiochip0  pinctrl-bcm2711  0       27         ID_SDA            (none)    No         Not requested    Not requested  ok
-...
-gpiochip0  pinctrl-bcm2711  7       26         GPIO7             spi0 CS1  Yes        Output           Yes            ok
-...
-gpiochip0  pinctrl-bcm2711  42      -          STATUS_LED_G_CLK  ACT       Yes        Output           No             ok
-...
+### Linux processes and connections
+
+```sh
+vol linux.pslist.PsList
+vol linux.pstree.PsTree
+vol linux.psaux.PsAux
+vol linux.sockstat.Sockstat
 ```
+
+PsList, PsTree and PsAux each returned **229 processes**. The controlled process chain and command arguments matched the live reference:
+
+```text
+sudo 5867
+└── python3 5905  python3 pi_demo.py capture /var/tmp/pi-demo-capture-pinned-20261119
+    ├── gpio-user 5920  /var/tmp/pi4-contest-demo-pinned-20261119/gpio-user /dev/gpiochip2
+    └── avml 5922       /var/tmp/pi4-contest-demo-pinned-20261119/avml acquire --source /proc/kcore /var/tmp/pi-demo-capture-pinned-20261119/memory.lime.partial
+```
+
+Sockstat matched the Python process's live PID, FD, addresses, ports and states before and after capture:
+
+| PID | FD | Source | Destination | State |
+|---|---|---|---|---|
+| 5905 | 8 | 127.0.0.1:48791 | 0.0.0.0:0 | LISTEN |
+| 5905 | 9 | 127.0.0.1:51386 | 127.0.0.1:48791 | ESTABLISHED |
+| 5905 | 10 | 127.0.0.1:48791 | 127.0.0.1:51386 | ESTABLISHED |
+
+As a separate ordinary Linux service example, `sshd` PID 1574 owns IPv4/IPv6 port 22 listeners at FD 3/4, shared with `systemd` PID 1 at FD 102/103. Sockstat's 2,574 rows include thread/FD duplication and are not a count of unique connections.
+
+Live `ps` listed 233 processes; 228 PIDs were shared with the dump and every shared PPID matched. Acquisition is not atomic, so transient process differences remain. PID 1 arguments were blank and sshd arguments truncated; this demo does not claim complete recovery of every process's arguments.
+
+### Open file and content recovery
+
+```sh
+FILE=/var/tmp/pi-demo-capture-pinned-20261119/station-status.txt
+vol linux.lsof.Lsof --pid 5905
+vol linux.proc.Maps --pid 5905
+```
+
+Lsof identifies the marker at **PID 5905, FD 4, device 179:2, inode 411295, size 39 bytes** (the mapping also retains a descriptor). Maps identifies the same file and inode at offset zero in VMA `0xffffa930e000–0xffffa930f000`. Recover that specific 4 KiB mapping:
+
+```sh
+mkdir -p demo-recovery
+vol -o demo-recovery linux.proc.Maps --pid 5905 --address 0xffffa930e000 --dump
+# Use the 39-byte size observed in Lsof, not the full page length.
+head -c 39 demo-recovery/pid.5905.vma.0xffffa930e000-0xffffa930f000.dmp > demo-recovery/station-status.recovered.txt
+shasum -a 256 demo-recovery/station-status.recovered.txt
+```
+
+Observed SHA-256, matching the original in both capture-time JSON records:
+
+```text
+4aecf752c1098b10e5db0a7e804867aa2ab5fd8e5ac427c761ca8da487d7b49c
+```
+
+The 4 KiB raw VMA dump is retained alongside the 39-byte derived file. This fixture holds a private file mapping with `mlock`; **successful content recovery here uses `linux.proc.Maps`**. `linux.pagecache.Files` reported `CachedPages=0`, and `linux.pagecache.InodePages --find "$FILE" --dump` did not recover content. Do not treat that command's zero exit code as a successful recovery. The cause of the unavailable page-cache content was not established.
+
+The capture and evidence remain local; listing the checksum does not publish the memory image. The Pi was left running 1023, with its original 1017 normal-boot configuration preserved and the temporary GPIO controller cleaned up.
 
 ## Validation scope
 
