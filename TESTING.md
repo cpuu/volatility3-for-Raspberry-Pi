@@ -1,6 +1,6 @@
 # Linux plugin validation
 
-Updated 2026-11-12: **48 of the 49 originally evaluated Linux plugins** were validated on Raspberry Pi 4 for the cases described here. `Check_idt` is excluded because it inspects the x86 Interrupt Descriptor Table, which has no AArch64 equivalent for this plugin to inspect.
+Updated 2026-11-19: **48 of the 49 originally evaluated Linux plugins** were validated on Raspberry Pi 4 for the cases described here. `Check_idt` is excluded because it inspects the x86 Interrupt Descriptor Table, which has no AArch64 equivalent for this plugin to inspect.
 
 The earlier six-environment regression covered three Ubuntu 24.04 kernels, Raspberry Pi OS, Kali Linux and Fedora: **288 runs (48 plugins × 6 environments) completed normally and matched the previous results**. The Ubuntu 26.04 follow-up runs below are separate from that count.
 
@@ -15,7 +15,7 @@ Raspberry Pi OS 64-bit was also tested on 2026-11-11, using a custom-built `6.18
 3. Install that kernel and its matching modules, DTBs and overlays on the Pi, generate its initramfs on Raspberry Pi OS, and boot it while retaining the original kernel as a fallback.
 4. Generate the ISF with dwarf2json from the same build's unstripped `vmlinux` and `System.map`, verify the running kernel's Build ID and banner, then acquire memory. Rebuilding the same version alone does not establish a match to the stock kernel binary.
 
-All 48 applicable plugins completed on a verified LiME conversion of the AVML 0.21.0 capture. Independent references matched for 42 plugins; five initially empty detectors subsequently passed controlled checks (four analysis simulations and one live no-op notifier).
+All 48 applicable plugins completed on a verified LiME conversion of the AVML 0.21.0 capture. Independent references matched for 42 plugins; five initially empty detectors subsequently passed controlled checks (four analysis simulations and one live no-op notifier). The remaining plugin, Kmsg, initially omitted the final message. Applying ricardojrdez’s [PR #2101](https://github.com/volatilityfoundation/volatility3/pull/2101) locally resolved the discrepancy in our Pi validation; the PR was not yet merged upstream when incorporated.
 
 ## Ubuntu
 
@@ -23,12 +23,12 @@ All 48 applicable plugins completed on a verified LiME conversion of the AVML 0.
 - AArch64, 4 KB pages, 48-bit virtual addresses
 - Ubuntu 24.04.5 LTS: `6.8.0-1068-raspi`, `6.17.0-1021-raspi`, `7.0.0-1023-raspi`
 - Ubuntu 26.04.1 LTS: `7.0.0-1017-raspi`, `7.0.0-1023-raspi`
-- AVML 0.21.0 compressed captures; matching [kernel ISFs](symbols/linux)
+- AVML 0.21.0: compressed captures for the earlier regression runs and uncompressed LiME for the 2026-11-19 example; matching [kernel ISFs](symbols/linux)
 - Analysis on Apple Silicon macOS with Python 3.12.14 and `uv sync --locked --extra full`
 
 The tests used several captures from the same Pi configuration, including controlled processes, sockets, tracing events and a no-op kernel notifier. The QEMU and image-format experiments are separate from this plugin validation.
 
-Both Ubuntu 26.04 captures completed all 48 plugin runs. In each capture, selected-field checks matched for 41 of 43 plugins checked; Kmsg and MountInfo retained discrepancies at the time of those runs; the subsequent Kmsg fix is documented below, while MountInfo remains unresolved. The other five detector outputs were empty without positive fixtures in those captures. The README and catalog examples use the Ubuntu 24.04.5 / `7.0.0-1023-raspi` capture.
+The earlier Ubuntu 26.04.1 captures on kernels `7.0.0-1017-raspi` and `7.0.0-1023-raspi` completed all 48 plugin runs. In each capture, selected-field checks matched for 41 of 43 plugins checked; Kmsg and MountInfo retained discrepancies at the time of those runs; the subsequent Kmsg fix is documented below, while MountInfo remains unresolved. The other five detector outputs were empty without positive fixtures in those captures. The README and catalog examples use the separate 2026-11-19 Ubuntu 26.04.1 LTS / `7.0.0-1023-raspi` capture documented in [Memory dump samples](DUMP_SAMPLES.md). The earlier full-suite counts do not describe that capture.
 
 ## Fedora
 

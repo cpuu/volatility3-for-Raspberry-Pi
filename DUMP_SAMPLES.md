@@ -1,6 +1,6 @@
 # Memory dump samples
 
-Nine captures are documented here: the current GPIO/Linux forensic demo is **uncompressed LiME**, while the eight earlier samples below are original Snappy-compressed AVML files. Sizes are rounded decimal GB (1 GB = 1,000,000,000 bytes).
+The memory sample below is planned for submission to the Volatility Plugin Contest 2026 and will be made public after judging is complete. It is an **uncompressed LiME** capture. Eight additional samples are listed below as original Snappy-compressed AVML files. Sizes are rounded decimal GB (1 GB = 1,000,000,000 bytes).
 
 ## Representative GPIO and Linux forensic demo
 
@@ -17,16 +17,15 @@ Nine captures are documented here: the current GPIO/Linux forensic demo is **unc
 | Analysis commit | `26cee65355d4ad441603969d34428786700553db` |
 | ISF | [`ubuntu-7.0.0-1023-raspi-arm64.json.xz`](symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.xz) |
 | ISF SHA-256 | `07e46196ade1e3f73c5ca2c1a841db1f6f308007af02ea2314dcc6573972f708` |
-| Local archive, relative to the experiment workspace | `pi4-demo-candidate-20261119/retry/capture/memory.lime` |
-| Availability | Local validation candidate; not uploaded or released for download |
+| Availability | Planned contest submission; public release after judging |
 
 Pi and Mac SHA-256 values matched. The same capture's `before.json` and `after.json` are preserved with the dump. The accompanying `analysis/`, `validation.json`, `general-linux-validation.json`, `maps-recovery-validation.json`, `candidate.json` and `EVIDENCE-SHA256SUMS` record the commands and comparisons.
 
 Verified artifacts: gpio-sim controller `volab-userspace-20261112` (six default/eight detailed rows); board model; 229 enumerated processes and the controlled `sudo 5867 → python3 5905 → gpio-user 5920 / avml 5922` chain; Python's localhost LISTEN/ESTABLISHED endpoints on ports 48791/51386; SSH listener ownership; the marker file's PID/FD/path/inode; and its 39-byte content recovered with `linux.proc.Maps`, with SHA-256 `4aecf752c1098b10e5db0a7e804867aa2ab5fd8e5ac427c761ca8da487d7b49c` matching the live reference.
 
-This is not a successful InodePages recovery example: the marker's recorded page cache was empty. GPIO refers to simulated-controller kernel state, not measured pin voltage. Transient process sets differ during live acquisition, and some system-process argument strings are incomplete. See [the current commands and observed output](README.md#analyzing-a-sample).
+This is not a successful InodePages recovery example: the marker's recorded page cache was empty. GPIO refers to simulated-controller kernel state, not measured pin voltage. Transient process sets differ during live acquisition, and some system-process argument strings are incomplete. See [board and GPIO command examples](README.md#analyzing-a-sample).
 
-## Earlier compressed AVML captures
+## Eight additional compressed AVML captures
 
 | Distribution | Kernel | Size (GB) | SHA-256 |
 |---|---|---:|---|

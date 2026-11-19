@@ -4,11 +4,11 @@ Raspberry Pi / AArch64 Linux memory analysis, maintained independently by [cpuu]
 
 My contributions in this repository include (see [contribution details](CONTRIBUTIONS.md) for inherited work and contribution scope):
 
-- **Integration and broader plugin support:** updated the original AArch64 implementation for newer Volatility 3 code, enabled 23 Linux plugins through architecture declarations, and made plugin or shared-core fixes for 16 others; nine existing plugins needed no additional changes.
+- **Integration and broader plugin support:** updated the original AArch64 implementation for newer Volatility 3 code and extended Linux plugin support through architecture declarations and plugin or shared-core fixes.
 - **Bug fixes:** corrected Bash history scanning, PsScan PID limits, kernel-thread attribution, kallsyms decoding, syscall-table analysis, socket scanning and framebuffer rendering.
 - **ARM64 analysis enhancements:** added ARM64 kernel-stack traversal and sparse-memory page-address handling, and improved reconstruction of resident kernel modules as analysis ELF files.
-- **New Raspberry Pi-specific plugins:** developed eight plugins for board identification, boot configuration, interfaces, console settings, firmware metadata, GPIO consumer labels and cached configuration, and Device Tree analysis; see the [plugin catalog](RPI_PLUGINS.md).
-- **Hardware validation:** tested 48 applicable Linux plugins on physical Raspberry Pi 4 captures across Ubuntu 24.04/26.04, Raspberry Pi OS, Kali Linux and Fedora, using capture-time references, controlled fixtures and regression runs.
+- **New Raspberry Pi-specific plugins:** developed plugins for board identification, boot configuration, interfaces, console settings, firmware metadata, GPIO consumer labels and cached configuration, and Device Tree analysis; see the [plugin catalog](RPI_PLUGINS.md).
+- **Hardware validation:** tested applicable Linux plugins on physical Raspberry Pi 4 captures across Ubuntu 24.04/26.04, Raspberry Pi OS, Kali Linux and Fedora, using capture-time references, controlled fixtures and regression runs.
 - **Reproducible samples and symbols:** generated and verified matching kernel ISFs, published them as compressed `.json.xz` files, and documented acquisition steps and sample checksums.
 
 ## Basis
@@ -150,7 +150,7 @@ gpiochip0  pinctrl-bcm2711  42      -          STATUS_LED_G_CLK  ACT       Yes  
 
 ## Validation scope
 
-**48 of the 49 originally evaluated Linux plugins** were validated on Raspberry Pi 4; the x86-only `Check_idt` is not applicable. The **eight newly developed [Raspberry Pi plugins](RPI_PLUGINS.md)** bring the total to **57 distinct plugins (49 + 8)**, separate from that original evaluation. The CLI lists **68 Linux command names**, including **11 compatibility aliases** for existing plugins. See [TESTING.md](TESTING.md) for test conditions, results and limitations.
+The repository contains **57 distinct Linux plugins**. See [TESTING.md](TESTING.md#coverage) for the count breakdown, validation coverage and limitations.
 
 On 2026-11-16, four fixes were rechecked against existing physical Pi 4 captures. Each comparison used the same dump and symbols, comparing the tested implementation with a copy in which only the relevant fix was reversed (retaining AArch64 enablement).
 

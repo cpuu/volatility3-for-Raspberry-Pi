@@ -15,7 +15,7 @@ Setup and examples remain in [README](README.md); test conditions and known limi
 
 | Area | Contribution |
 | --- | --- |
-| Integration | Adapted the existing AArch64 work to newer Volatility code. Of the original 49 Linux plugins evaluated, 23 needed architecture declarations, 16 needed plugin or shared-core fixes, nine needed no additional changes, and the x86-only IDT plugin was inapplicable. These are coverage categories, not 48 newly written plugins. |
+| Integration | Adapted the existing AArch64 work to newer Volatility code through architecture declarations and plugin or shared-core fixes. See [coverage](TESTING.md#coverage) for the breakdown of existing implementations. |
 | Analysis fixes | Address-range handling, PID bounds, kernel-thread attribution, kallsyms decoding, syscall analysis, socket candidates, sparse-memory page conversion, module reconstruction and framebuffer decoding. Changes to shared code can benefit several plugins. |
 | New Raspberry Pi plugins | **Developed eight new Raspberry Pi-specific plugins in this repository:** Rpi, Model, Boot, Interfaces, Console, Firmware, DtChanges and Gpio. They recover and interpret Device Tree properties, board identity, boot configuration, peripheral and console settings, firmware metadata, retained-boot-FDT differences, and GPIO consumer/configuration state. Several share a common DT reader. See the [catalog](RPI_PLUGINS.md). |
 | Validation | Acquired physical Pi 4 captures across the documented distributions, generated matching ISFs, and compared selected results with capture-time references and controlled fixtures. Existing regression runs measure consistency separately from correctness. |
