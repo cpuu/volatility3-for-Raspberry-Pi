@@ -1,0 +1,31 @@
+name: Raspberry Pi integration checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Install Snappy (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libsnappy1v5
+      - name: Install Snappy (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install snappy
+          echo "DYLD_FALLBACK_LIBRARY_PATH=$(brew --prefix snappy)/lib" >> "$GITHUB_ENV"
+      - run: uv sync --locked --extra test --extra arrow
+      - name: Run unit and synthetic regression tests
+        run: uv run --no-sync pytest test --volatility vol.py -q -rs

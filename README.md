@@ -1,0 +1,167 @@
+# volatility3 for Raspberry Pi
+
+Raspberry Pi / AArch64 Linux memory analysis, maintained independently by [cpuu](https://github.com/cpuu), based on [Volatility 3](https://github.com/volatilityfoundation/volatility3) and [Abyss-W4tcher's AArch64 implementation (#1088)](https://github.com/volatilityfoundation/volatility3/pull/1088).
+
+This project extends Linux memory analysis on Raspberry Pi with ARM64 integration fixes and eight Pi-specific plugins. Validation covers **eight memory captures and 384 plugin runs**, together with controlled recovery comparisons and automated tests.
+
+- **ARM64 integration:** adapted the existing AArch64 implementation to Volatility 3 v2.28.2 and subsequent upstream development changes.
+- **Analysis improvements:** corrected Bash history scanning, PID bounds, kernel-thread attribution, kallsyms decoding, syscall and socket analysis, and framebuffer rendering. Added ARM64 kernel-stack traversal, sparse-memory page handling and improved module reconstruction as analysis ELF files.
+- **Raspberry Pi artifacts:** board identity, boot configuration, interfaces, console settings, firmware metadata, Device Tree differences, and GPIO consumer labels and cached configuration. See the [plugin catalog](RPI_PLUGINS.md).
+- **Samples and symbols:** matching compressed kernel ISFs, acquisition instructions and sample checksums. See [Memory dump samples](DUMP_SAMPLES.md).
+
+[CONTRIBUTIONS.md](CONTRIBUTIONS.md) describes the work added in this fork and its foundations; [TESTING.md](TESTING.md) records the validation methods and results.
+
+## Basis
+
+Based on [Volatility 3](https://github.com/volatilityfoundation/volatility3), including [v2.28.2](https://github.com/volatilityfoundation/volatility3/releases/tag/v2.28.2) and subsequent development changes, and [Abyss-W4tcher's AArch64 implementation (#1088)](https://github.com/volatilityfoundation/volatility3/pull/1088).
+
+## Quick start
+
+Use Python 3.12 and [uv](https://docs.astral.sh/uv/). Collect memory on the Pi and analyze it on the Mac or another host.
+
+```sh
+git clone https://github.com/cpuu/volatility3-for-Raspberry-Pi.git
+cd volatility3-for-Raspberry-Pi
+uv sync --python 3.12 --extra full
+mkdir -p symbols/linux
+# Use an included ISF, or add one matching the captured kernel build to symbols/linux.
+uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
+uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.pslist.PsList
+```
+
+## Test environment
+
+Hardware validation used a Raspberry Pi 4 across Ubuntu 24.04/26.04, Raspberry Pi OS, Kali Linux and Fedora. Ubuntu and Fedora supplied matching debug `vmlinux` packages; Raspberry Pi OS and Kali used custom kernels with DWARF debug information. See [test environments](TESTING.md#test-environments).
+
+Ubuntu reference environment:
+
+| Component | Environment |
+|---|---|
+| Hardware | Raspberry Pi 4 Model B Rev 1.4, 8 GB RAM |
+| Ubuntu 26.04.1 LTS, AArch64 | `7.0.0-1017-raspi`, `7.0.0-1023-raspi` |
+| Ubuntu 24.04.5 LTS, AArch64 | `6.8.0-1064-raspi`, `6.8.0-1068-raspi`, `6.17.0-1021-raspi`, `7.0.0-1023-raspi` |
+| Memory | 4 KB pages, 48-bit virtual addresses |
+| Acquisition | AVML 0.21.0, root access to `/proc/kcore` |
+| Analysis / ISF generation | Apple Silicon Mac, Python 3.12.14, dwarf2json 0.9.0 |
+
+Tested inputs include LiME and Snappy-compressed AVML from a physical Pi 4, and ELF64 from a QEMU AArch64 VM. The eight-sample validation used LiME conversions. For compressed captures, use AVML 0.21.0's `avml convert` command to prepare LiME input.
+
+Although the Raspberry Pi 5 became available in [October 2023](https://www.raspberrypi.com/news/raspberry-pi-5-available-now/), **skyrocketing hardware prices** have made expanding this research difficult. The prices I have encountered in South Korea are approximately KRW 300,000 (USD 225) for the 8 GB model and KRW 600,000 (USD 450) for the 16 GB model. As an independent researcher without dedicated research funding or hardware sponsorship, these costs currently exceed this project's budget; hardware donations or research support would help make this work possible. I plan to extend validation to the Raspberry Pi 5 in 2027 and, if successful, submit the findings to conferences and journals.
+
+## Memory acquisition
+
+Run the official [AVML 0.21.0 AArch64 binary](https://github.com/microsoft/avml/releases/tag/v0.21.0) on the Pi. Allow at least 10 GiB of free disk space for the recorded 8 GB model. For the controlled demo and its verified artifacts, see [Memory dump samples](DUMP_SAMPLES.md#representative-gpio-and-linux-forensic-demo).
+
+```sh
+set -eu
+curl -fL https://github.com/microsoft/avml/releases/download/v0.21.0/avml-aarch64 -o avml
+printf '%s  %s\n' d97fd8bf043c8a14ad2bfe18ef6352ac9d3277a962f252d11fa34f4d40bacbfe avml | sha256sum -c -
+chmod 700 avml
+umask 077
+capture_dir="$PWD/capture-$(date -u +%Y%m%dT%H%M%SZ)"
+mkdir "$capture_dir"
+uname -a > "$capture_dir/uname.txt"
+sudo ./avml acquire --source /proc/kcore "$capture_dir/memory.lime"
+sudo chown "$(id -u):$(id -g)" "$capture_dir/memory.lime"
+(cd "$capture_dir" && sha256sum memory.lime > memory.lime.sha256)
+```
+
+The default output is uncompressed LiME; add `--compress` for Snappy-compressed AVML.
+
+For direct compressed-input reading on macOS, make the native Snappy library discoverable, for example with `DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib` for a Homebrew installation.
+
+Transfer the capture directory to the analysis host and verify its checksum:
+
+```sh
+mkdir -p samples/pi4
+scp -r user@raspberry-pi:/absolute/path/to/capture-directory samples/pi4/
+cd samples/pi4/capture-directory
+shasum -a 256 -c memory.lime.sha256
+```
+
+Details of the representative GPIO/Linux forensic demo and eight earlier captures are available in [Memory dump samples](DUMP_SAMPLES.md).
+
+## ISF generation
+
+Generate an ISF with [dwarf2json](https://github.com/volatilityfoundation/dwarf2json) from the captured kernel's matching debug `vmlinux`. The example below uses the Ubuntu `7.0.0-1023-raspi` debug package, whose Build ID matched the captured kernel. Packages are available from the [Ubuntu debug symbol archive](https://ddebs.ubuntu.com/pool/main/l/linux-raspi/) and [Fedora Koji](https://kojipkgs.fedoraproject.org/packages/kernel/).
+
+With Go installed, run the following from the repository root:
+
+```sh
+set -eu
+mkdir -p symbol-input/extracted symbols/linux tools
+curl -fL https://ddebs.ubuntu.com/pool/main/l/linux-raspi/linux-image-7.0.0-1023-raspi-dbgsym_7.0.0-1023.23_arm64.ddeb -o symbol-input/kernel-dbgsym.ddeb
+printf '%s  %s\n' 81570d982b3223ce19420d4aa5678224016e74b32fccdad3e23a5f39262bf0a4 symbol-input/kernel-dbgsym.ddeb | shasum -a 256 -c -
+ar -p symbol-input/kernel-dbgsym.ddeb data.tar.xz > symbol-input/kernel-debug-data.tar.xz
+tar -xJf symbol-input/kernel-debug-data.tar.xz -C symbol-input/extracted ./usr/lib/debug/boot/vmlinux-7.0.0-1023-raspi
+
+git clone https://github.com/volatilityfoundation/dwarf2json.git tools/dwarf2json
+git -C tools/dwarf2json checkout 9f14607e0d339d463ea725fbd5c08aa7b7d40f75
+(cd tools/dwarf2json && go build -o dwarf2json .)
+tools/dwarf2json/dwarf2json linux --elf symbol-input/extracted/usr/lib/debug/boot/vmlinux-7.0.0-1023-raspi > symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.partial
+mv symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.partial symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json
+xz -f symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json
+```
+
+The [generated ISF](symbols/linux/ubuntu-7.0.0-1023-raspi-arm64.json.xz) passed schema 6.2.0 validation and contains 211,075 symbols and 12,826 user types. Matching ISFs for all listed kernels are included in [symbols/linux](symbols/linux) as `.json.xz` files, which Volatility reads directly. For another build, use its corresponding debug package and ISF.
+
+## Analyzing a sample
+
+This example uses the Ubuntu 26.04.1 LTS `7.0.0-1023-raspi` capture listed in [Memory dump samples](DUMP_SAMPLES.md). The capture is already in uncompressed LiME format.
+
+From this repository's root, identify the kernel banner first (one matching result shown):
+
+```console
+$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime banners.Banners
+
+Offset      Banner
+0xffff0000015502d0   Linux version 7.0.0-1023-raspi (buildd@bos03-arm64-076) (aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0, GNU ld (GNU Binutils for Ubuntu) 2.46) #23-Ubuntu SMP PREEMPT_DYNAMIC Sat Oct 31 00:19:11 UTC 2026 (Ubuntu 7.0.0-1023.23-raspi 7.0.14)
+```
+
+Display the board model, revision, serial number, RAM capacity and board manufacturer:
+
+```console
+$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.model.Model
+
+Volatility 3 Framework 2.28.3
+
+Board                   Model                  Revision  Serial            RevisionCode  RAM   BoardManufacturer  SoC      Status
+Raspberry Pi 4 Model B  raspberrypi,4-model-b  1.4       1000000015089641  0x00d03114    8 GB  Sony UK            BCM2711  ok
+```
+
+Display GPIO line names, consumers, request state and cached direction/ActiveLow configuration, including unrequested lines (three selected rows shown):
+
+```console
+$ uv run --extra full python vol.py -s symbols -f /path/to/memory.lime linux.rpi.gpio.Gpio --all
+
+Volatility 3 Framework 2.28.3
+
+Chip       Controller       Offset  HeaderPin  LineName          Consumer  Requested  KernelDirection  ActiveLow      Status
+gpiochip0  pinctrl-bcm2711  0       27         ID_SDA            (none)    No         Not requested    Not requested  ok
+...
+gpiochip0  pinctrl-bcm2711  7       26         GPIO7             spi0 CS1  Yes        Output           Yes            ok
+...
+gpiochip0  pinctrl-bcm2711  42      -          STATUS_LED_G_CLK  ACT       Yes        Output           No             ok
+...
+```
+
+## Validation scope
+
+The repository contains **57 distinct Linux plugin implementations**, including eight new Raspberry Pi plugins. The original evaluation covered 49 implementations, of which 48 apply to AArch64; `Check_idt` is x86-specific.
+
+**All 384 runs completed normally: 48 plugins × eight memory captures** across Ubuntu 24.04/26.04, Raspberry Pi OS, Kali Linux and Fedora. JSON outputs and extracted files were compared with saved references. See [sample coverage](TESTING.md#sample-coverage) for the per-sample results and verified output differences.
+
+Controlled comparisons used the same dump and symbols, with ARM64 support retained while the relevant fix was reversed:
+
+| Check | Without the fix | With the fix |
+| --- | --- | --- |
+| Bash history | 0/6 known commands | 6/6, matching PID, process name and timestamp to the second |
+| PsScan | 105/144 stable reference PID/PPID pairs | 144/144, including PID 171671 |
+| Sockscan | Exception on an unresolved candidate | All ten controlled IPv4/IPv6 TCP/UDP endpoints found once each |
+| InodePages | Page-conversion error; 0 bytes recovered | 2,135 bytes recovered, byte-for-byte and SHA-256 match |
+
+The full unit/synthetic suite passed **515 tests**, with 24 image-dependent cases skipped when no image arguments were supplied. A separate image-backed run passed all eight Arrow/Parquet cases. The [evidence matrix](TESTING.md#evidence-matrix) identifies physical-reference, synthetic and regression checks for each capability.
+
+## Credits and license
+
+Built on Volatility Foundation's framework and Abyss-W4tcher's AArch64 implementation; maintained by cpuu. Original copyright notices and the [Volatility Software License](LICENSE.txt) are retained; the source implementations are identified in [Basis](#basis). See also the [upstream README](README.upstream.md).
